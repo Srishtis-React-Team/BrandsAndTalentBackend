@@ -53,9 +53,6 @@ const addUsers = async (req, res, next) => {
       talent: req.body.talent,
       dob:req.body.dob,
       gender:req.body.gender,
-
-
-      
       height:req.body.height,
       nationality:req.body.nationality,
       ethnicity: req.body.ethnicity,
