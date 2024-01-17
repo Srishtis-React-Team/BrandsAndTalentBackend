@@ -353,11 +353,30 @@ const deleteUser = async (req, res) => {
     res.json({ status: false, msg: 'Invalid Token' });
   }
 };
+/**
+ *********fetchUser*****
+ * @param {*} req from user
+ * @param {*} res return data
+ * @param {*} next undefined
+ */
+const userFetch = async (req, res, next) => {
 
-
+  usermodel.find({ isActive: true}).sort({ created: -1 })
+      .then((response) => {
+          res.json({
+              status: true,
+              data: response
+          });
+      })
+      .catch((error) => {
+          res.json({
+              Status: false,
+          });
+      });
+};
 
 
 module.exports = {
-  addUsers, userLogin, userProfile, forgotPassword, resetPassword, editUser, deleteUser
+  addUsers, userLogin, userProfile, forgotPassword, resetPassword, editUser, deleteUser,userFetch
 
 };

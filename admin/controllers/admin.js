@@ -367,9 +367,27 @@ const listState = async (req, res, next) => {
 };//npm i country-state-city
 
 
+//for test
+const adminFetch = async (req, res, next) => {
+
+  adminmodel.find({ isActive: true}).sort({ created: -1 })
+      .then((response) => {
+          res.json({
+              status: true,
+              data: response
+          });
+      })
+      .catch((error) => {
+          res.json({
+              Status: false,
+          });
+      });
+};
+
+
 
 
 module.exports = {
-  addAdmin, adminLogin, adminProfile, forgotPassword, resetPassword, imageUpload, uploads, listCountry, listCity,listState
+  addAdmin, adminLogin, adminProfile, forgotPassword, resetPassword, imageUpload, uploads, listCountry, listCity,listState,adminFetch
 
 };

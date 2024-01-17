@@ -12,6 +12,8 @@ router.post('/imageUpload',admin.uploads.single("file"),admin.imageUpload) //Fil
 router.post('/listCountry',admin.listCountry)
 router.post('/listCity',admin.listCity)
 router.post('/listState',admin.listState)
+router.post('/adminFetch',admin.adminFetch)
+
 
 module.exports = router
 

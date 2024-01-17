@@ -15,8 +15,8 @@ const users = require('./users/routes/userroutes');
 const admin = require('./admin/routes/adminroutes');
 
 // Define routes
-app.use('/users',users);
-app.use('/admin',admin);
+app.use('/brandsntalent_api/users',users);
+app.use('/brandsntalent_api/admin',admin);
 
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -24,8 +24,8 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 try {
    
     // Start the server
-    app.listen(3000, () => {
-      console.log('Server is listening on port 3000');
+    app.listen(4014, () => {
+      console.log('Server is listening on port 4014');
     });
   } catch (error) {
     console.error('Error connecting to database:', error);
