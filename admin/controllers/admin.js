@@ -271,14 +271,56 @@ const resetPassword = async (req, res, next) => {
  * @param {*} res return data
  * @param {*} next undefined
  */
-const imageUpload = (req, res, msg) => {
-  //  res.send(req.file.filename);
-  res.json({
-    status: true,
-    data: req.file.filename,
-    message: "Success,File Uploaded...!",
+ const fileUpload = (req, res, msg) => {
+  // Assuming you have a function to save file details in the database
+  saveFileDetails(req.file.filename, req.file.originalname, req.file.size, req.file.mimetype, (err, fileId) => {
+    if (err) {
+      return res.status(500).json({ status: false, message: "Error saving file details" });
+    }
+
+    // Determine file type based on mimetype
+    let fileType;
+    if (req.file.mimetype.includes('video')) {
+      fileType = 'video';
+    } else if (req.file.mimetype.includes('audio')) {
+      fileType = 'audio';
+    } else if (req.file.mimetype.includes('image')) {
+      fileType = 'image';
+    } else {
+      fileType = 'unknown';
+    }
+
+    res.json({
+      status: true,
+      data: {
+        fileId: fileId, // Unique identifier for the uploaded file
+        filename: req.file.filename,
+        originalname: req.file.originalname, // Actual uploaded file name
+        filetype: fileType, // File type
+      },
+      message: "File Uploaded Successfully",
+    });
   });
 };
+
+// Function to save file details in the database
+function saveFileDetails(filename, originalname, size, mimetype, callback) {
+  // Logic to save file details in the database goes here
+  // This is a placeholder function, you should replace it with actual implementation
+  // For example, using an ORM like Mongoose for MongoDB or Sequelize for SQL databases
+  // For demonstration purposes, we'll simply generate a unique identifier here
+  const fileId = generateUniqueIdentifier();
+  // Assuming you have saved the file details, invoke the callback with the fileId
+  callback(null, fileId);
+}
+
+// Function to generate a unique identifier (placeholder)
+function generateUniqueIdentifier() {
+  // This is a placeholder function, you should replace it with your actual logic
+  // For demonstration, we'll generate a UUID here
+  return uuid();
+}
+
 var storage = multer.diskStorage({
   destination: function (req, file, cb) {
     // Uploads is the Upload_folder_name
@@ -288,27 +330,31 @@ var storage = multer.diskStorage({
     cb(null, uuid() + path.extname(file.originalname));
   },
 });
-const maxSize = 50 * 1024 * 1024;
-const Fieldsize = 8 * 1024 * 1024;
+
+// Adjusted file size limits
+const maxSize = 100 * 1024 * 1024; // Increased to 100 MB
+const Fieldsize = 10 * 1024 * 1024; // Increased to 10 MB
+
 var uploads = multer({
   storage: storage,
   limits: { fileSize: maxSize, fieldSize: Fieldsize },
   fileFilter: function (req, file, cb) {
-    // Set the filetypes, it is optional
-    var filetypes = /jpeg|jpg|png|pdf|txt|doc|mp4|mov|avi/;
-    var mimetype = filetypes.test(file.mimetype);
-    var extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-    if (mimetype && extname) {
+    // Set the filetypes to match video, audio, or image
+    var filetypes = /video|audio|image/;
+    var extname = file.originalname.match(/\.(mp4|mov|avi|mp3|jpg|jpeg|png)$/i);
+    if (extname && filetypes.test(file.mimetype)) {
       return cb(null, true);
     }
 
     cb(
-      "Error: File upload only supports the " +
-      "following filetypes - " +
-      filetypes
+      "Error: File upload only supports the following filetypes - " +
+      "video, audio, image"
     );
   },
 });
+
+
+
 /**
  *******listing country
 * @param {*} req from user
@@ -388,6 +434,6 @@ const adminFetch = async (req, res, next) => {
 
 
 module.exports = {
-  addAdmin, adminLogin, adminProfile, forgotPassword, resetPassword, imageUpload, uploads, listCountry, listCity,listState,adminFetch
+  addAdmin, adminLogin, adminProfile, forgotPassword, resetPassword, fileUpload, uploads, listCountry, listCity,listState,adminFetch
 
 };

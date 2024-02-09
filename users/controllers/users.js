@@ -8,6 +8,9 @@ const crypto = require('crypto');
 const moment = require('moment');
 var loginData = require('../../emailCredentials.js');
 const { gmail: { host, pass } } = loginData;
+const { getBusinessReviewEmailTemplate} = require('../../template.js');
+
+
 const nodemailer = require('nodemailer');
 
 
@@ -30,75 +33,113 @@ const usermodel = require('../models/usermodel');
  * @param {*} res return data
  * @param {*} next undefined
  */
-const addUsers = async (req, res, next) => {
+ const addUsers = async (req, res, next) => {
   try {
     console.log(req.body);
 
-    const hashedPass = await bcrypt.hash(req.body.password, 10);
+    const hashedPass = await bcrypt.hash(req.body.talentPassword, 10);
 
     console.log("hashedPass", hashedPass);
 
-    const userExist = await usermodel.findOne({ email: req.body.email });
+    const userExist = await usermodel.findOne({ talentEmail: req.body.talentEmail });
 
     if (userExist) {
       console.log("email matches");
       return res.json({
-        message: "Email ID Already Exist",
+        message: "Email ID Already Exists",
         status: false
       });
     }
 
-    const Add_User = new usermodel({
-      fullName: req.body.fullName,
-      talent: req.body.talent,
-      dob:req.body.dob,
-      gender:req.body.gender,
-      height:req.body.height,
-      nationality:req.body.nationality,
-      ethnicity: req.body.ethnicity,
-      phone: req.body.phone,
-      email: req.body.email,
-      country:req.body.country,
-      city:req.body.city,
-      image: req.body.image,
-      password: hashedPass,
-      
-      hairColour: req.body.hairColour,
-      hairType: req.body.hairType,
-      build: req.body.build,
-      skinType: req.body.skinType,
-      skinTone: req.body.skinTone,
-      eyeColour: req.body.eyeColour,
-      hairLength: req.body.hairLength,
-      chest: req.body.chest,
-      waist: req.body.waist,
-      hipSize: req.body.hipSize,
-      dressSize: req.body.dressSize,
-      shoeSize: req.body.shoeSize,
-      braSize: req.body.braSize,
-      transgender: req.body.transgender,
-      sexuality: req.body.sexuality,
-      maritalStatus: req.body.maritalStatus,
-      children: req.body.children,
-      pets: req.body.pets,
-      diet: req.body.diet,
-      isActive: true
+    let newUser;
+
+    if (req.body.age <= 17) {
+      newUser = new usermodel({
+        legalFirstName: req.body.legalFirstName,
+        legalLastName: req.body.legalLastName,
+        talentEmail: req.body.talentEmail,
+        mobileNo: req.body.mobileNo,
+        country: req.body.country,
+        state: req.body.state,
+        address: req.body.address,
+        talentPassword:req.body.talentPassword,
+        legalChildFirstName: req.body.legalChildFirstName,
+        legalChildLastName: req.body.legalChildLastName,
+        preferredFirstname: req.body.preferredFirstname,
+        preferredLastName: req.body.preferredLastName,
+        aboutYou:req.body.aboutYou,
+        profession:req.body.profession,
+        actorPerDay:req.body.actorPerDay,
+        actorPerHr:req.body.actorPerHr,
+        modelPerDay:req.body.modelPerDay,
+        modelPerHr:req.body.modelPerHr,
+        directorPerDay:req.body.directorPerDay,
+        directorPerHr:req.body.directorPerHr,
+        singerPerDay:req.body.singerPerDay,
+        singerPerHr:req.body.singerPerHr,
+        relevantCategories:req.body.relevantCategories,
+        cv:req.body.cv,
+        photo:req.body.photo,
+        videosAndAudios:req.body.videosAndAudios,
+        hairColour: req.body.hairColour,
+        eyeColour: req.body.eyeColour,
+        height: req.body.height,
+        shoeSize: req.body.shoeSize,
+        hips: req.body.hips,
+        chest: req.body.chest,
+        waist: req.body.waist,
+        weight: req.body.weight,
+        neckToToe: req.body.neckToToe,
+        insideLeg: req.body.insideLeg,
+        dressSize: req.body.dressSize,
+        socialMedia:req.body.socialMedia,
+        subscription:req.body.subscription,
+        userType:'talent'
+      });
+    } else if (req.body.age >= 18) {
+      newUser = new usermodel({
+       
+        talentEmail: req.body.talentEmail,
+        talentPassword: hashedPass,
+        userType:'talent'
+      });
+    }
+
+    const response = await newUser.save();
+
+    const transporter = nodemailer.createTransport({
+      service: 'Gmail',
+      auth: {
+                user: host,
+                pass: pass
+              }
     });
 
-    const response = await Add_User.save();
+    const mailOptions = {
+      from: process.env.EMAIL_HOST,
+      to: req.body.brandEmail,
+      subject: 'Welcome to Brands&Talent',
+      html: getBusinessReviewEmailTemplate()
+    };
+
+    await transporter.sendMail(mailOptions);
+
 
     return res.json({
       message: "Added Successfully",
       status: true,
-      data: Add_User,
+      data: response,
     });
+
   } catch (error) {
-    console.log(error);
+    console.error(error);
     return res.json({
-      message: "An Error Occurred"
+      message: "An Error Occurred",
+      status: false,
     });
   }
 };
+
 
 
 /**
@@ -297,7 +338,7 @@ const resetPassword = async (req, res, next) => {
  */
 
 
-const editUser = async (req, res) => {
+ const editUser = async (req, res) => {
   try {
     const userId = req.body.user_id || req.params.user_id;
 
@@ -308,11 +349,42 @@ const editUser = async (req, res) => {
     }
     /* Authentication */
 
+    const user_id = req.body.user_id || req.params.user_id;
+    const updateFields = {
+      isActive: true, // Assuming isActive is always set to true
+      profession: req.body.profession,
+      actorPerDay: req.body.actorPerDay,
+      actorPerHr: req.body.actorPerHr,
+      modelPerDay: req.body.modelPerDay,
+      modelPerHr: req.body.modelPerHr,
+      directorPerDay: req.body.directorPerDay,
+      directorPerHr: req.body.directorPerHr,
+      singerPerDay: req.body.singerPerDay,
+      singerPerHr: req.body.singerPerHr,
+      relevantCategories: req.body.relevantCategories,
+      legalFirstName: req.body.legalFirstName,
+      legalLastName: req.body.legalLastName,
+      preferredFirstname: req.body.preferredFirstname,
+      preferredLastName: req.body.preferredLastName,
+      gender: req.body.gender,
+      maritalStatus: req.body.maritalStatus,
+      nationality: req.body.nationality,
+      ethnicity: req.body.ethnicity,
+      dob: req.body.dob,
+      languages: req.body.languages,
+      contactPhone: req.body.contactPhone,
+      contactEmail: req.body.contactEmail,
+      country: req.body.country,
+      city: req.body.city,
+      aboutYou: req.body.aboutYou,
+      cv: req.body.cv,
+      portfolio: req.body.portfolio
+    };
+
     try {
-      const user_id = req.body.user_id || req.params.user_id;
       await usermodel.updateOne(
         { _id: new mongoose.Types.ObjectId(user_id) },
-        { $set: { ...req.body, isActive: true } }
+        { $set: updateFields }
       );
       res.json({ status: true, msg: 'Updated successfully' });
     } catch (err) {
@@ -322,6 +394,7 @@ const editUser = async (req, res) => {
     res.json({ status: false, msg: 'Error Occurred' });
   }
 };
+
 /**
  *********deleteUser*****
  * @param {*} req from user
@@ -360,23 +433,38 @@ const deleteUser = async (req, res) => {
  * @param {*} next undefined
  */
 const userFetch = async (req, res, next) => {
+  try {
+    const userId = req.body.user_id || req.params.user_id;
 
-  usermodel.find({ isActive: true}).sort({ created: -1 })
+    /* Authentication */
+    const authResult = await auth.CheckAuth(req.headers["x-access-token"], userId);
+    if (!authResult) {
+      return res.json({ status: false, msg: 'Authentication failed' });
+    }
+    /* Authentication */
+
+    usermodel.find({ isActive: true }).sort({ created: -1 })
       .then((response) => {
-          res.json({
-              status: true,
-              data: response
-          });
+        res.json({
+          status: true,
+          data: response
+        });
       })
       .catch((error) => {
-          res.json({
-              Status: false,
-          });
+        res.json({
+          Status: false,
+        });
       });
+  } catch (error) {
+    res.json({ status: false, msg: 'Invalid Token' });
+  }
 };
 
 
+
+
+
 module.exports = {
-  addUsers, userLogin, userProfile, forgotPassword, resetPassword, editUser, deleteUser,userFetch
+  addUsers, userLogin, userProfile, forgotPassword, resetPassword, editUser, deleteUser, userFetch,
 
 };

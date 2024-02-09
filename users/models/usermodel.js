@@ -3,128 +3,196 @@ var schema = mongoose.Schema;
 
 
 var authenticationSchema = new schema({
-   fullName: {
-        type: String
-    },
-    talent: {
-        type: String
-    },
-    dob:{
-      type:Date
-    },
-    gender:{
-      type:String
-    },
-    height:{
-      type:String
-    },
-    nationality:{
-      type:String
-    },
-    phone: {
-        type: Number
-    },
-    ethnicity:{                       
-        
-      type:String
+   legalFirstName: {
+      type: String
    },
-    email: {
-        type: String
-    },
-    country:{
-      type:String
-    },
-    city:{
-      type:String
-    },
-   password: {
-        type: String
-    },
-    image: {
-        type: String
-    },
-   
-  
-    isActive:
-    {
-        type: Boolean,
-        default: null
-    },
-    resetPasswordToken:
-    {
-        type: String,
+   legalLastName: {
+      type: String
+   },
+   talentEmail: {
+      type: String
+   },
+   talentPassword: {
+      type: String
+   },
+   mobileNo: {
+      type: Number
+   },
+   country: {
+      type: String
+   },
+   state: {
+      type: String
+   },
+   address: {
+      type: String
+   },
+   talentPassword: {
 
-    },
-    // token:{
-    //     type:String
-    // },
-    resetPasswordExpires: Date,
-    created: { type: Date, default: Date.now }, 
-     //
-    
-     hairColour:{
-        type:String
-     },
-     hairType:{
-        type:String
-     },
-     build:{
-        type:String
-     },
-     skinType:{
-        type:String
-     },
-     skinTone:{
-        type:String
-     },
-     eyeColour:{
-        type:String
-     },
-     hairLength:{           
-        type:String
-     },
-     chest:{
-        type:String
-     },
-     waist:{
-        type:String
-     },
-     hipSize:{                
-        type:String
-     },
-     dressSize:{ 
-        type:String
-     },
-     shoeSize:{
-        type:String
-     },
-     braSize:{
-        type:String
-     },
-     transgender:{
-        type:String
-     },
-     sexuality:{
-        type:String
-     },
-     maritalStatus:{
-        type:String
-     },
-     children:{
-        type:String
-     },
-     pets:{
-        type:String
-     },
-     diet:{
-        type:String
-     },
-     //
-   
+      type: String
+   },
+   legalChildFirstName: {
+      type: String
+   },
+   legalChildLastName: {
+      type: String
+   },
+   preferredFirstname: {
+      type: String
+   },
+   preferredLastName: {
+      type: String
+   },
+   aboutYou: {
+      type: String
+   },
+   profession: {
+      type: String
+   },
+   actorPerDay: {
+      type: String
+   },
+   actorPerHr: {
+      type: String
+   },
+   modelPerDay: {
+      type: String
+   },
+   modelPerHr: {
+      type: String
+   },
+   directorPerDay: {
+      type: String
+   },
+   directorPerHr: {
+      type: String
+   },
+   singerPerDay: {
+      type: String
+   },
+   singerPerHr: {
+      type: String
+   },
+   relevantCategories: {
+      type: String
+   },
+   cv: {
+      type: String
+   },
+   photo: {
+      type: String
+   },
+   videosAndAudios: {
+      type: String
+   },
+   hairColour: {
+      type: String
+   },
+   eyeColour: {
+      type: String
+   },
+   height: {
+      type: String
+   },
+   shoeSize: {
+      type: String
+   },
+   hips: {
+      type: String
+   },
+   chest: {
+      type: String
+   },
+   waist: {
+      type: String
+   },
+   weight: {
+      type: String
+   },
+   neckToToe: {
+      type: String
+   },
+   insideLeg: {
+      type: String
+   },
+   dressSize: {
+      type: String
+   },
+   socialMedia: {
+      type: String
+   },
+   subscription: {
+      type: String
+   },
+   userType: {
+      type: String
+   },
+   preferredFirstname: {
+      type: String
+   },
+   preferredLastName: {
+      type: String
+   },
+   gender: {
+      type: String
+   },
+   maritalStatus: {
+      type: String
+   },
+   nationality: {
+      type: String
+   },
+   ethnicity: {
+      type: String
+   },
+   dob: {
+      type: Date
+   },
+   languages: {
+      type: String
+   },
+   contactPhone: {
+      type: String
+   },
+   contactEmail: {
+      type: String
+   },
+   country: {
+      type: String
+   },
+   city: {
+      type: String
+   },
+   aboutYou: {
+      type: String
+   },
+   portfolio: {
+      type: String
+
+   },
+
+
+   isActive:
+   {
+      type: Boolean,
+      default: null
+   },
+   resetPasswordToken:
+   {
+      type: String,
+
+   },
+   // token:{
+   //     type:String
+   // },
+   resetPasswordExpires: Date,
+   created: { type: Date, default: Date.now },
+
+
 },
-    {
-        timestamps: true
+   {
+      timestamps: true
 
 
-    });
+   });
 module.exports = mongoose.model('Users', authenticationSchema);

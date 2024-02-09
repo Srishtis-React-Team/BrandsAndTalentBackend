@@ -3,39 +3,102 @@ var schema = mongoose.Schema;
 
 
 var authenticationSchema = new schema({
-    companyName: {
+    brandName: {
         type: String
     },
-    positionsNo: {
+    brandEmail: {
         type: String
     },
-    contactNo: {
+    brandPassword: {
+        type: String
+    },
+    brandPhone: {
         type: Number
     },
-    website: {
+   
+    brandZipCode: {
+        type: Number
+    },
+    enableTracking: {
+        type: String
+    },
+    howHearAboutUs: {
         type: String
     },
    
-    image: {
+    jobTitle: {
         type: String
     },
-    subscription: {
+    jobLocation: {
         type: String
     },
-    email: {
+    jobAge: {
+        type: Number
+    },
+    jobGender: {
         type: String
     },
-    password: {
+    jobSocialFollowers: {
+        type: Number
+    },
+    jobLanguages: {
+        type: String
+    },
+    jobType: {
+        type: String
+    },
+    jobRemote: {
+        type: String
+    },
+    jobSummary: {
+        type: String
+    },
+    jobYouWill: {
+        type: String
+    },
+    jobIdeallyWill: {
+        type: String
+    },
+    jobAboutUs: {
+        type: String
+    },
+    jobBenefits: {
+        type: Array
+    },
+    jobPayInformation: {
+        type: String
+    },
+    jobCurrency: {
+        type: String
+    },
+    jobFrequency: {
+        type: String
+    },
+    jobAmountType: {
+        type: String
+    },
+    jobMinPay: {
+        type: String
+    },
+    jobMaxPay: {
+        type: Number
+    },
+    jobImage: {
         type: String
     },
 
+
     isActive:
     {
-        type: Boolean,
-        default: null
+        type: Boolean
+        
     },
     resetPasswordToken:
     {
+        type: String,
+
+    },
+    userType:{
         type: String,
 
     },

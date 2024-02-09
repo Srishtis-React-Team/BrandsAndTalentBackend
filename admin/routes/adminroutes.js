@@ -8,7 +8,7 @@ router.post('/adminLogin',admin.adminLogin)//for admin login
 router.post('/adminProfile/:user_id',admin.adminProfile)//for admin login
 router.post('/forgotPassword',admin.forgotPassword)//for forgotPassword
 router.post('/resetPassword',admin.resetPassword)//for resetPassword
-router.post('/imageUpload',admin.uploads.single("file"),admin.imageUpload) //File Upload Single Image
+router.post('/fileUpload',admin.uploads.single("file"),admin.fileUpload) //File Upload Single Image
 router.post('/listCountry',admin.listCountry)
 router.post('/listCity',admin.listCity)
 router.post('/listState',admin.listState)
