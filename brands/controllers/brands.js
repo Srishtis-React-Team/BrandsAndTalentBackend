@@ -10,7 +10,7 @@ var loginData = require('../../emailCredentials.js');
 const { gmail: { host, pass } } = loginData;
 const { getBusinessReviewEmailTemplate} = require('../../template.js');
 const nodemailer = require('nodemailer');
-const usermodel = require('../../users/models/usermodel.js');
+const usermodel = require('../../users/models/kidsmodel.js');
 
 
 

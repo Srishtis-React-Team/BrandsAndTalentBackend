@@ -286,7 +286,12 @@ const resetPassword = async (req, res, next) => {
       fileType = 'audio';
     } else if (req.file.mimetype.includes('image')) {
       fileType = 'image';
-    } else {
+    } else if (req.file.mimetype.includes('pdf') || req.file.mimetype.includes('doc') || req.file.mimetype.includes('txt')||req.file.mimetype.includes('docx')) {
+      fileType = 'document';
+    } else if (req.file.mimetype.includes('webp') ) {
+      fileType = 'webp';
+    } 
+    else {
       fileType = 'unknown';
     }
 
@@ -339,19 +344,22 @@ var uploads = multer({
   storage: storage,
   limits: { fileSize: maxSize, fieldSize: Fieldsize },
   fileFilter: function (req, file, cb) {
-    // Set the filetypes to match video, audio, or image
-    var filetypes = /video|audio|image/;
-    var extname = file.originalname.match(/\.(mp4|mov|avi|mp3|jpg|jpeg|png)$/i);
-    if (extname && filetypes.test(file.mimetype)) {
+    // Set the filetypes to match video, audio, image, pdf, txt, doc, mov, avi, jpg, jpeg
+    var filetypes = /video|audio|image|pdf|txt|doc|mov|avi|jpg|jpeg|mp4|mp3|png|docx|webp/;
+    var extname = file.originalname.match(/\.(mp4|mov|avi|mp3|jpg|jpeg|png|pdf|txt|doc|docx|webp)$/i);
+    if (extname && filetypes.test(path.extname(file.originalname).toLowerCase())) {
       return cb(null, true);
     }
 
     cb(
       "Error: File upload only supports the following filetypes - " +
-      "video, audio, image"
+      "video, audio, image, pdf, txt, doc, mov, avi, jpg, jpeg"
     );
   },
 });
+
+
+
 
 
 
