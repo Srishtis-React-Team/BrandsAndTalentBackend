@@ -867,11 +867,53 @@ const kidsFetch = async (req, res, next) => {
     res.json({ status: false, msg: 'Error Occurred' });
   }
 };
+/**
+ *********kidsDataFetch*****
+ * @param {*} req from user
+ * @param {*} res return data
+ * @param {*} next undefined
+ */
+ const kidsDataFetch = async (req, res, next) => {
+  try {
+    const userId = req.params.user_id;
+
+    // Check authentication
+    const authResult = await auth.CheckAuth(req.headers["x-access-token"], userId);
+    if (!authResult) {
+      return res.json({ status: false, msg: 'Authentication failed' });
+    }
+
+    let query;
+    const dataType = parseInt(req.params.dataType);
+    switch (dataType) {
+      case 1:
+        query = kidsmodel.find({ _id: userId, isActive: true }).sort({ created: -1 }).select({ portfolio: 1 });
+        break;
+      case 2:
+        query = kidsmodel.find({ _id: userId, isActive: true }).sort({ created: -1 }).select({ videosAndAudios: 1 });
+        break;
+      case 3:
+        query = kidsmodel.find({ _id: userId, isActive: true }).sort({ created: -1 }).select({ cv: 1 });
+        break;
+      case 4:
+        query = kidsmodel.find({ _id: userId, isActive: true }).sort({ created: -1 }).select({ features: 1 });
+        break;
+      default:
+        return res.json({ status: false, msg: 'Invalid request' });
+    }
+
+    const response = await query;
+    res.json({ status: true, data: response });
+  } catch (error) {
+    res.json({ status: false, msg: 'Invalid Token' });
+  }
+};
+
 
 
 
 module.exports = {
   kidsSignUp, adultSignUp, kidsLogin, adultFetch, forgotPassword, resetPassword, editAdult, deleteUser, kidsFetch, otpVerification, subscriptionPlan,adultLogin,
-  otpVerificationAdult,editKids
+  otpVerificationAdult,editKids,kidsDataFetch
 
 };
