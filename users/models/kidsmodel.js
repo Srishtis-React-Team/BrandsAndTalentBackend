@@ -79,7 +79,7 @@ var authenticationSchema = new schema({
       type:String
    },
    childAboutYou:{
-      type:String
+      type:Array
    },
    
    
@@ -228,7 +228,10 @@ var authenticationSchema = new schema({
    // },
    resetPasswordExpires: Date,
    created: { type: Date, default: Date.now },
-
+   
+   otp:{
+      type:String
+   },
 
 },
    {

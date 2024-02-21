@@ -22,7 +22,7 @@ const getBusinessReviewEmailTemplate = (
         Your account has been successfully activated, granting you full access to our platform. Feel free to log in and continue exploring our platform with your newly activated account.
       </div>
       <div class="btn" style="display: inline-block; width: 180px; height: 52px; background-color: #000; color: #fff; font-family: sans-serif; font-size: 17px; font-weight: 400; text-align: center; line-height: 52px; border-radius: 50px;">
-        <a href="https://hybrid.sicsglobal.com/project/brandsandtalent/login" style="color: #fff; text-decoration: none; display: block; width: 100%; height: 100%;">Login Now</a>
+        <a href="https://hybrid.sicsglobal.com/project/brandsandtalent/login?talent" style="color: #fff; text-decoration: none; display: block; width: 100%; height: 100%;">Login Now</a>
       </div>
     </div>
   </div>

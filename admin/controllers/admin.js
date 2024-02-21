@@ -25,6 +25,8 @@ var transporter = nodemailer.createTransport({
 });
 
 const adminmodel = require('../models/adminmodel.js');
+const  countrymodel = require('../models/countrymodel.js')
+const statemodel = require('../models/statemodel.js');
 
 /**
  ********* Add Users******
@@ -369,7 +371,7 @@ var uploads = multer({
 * @param {*} res return data
 * @param {*} next undefined
 */
-const listCountry = async (req, res, next) => {
+const listCountries = async (req, res, next) => {
   const { Country } = require('country-state-city');
 
   const countries = Country.getAllCountries();
@@ -381,6 +383,75 @@ const listCountry = async (req, res, next) => {
     data: countryNames
   });
 };
+/**
+ *******listing country
+* @param {*} req from user
+* @param {*} res return data
+* @param {*} next undefined
+*/
+
+const addCountry = async (req, res, next) => {
+  try {
+    const { Country } = require('country-state-city');
+    const { v4: uuidv4 } = require('uuid'); // Import uuidv4 for generating unique IDs
+    //const CountryModel = require('../models/CountryModel'); // Adjust the path as per your project structure
+
+    const countries = Country.getAllCountries();
+
+    if (!countries || countries.length === 0) {
+      throw new Error('No countries found');
+    }
+
+    let countryList = [];
+
+    // Loop through the countries array to save each country in the database
+    for (const country of countries) {
+      // Generate a unique ID for the country
+      const countryId = uuidv4();
+
+      // Check if the country with the same ID already exists in the database
+      const existingCountry = await countrymodel.findOne({ countryId });
+
+      // If the country doesn't exist, insert it into the database
+      if (!existingCountry) {
+        await countrymodel.create({
+          countryId,
+          name: country.name
+          // Add more fields if needed
+        });
+      }
+
+      // Construct country object with ID and name
+      const countryObject = {
+        countryId,
+        name: country.name
+      };
+
+      // Push the country object to the list
+      countryList.push(countryObject);
+    }
+
+    // Save the country list to the database
+    await countrymodel.insertMany(countryList);
+
+    res.json({
+      status: true,
+      data: countryList
+    });
+  } catch (error) {
+    console.error(error);
+    res.json({
+      status: false,
+      message: error.message || 'Error occurred while fetching countries'
+    });
+  }
+};
+
+
+
+
+
+
 /**
  *******listing city
 * @param {*} req from user
@@ -406,20 +477,102 @@ const listCity = async (req, res, next) => {
 * @param {*} res return data
 * @param {*} next undefined
 */
-
 const listState = async (req, res, next) => {
-  const { State } = require('country-state-city');
+  try {
+    const { State, Country } = require('country-state-city');
+    const { v4: uuidv4 } = require('uuid');
+    // const CountryModel = require('../models/CountryModel'); // Adjust the path as per your project structure
+    // const StateModel = require('../models/StateModel'); // Adjust the path as per your project structure
 
-  const states = State.getAllStates();
+    const states = State.getAllStates();
 
-  const stateNames = states.map(state => state.name);
+    if (!states || states.length === 0) {
+      throw new Error('No states found');
+    }
 
-  res.json({
-    status: true,
-    data: stateNames
-  });
-};//npm i country-state-city
+    let stateList = [];
 
+    // Create a map of country codes to country names for efficient lookup
+    const countryMap = {};
+    Country.getAllCountries().forEach(country => {
+      countryMap[country.isoCode] = country.name;
+    });
+
+    // Loop through the states array to save each state in the database
+    for (const state of states) {
+      // Generate a unique ID for the state
+      const stateId = uuidv4();
+
+      // Get the country name using the country code or set to 'Unknown' if not found
+      const countryName = countryMap[state.countryCode] || 'Unknown';
+
+      // Check if the state with the same ID already exists in the database
+      const existingState = await statemodel.findOne({ stateId });
+
+      // If the state doesn't exist, insert it into the database
+      if (!existingState) {
+        await statemodel.create({
+          stateId,
+          name: state.name,
+          countryId: state.countryCode,
+          countryName,
+          // Add more fields if needed
+        });
+      }
+
+      // Construct state object with ID, name, country ID, and country name
+      const stateObject = {
+        stateId,
+        name: state.name,
+        countryId: state.countryCode,
+        countryName,
+      };
+
+      // Push the state object to the list
+      stateList.push(stateObject);
+    }
+
+    // Save the state list to the database
+    await statemodel.insertMany(stateList);
+
+    res.json({
+      status: true,
+      data: stateList
+    });
+  } catch (error) {
+    console.error(error);
+    res.json({
+      status: false,
+      message: error.message || 'Error occurred while fetching states'
+    });
+  }
+};
+
+
+
+
+
+/**
+ ******* listLocation 
+* @param {*} req from user
+* @param {*} res return data
+* @param {*} next undefined
+*/
+const listLocation = async (req, res, next) => {
+
+  statemodel.find({countryName:req.body.countryName}).sort({ created: -1 })
+      .then((response) => {
+          res.json({
+              status: true,
+              data: response
+          });
+      })
+      .catch((error) => {
+          res.json({
+              Status: false,
+          });
+      });
+};
 
 //for test
 const adminFetch = async (req, res, next) => {
@@ -442,6 +595,6 @@ const adminFetch = async (req, res, next) => {
 
 
 module.exports = {
-  addAdmin, adminLogin, adminProfile, forgotPassword, resetPassword, fileUpload, uploads, listCountry, listCity,listState,adminFetch
+  addAdmin, adminLogin, adminProfile, forgotPassword, resetPassword, fileUpload, uploads, addCountry, listCity,listState,adminFetch,listLocation,listCountries
 
 };

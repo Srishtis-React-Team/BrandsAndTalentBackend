@@ -15,12 +15,13 @@ router.post('/editAdult/:user_id',users.editAdult)//for editUser
 router.post('/deleteUser/:user_id',users.deleteUser)//for deleteUser
 router.post('/otpVerification',users.otpVerification)//for otpVerification
 router.post('/subscriptionPlan',users.subscriptionPlan)//for subscriptionPlan
-router.post('/otpVerificationAdult',users.otpVerificationAdult)//for subscriptionPlan
-router.post('/editKids/:user_id',users.editKids)//for subscriptionPlan
-router.post('/kidsDataFetch/:user_id/:dataType',users.kidsDataFetch)//for subscriptionPlan
-
-
-
+router.post('/otpVerificationAdult',users.otpVerificationAdult)//for otpVerificationAdult
+router.post('/editKids/:user_id',users.editKids)//for editKids
+router.post('/kidsDataFetch/:user_id/:dataType',users.kidsDataFetch)//for kidsDataFetch
+router.post('/deleteFile/:user_id',users.deleteFile)//for deleteFile
+router.post('/adultDataFetch/:user_id/:dataType',users.adultDataFetch)//for adultDataFetch
+router.post('/otpResend',users.otpResend)//for otpResend
+router.post('/otpResendAdult',users.otpResendAdult)//for otpResendAdult
 
 module.exports = router
 

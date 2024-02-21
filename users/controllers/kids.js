@@ -9,27 +9,30 @@ const moment = require('moment');
 var loginData = require('../../emailCredentials.js');
 const { gmail: { host, pass } } = loginData;
 const { getBusinessReviewEmailTemplate } = require('../../template.js');
-const session = require('express-session');//otp
 
+const generateAndHashOTP = async () => {
+  const otp = Math.floor(1000 + Math.random() * 9000); // Generate a random 4-digit OTP
+  const hashedOTP = await bcrypt.hash(otp.toString(), 10); // Hash the OTP
+  return { otp, hashedOTP };
+};
 
-function generateOTP() {
-  const buffer = crypto.randomBytes(2);
-  const otp = buffer.readUInt16BE() % 10000;
-  return otp.toString().padStart(4, '0');
-}
+// Send OTP through email
+const sendOTPByEmail = async (email, otp) => {
+  const mailOptions = {
+    from: host,
+    to: email,
+    subject: 'OTP Verification',
+    text: `Your OTP (One-Time Password) is ${otp}. Please use this code to complete your verification process. Do not share this code with anyone. Thank you for using our services.\n\nKind regards,\nTeam`
+  };
 
-function sendOTP(talentEmail, req) {
-  const otp = generateOTP();
-  req.session.otp = otp; // Store the OTP in the session
-  // Code to send the OTP to the specified contact
-  console.log(`Sent OTP ${otp} to ${talentEmail}`);
-  return otp;
-}
-
-// Function to verify the OTP entered by the user
-function verifyOTP(otp, input) {
-  return otp === input;
-}
+  try {
+    await transporter.sendMail(mailOptions);
+    return true; // Return true if email sent successfully
+  } catch (error) {
+    console.error('Error sending OTP:', error);
+    return false; // Return false if email sending fails
+  }
+};
 
 
 const nodemailer = require('nodemailer');
@@ -55,7 +58,7 @@ const adultmodel = require('../models/adultmodel.js');
  * @param {*} res return data
  * @param {*} next undefined
  */
-const kidsSignUp = async (req, res, next) => {
+ const kidsSignUp = async (req, res, next) => {
   try {
     console.log(req.body);
 
@@ -73,106 +76,75 @@ const kidsSignUp = async (req, res, next) => {
       });
     }
 
-    // Create a new user document
-    const newUser = new kidsmodel({
-      parentFirstName: req.body.parentFirstName,
-      parentLastName: req.body.parentLastName,
-      parentEmail: req.body.parentEmail,
-      parentMobileNo: req.body.parentMobileNo,
-      parentCountry: req.body.parentCountry,
-      parentState: req.body.parentState,
-      parentAddress: req.body.parentAddress,
-      talentPassword: hashedPass,
-      confirmPassword: req.body.confirmPassword,
-      profession: req.body.profession,
-      relevantCategories: req.body.relevantCategories,
-      childFirstName: req.body.childFirstName,
-      childLastName: req.body.childLastName,
-      preferredChildFirstname: req.body.preferredChildFirstname,
-      preferredChildLastName: req.body.preferredChildLastName,
-      childGender: req.body.childGender,
-      childNationality: req.body.childNationality,
-      childEthnicity: req.body.childEthnicity,
-      languages: req.body.languages,
-      childDob: req.body.childDob,
-      childPhone: req.body.childPhone,
-      childEmail: req.body.childEmail,
-      childLocation: req.body.childLocation,
-      childCity: req.body.childCity,
-      childAboutYou: req.body.childAboutYou,
-      cv: req.body.cv,
-      videosAndAudios: req.body.videosAndAudios,
-      features:req.body.features,
-      portfolio:req.body.portfolio,
-      // hairColour: req.body.hairColour,
-      // eyeColour: req.body.eyeColour,
-      // height: req.body.height,
-      // shoeSize: req.body.shoeSize,
-      // hipSize: req.body.hipSize,
-      // braSize: req.body.braSize,
-      // transgender: req.body.transgender,
-      // sexuality: req.body.sexuality,
-      // children: req.body.children,
-      // pets: req.body.pets,
-      // hairType: req.body.hairType,
-      // build: req.body.build,
-      // skinType: req.body.skinType,
-      // skinTone: req.body.skinTone,
-      // hairLength: req.body.hairLength,
-      // chest: req.body.chest,
-      // waist: req.body.waist,
-      // weight: req.body.weight,
-      // neckToToe: req.body.neckToToe,
-      // insideLeg: req.body.insideLeg,
-      // dressSize: req.body.dressSize,
-      instaFollowers: req.body.instaFollowers,
-      tiktokFollowers: req.body.tiktokFollowers,
-      twitterFollowers: req.body.twitterFollowers,
-      youtubeFollowers: req.body.youtubeFollowers,
-      facebookFollowers: req.body.facebookFollowers,
-      linkedinFollowers: req.body.linkedinFollowers,
-      threadsFollowers: req.body.threadsFollowers,
-      idType: req.body.idType,
-      verificationId: req.body.verificationId,
-      userType: 'talent',
-      isVerified: false,
-      type: 'kids',
-      isActive: true
-    });
-
-    // Save the new user to the database
-    const response = await newUser.save();
+    // Generate and hash OTP
+    const { otp, hashedOTP } = await generateAndHashOTP();
 
     // Send OTP after saving user
     const email = req.body.parentEmail;
-    const otp = sendOTP(email, req);
-    const mailOptions = {
-      from: host,
-      to: req.body.parentEmail,
-      subject: "Use this code to verify your account",
-      text: `Your One-Time Password (OTP) is ${otp}. Please use this code to complete your verification process. Do not share this code with anyone. Thank you for using our services.\n \nKind regards,\nTeam`,
-    };
+    const emailSent = await sendOTPByEmail(email, otp);
 
-    // Send email with OTP
-    transporter.sendMail(mailOptions, function (error, info) {
-      if (error) {
-        console.log(error);
-        return res.json({
-          message: "Error sending OTP",
-          status: false,
-          error: error
-        });
-      } else {
-        console.log("mailOptions", mailOptions);
-        console.log("Email sent: " + info.response);
-        res.json({
-          message: "OTP sent successfully",
-          status: true,
-          data:req.body.parentEmail
-        });
-      }
-    });
+    if (emailSent) {
+      // Create a new user document
+      const newUser = new kidsmodel({
+        parentFirstName: req.body.parentFirstName,
+        parentLastName: req.body.parentLastName,
+        parentEmail: req.body.parentEmail,
+        parentMobileNo: req.body.parentMobileNo,
+        parentCountry: req.body.parentCountry,
+        parentState: req.body.parentState,
+        parentAddress: req.body.parentAddress,
+        talentPassword: hashedPass,
+        confirmPassword: req.body.confirmPassword,
+        profession: req.body.profession,
+        relevantCategories: req.body.relevantCategories,
+        childFirstName: req.body.childFirstName,
+        childLastName: req.body.childLastName,
+        preferredChildFirstname: req.body.preferredChildFirstname,
+        preferredChildLastName: req.body.preferredChildLastName,
+        childGender: req.body.childGender,
+        childNationality: req.body.childNationality,
+        childEthnicity: req.body.childEthnicity,
+        languages: req.body.languages,
+        childDob: req.body.childDob,
+        childPhone: req.body.childPhone,
+        childEmail: req.body.childEmail,
+        childLocation: req.body.childLocation,
+        childCity: req.body.childCity,
+        childAboutYou: req.body.childAboutYou,
+        cv: req.body.cv,
+        videosAndAudios: req.body.videosAndAudios,
+        features: req.body.features,
+        portfolio: req.body.portfolio,
+        instaFollowers: req.body.instaFollowers,
+        tiktokFollowers: req.body.tiktokFollowers,
+        twitterFollowers: req.body.twitterFollowers,
+        youtubeFollowers: req.body.youtubeFollowers,
+        facebookFollowers: req.body.facebookFollowers,
+        linkedinFollowers: req.body.linkedinFollowers,
+        threadsFollowers: req.body.threadsFollowers,
+        idType: req.body.idType,
+        verificationId: req.body.verificationId,
+        userType: 'talent',
+        isVerified: false,
+        type: 'kids',
+        isActive: true,
+        otp: hashedOTP // Store hashed OTP in the user document
+      });
 
+      // Save the new user to the database
+      await newUser.save();
+
+      res.json({
+        message: "OTP sent successfully",
+        status: true,
+        data: req.body.parentEmail
+      });
+    } else {
+      res.json({
+        message: "Error sending OTP",
+        status: false,
+      });
+    }
   } catch (error) {
     console.error(error);
     return res.json({
@@ -182,6 +154,7 @@ const kidsSignUp = async (req, res, next) => {
     });
   }
 };
+
 
 /**
 *********adultSignUp******
@@ -207,48 +180,40 @@ const adultSignUp = async (req, res, next) => {
       });
     }
 
-    // Create a new user document
-    const newUser = new adultmodel({
-      adultEmail: req.body.adultEmail,
-      talentPassword: hashedPass,
-      isVerified: false,
-      userType: 'talent',
-      isActive: true,
-      type: 'adult' // Assuming type should be set to 'adult'
-    });
-
-    // Save the new user to the database
-    const response = await newUser.save();
+    // Generate OTP and hash it
+    const { otp, hashedOTP } = await generateAndHashOTP();
 
     // Send OTP after saving user
     const email = req.body.adultEmail;
-    const otp = sendOTP(email, req);
-    const mailOptions = {
-      from: host,
-      to: req.body.adultEmail,
-      subject: "Use this code to verify your account",
-      text: `Your One-Time Password (OTP) is ${otp}. Please use this code to complete your verification process. Do not share this code with anyone. Thank you for using our services.\n \nKind regards,\nTeam`,
-    };
+    const emailSent = await sendOTPByEmail(email, otp);
 
-    // Send email with OTP
-    transporter.sendMail(mailOptions, function (error, info) {
-      if (error) {
-        console.log(error);
-        return res.json({
-          message: "Error sending OTP",
-          status: false,
-          error: error
-        });
-      } else {
-        console.log("mailOptions", mailOptions);
-        console.log("Email sent: " + info.response);
-        res.json({
-          message: "OTP sent successfully",
-          status: true
-        });
-      }
-    });
+    if (emailSent) {
+      // Create a new user document
+      const newUser = new adultmodel({
+        adultEmail: req.body.adultEmail,
+        talentPassword: hashedPass,
+        confirmPassword:req.body.confirmPassword,
+        isVerified: false,
+        userType: 'talent',
+        isActive: true,
+        type: 'adult', // Assuming type should be set to 'adult'
+        otp: hashedOTP // Store hashed OTP in the user document
+      });
 
+      // Save the new user to the database
+      const response = await newUser.save();
+
+      res.json({
+        message: "OTP sent successfully",
+        status: true,
+        data: req.body.adultEmail
+      });
+    } else {
+      res.json({
+        message: "Error sending OTP",
+        status: false,
+      });
+    }
   } catch (error) {
     console.error(error);
     return res.json({
@@ -258,6 +223,7 @@ const adultSignUp = async (req, res, next) => {
     });
   }
 };
+
 /**
 *********adult otpVerification******
 * @param {*} req from user
@@ -268,20 +234,35 @@ const adultSignUp = async (req, res, next) => {
 const otpVerificationAdult = async (req, res, next) => {
   try {
     const inputOTP = req.body.otp;
-    const sessionOTP = req.session.otp; // Retrieve the OTP from the session
     const newEmail = req.body.adultEmail;
 
-    const isMatch = verifyOTP(sessionOTP, inputOTP);
-    console.log(`OTP match: ${isMatch}`);
+    // Fetch the user from the database for the given email
+    const user = await adultmodel.findOne({ adultEmail: newEmail });
+    console.log("user",user)
+    if (!user) {
+      console.log("Error: User not found");
+      return res.json({
+        message: "User not found",
+        status: false
+      });
+    }
+
+    // Retrieve the hashed OTP from the user document
+    const hashedOTP = user.otp;
+
+    // Compare the input OTP with the hashed OTP
+    const isMatch = await bcrypt.compare(inputOTP.toString(), hashedOTP);
 
     if (isMatch) {
       // Update isVerified value to true for the user with the given email
       await adultmodel.findOneAndUpdate({ adultEmail: newEmail }, { isVerified: true });
 
+      console.log("Success: User verified");
 
+      // Send a welcome email to the verified user
       const mailOptions = {
         from: host,
-        to: newEmail, // Use the provided newEmail
+        to: newEmail,
         subject: 'Welcome to Brands&Talent',
         html: getBusinessReviewEmailTemplate() // Assuming you have the email template function
       };
@@ -317,31 +298,32 @@ const otpVerificationAdult = async (req, res, next) => {
 * @param {*} res return data
 * @param {*} next undefined
 */
-
 const otpVerification = async (req, res, next) => {
   try {
     const inputOTP = req.body.otp;
-    const sessionOTP = req.session.otp; // Retrieve the OTP from the session
     const newEmail = req.body.parentEmail;
 
-    const isMatch = verifyOTP(sessionOTP, inputOTP);
-    console.log(`OTP match: ${isMatch}`);
+    // Fetch the user from the database for the given email
+    const user = await kidsmodel.findOne({ parentEmail: newEmail });
+    if (!user) {
+      console.log("Error: User not found");
+      return res.json({
+        message: "User not found",
+        status: false
+      });
+    }
+
+    // Retrieve the hashed OTP from the user document
+    const hashedOTP = user.otp;
+
+    // Compare the input OTP with the hashed OTP
+    const isMatch = await bcrypt.compare(inputOTP.toString(), hashedOTP);
 
     if (isMatch) {
       // Update isVerified value to true for the user with the given email
       await kidsmodel.findOneAndUpdate({ parentEmail: newEmail }, { isVerified: true });
 
-
-      // const mailOptions = {
-      //   from: host,
-      //   to: newEmail, // Use the provided newEmail
-      //   subject: 'Welcome to Brands&Talent',
-      //   html: getBusinessReviewEmailTemplate() // Assuming you have the email template function
-      // };
-
-      // await transporter.sendMail(mailOptions);
-
-      console.log("Success: User verified and email sent");
+      console.log("Success: User verified");
       res.json({
         message: "User verified",
         status: true
@@ -362,6 +344,53 @@ const otpVerification = async (req, res, next) => {
     });
   }
 };
+
+
+
+// const otpVerification = async (req, res, next) => {
+//   try {
+//     const inputOTP = req.body.otp;
+//     const sessionOTP = req.session.otp; // Retrieve the OTP from the session
+//     const newEmail = req.body.parentEmail;
+
+//     const isMatch = verifyOTP(sessionOTP, inputOTP);
+//     console.log(`OTP match: ${isMatch}`);
+
+//     if (isMatch) {
+//       // Update isVerified value to true for the user with the given email
+//       await kidsmodel.findOneAndUpdate({ parentEmail: newEmail }, { isVerified: true });
+
+
+//       // const mailOptions = {
+//       //   from: host,
+//       //   to: newEmail, // Use the provided newEmail
+//       //   subject: 'Welcome to Brands&Talent',
+//       //   html: getBusinessReviewEmailTemplate() // Assuming you have the email template function
+//       // };
+
+//       // await transporter.sendMail(mailOptions);
+
+//       console.log("Success: User verified and email sent");
+//       res.json({
+//         message: "User verified",
+//         status: true
+//       });
+//     } else {
+//       console.log("Error: OTP does not match");
+//       res.json({
+//         message: "OTP does not match",
+//         status: false
+//       });
+//     }
+//   } catch (error) {
+//     console.error("Error:", error);
+//     res.json({
+//       message: "An error occurred",
+//       status: false,
+//       error: error
+//     });
+//   }
+// };
 /**
 *********subscription******
 * @param {*} req from user
@@ -414,6 +443,7 @@ const subscriptionPlan = async (req, res, next) => {
 const kidsLogin = async (req, res, next) => {
   const username = req.body.parentEmail;
   const password = req.body.talentPassword;
+ 
 
   try {
     const user = await kidsmodel.findOne({ $or: [{ parentEmail: username }, { parentEmail: username }] });
@@ -460,6 +490,7 @@ const kidsLogin = async (req, res, next) => {
 const adultLogin = async (req, res, next) => {
   const username = req.body.adultEmail;
   const password = req.body.talentPassword;
+  
 
   try {
     const user = await adultmodel.findOne({ $or: [{ adultEmail: username }, { adultEmail: username }] });
@@ -710,6 +741,7 @@ const editAdult = async (req, res) => {
       threadsFollowers: req.body.threadsFollowers,
       idType: req.body.idType,
       verificationId: req.body.verificationId,
+      services:req.body.services
 };
 
     try {
@@ -908,12 +940,217 @@ const kidsFetch = async (req, res, next) => {
     res.json({ status: false, msg: 'Invalid Token' });
   }
 };
+/**
+ *********adultDataFetch*****
+ * @param {*} req from user
+ * @param {*} res return data
+ * @param {*} next undefined
+ */
+ const adultDataFetch = async (req, res, next) => {
+  try {
+    const userId = req.params.user_id;
+
+    // Check authentication
+    const authResult = await auth.CheckAuth(req.headers["x-access-token"], userId);
+    if (!authResult) {
+      return res.json({ status: false, msg: 'Authentication failed' });
+    }
+
+    let query;
+    const dataType = parseInt(req.params.dataType);
+    switch (dataType) {
+      case 1:
+        query = adultmodel.find({ _id: userId, isActive: true }).sort({ created: -1 }).select({ portfolio: 1 });
+        break;
+      case 2:
+        query = adultmodel.find({ _id: userId, isActive: true }).sort({ created: -1 }).select({ videosAndAudios: 1 });
+        break;
+      case 3:
+        query = adultmodel.find({ _id: userId, isActive: true }).sort({ created: -1 }).select({ cv: 1 });
+        break;
+      case 4:
+        query = adultmodel.find({ _id: userId, isActive: true }).sort({ created: -1 }).select({ features: 1 });
+
+        break;
+        case 5:
+        query = adultmodel.find({ _id: userId, isActive: true }).sort({ created: -1 }).select({ services: 1 });
+      default:
+        return res.json({ status: false, msg: 'Invalid request' });
+    }
+
+    const response = await query;
+    res.json({ status: true, data: response });
+  } catch (error) {
+    res.json({ status: false, msg: 'Invalid Token' });
+  }
+};
+/**
+ *********file delete*****
+ * @param {*} req from user
+ * @param {*} res return data
+ * @param {*} next undefined
+ */
+ const deleteFile = async (req, res, next) => {
+  try {
+    const userId = req.body.user_id || req.params.user_id; // Replace this with the actual user ID
+    const cvIdToRemove = req.body.element_id; // Replace this with the ID of the cv to remove
+    const videoIdToRemove = req.body.element_id; // Replace this with the ID of the video to remove
+    const audioIdToRemove = req.body.element_id; // Replace this with the ID of the audio to remove
+    const pfIdToRemove = req.body.element_id;
+
+    // Check authentication
+    const authResult = await auth.CheckAuth(req.headers["x-access-token"], userId);
+    if (!authResult) {
+      return res.json({ status: false, msg: 'Authentication failed' });
+    }
+
+    // Update the user document to remove items from arrays and return the updated document
+    const updatedUser = await kidsmodel.findOneAndUpdate(
+      { _id: userId },
+      {
+        $pull: {
+          cv: { id: cvIdToRemove },
+          videosAndAudios: { id: { $in: [videoIdToRemove, audioIdToRemove] } },
+          portfolio: { id: pfIdToRemove }
+        }
+      },
+      { new: true } // To return the updated document
+    );
+
+    if (updatedUser) {
+      console.log('Successfully removed items from cv, videosAndAudios, and portfolio arrays.');
+      res.json({ status: true, msg: 'Items successfully removed.', updatedUser });
+    } else {
+      console.log('No items were removed from cv, videosAndAudios, and portfolio arrays.');
+      res.json({ status: false, msg: 'No items were removed.', updatedUser: null });
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    if (error.name === "TokenExpiredError") {
+      res.json({ status: false, msg: 'Token expired' });
+    } else {
+      res.json({ status: false, msg: 'Internal server error.' });
+    }
+  }
+};
 
 
 
+
+/**
+ *********otpResend*****
+ * @param {*} req from user
+ * @param {*} res return data
+ * @param {*} next undefined
+ */
+ const otpResend = async (req, res, next) => {
+  try {
+    const email = req.body.parentEmail;
+
+    // Generate and hash new OTP
+    const { otp, hashedOTP } = await generateAndHashOTP();
+
+    // Compose email options
+    const mailOptions = {
+      from: host,
+      to: email,
+      subject: "Use this code to verify your account",
+      text: `Your One-Time Password (OTP) is ${otp}. Please use this code to complete your verification process. Do not share this code with anyone. Thank you for using our services.\n \nKind regards,\nTeam`,
+    };
+
+    // Send email with OTP
+    transporter.sendMail(mailOptions, async function (error, info) {
+      if (error) {
+        console.log(error);
+        return res.json({
+          message: "Error sending OTP",
+          status: false,
+          error: error
+        });
+      } else {
+        console.log("mailOptions", mailOptions);
+        console.log("Email sent: " + info.response);
+
+        // Update the OTP in the database for the user
+        try {
+          const filter = { parentEmail: email };
+          const update = { otp: hashedOTP };
+          await kidsmodel.findOneAndUpdate(filter, update);
+          console.log("OTP updated successfully in the database");
+        } catch (updateError) {
+          console.error("Error updating OTP in the database:", updateError);
+        }
+
+        res.json({
+          message: "OTP sent successfully",
+          status: true
+        });
+      }
+    });
+  } catch (error) {
+    console.error("Error occurred:", error);
+    res.json({ status: false, msg: "Error Occurred" });
+  }
+};
+/**
+ *********otpResend Adult*****
+ * @param {*} req from user
+ * @param {*} res return data
+ * @param {*} next undefined
+ */
+ const otpResendAdult = async (req, res, next) => {
+  try {
+    const email = req.body.adultEmail;
+
+    // Generate and hash new OTP
+    const { otp, hashedOTP } = await generateAndHashOTP();
+
+    // Compose email options
+    const mailOptions = {
+      from: host,
+      to: email,
+      subject: "Use this code to verify your account",
+      text: `Your One-Time Password (OTP) is ${otp}. Please use this code to complete your verification process. Do not share this code with anyone. Thank you for using our services.\n \nKind regards,\nTeam`,
+    };
+
+    // Send email with OTP
+    transporter.sendMail(mailOptions, async function (error, info) {
+      if (error) {
+        console.log(error);
+        return res.json({
+          message: "Error sending OTP",
+          status: false,
+          error: error
+        });
+      } else {
+        console.log("mailOptions", mailOptions);
+        console.log("Email sent: " + info.response);
+
+        // Update the OTP in the database for the user
+        try {
+          const filter = { adultEmail: email };
+          const update = { otp: hashedOTP };
+          await adultmodel.findOneAndUpdate(filter, update);
+          console.log("OTP updated successfully in the database");
+        } catch (updateError) {
+          console.error("Error updating OTP in the database:", updateError);
+        }
+
+        res.json({
+          message: "OTP sent successfully",
+          status: true
+        });
+      }
+    });
+  } catch (error) {
+    console.error("Error occurred:", error);
+    res.json({ status: false, msg: "Error Occurred" });
+  }
+};
 
 module.exports = {
   kidsSignUp, adultSignUp, kidsLogin, adultFetch, forgotPassword, resetPassword, editAdult, deleteUser, kidsFetch, otpVerification, subscriptionPlan,adultLogin,
-  otpVerificationAdult,editKids,kidsDataFetch
+  otpVerificationAdult,editKids,kidsDataFetch,adultDataFetch,otpResend,otpResendAdult,
+  deleteFile
 
 };

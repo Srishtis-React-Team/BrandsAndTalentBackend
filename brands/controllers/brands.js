@@ -25,6 +25,8 @@ var transporter = nodemailer.createTransport({
 });
 
 const brandsmodel = require('../models/brandsmodel.js');
+const kidsmodel = require("../../users/models/kidsmodel.js");
+const adultmodel = require("../../users/models/adultmodel.js");
 
 /**
  *********brandsRegister******
@@ -134,9 +136,10 @@ const brandsRegister = async (req, res, next) => {
 const brandsLogin = async (req, res, next) => {
   const username = req.body.brandEmail;
   const password = req.body.brandPassword;
+  
 
   try {
-    const brands = await brandsmodel.findOne({ $or: [{ email: username }, { email: username }] });
+    const brands = await brandsmodel.findOne({ $or: [{ brandEmail: username }, { brandEmail: username }] });
 console.log("brands",brands)
     if (brands) {
       const passwordMatch = await bcrypt.compare(password, brands.brandPassword);
@@ -176,84 +179,239 @@ console.log("brands",brands)
 * @param {*} next undefined
 */
 
-const login = async (req, res, next) => {
+// const login = async (req, res, next) => {
+//   try {
+//     const username = req.body.brandEmail;
+//     const password = req.body.brandPassword;
+//     const kidsEmail =req.body.kidsEmail;
+//     const tpassword = req.body.talentPassword;
+//     const adultEmail =req.body.adultEmail;
+//     const adultpassword = req.body.talentPassword;
+//     const userType = req.body.userType;
+//     const type=req.body.type;
+   
+
+//     if (userType === 'talent'&&type==='kids') {
+//       const user = await kidsmodel.findOne({ kidsEmail: kidsEmail });
+
+//       if (user) {
+//         const passwordMatch = await bcrypt.compare(tpassword, user.talentPassword);
+
+//         if (passwordMatch) {
+//           const token = auth.gettoken(user._id, user.email);
+
+//           return res.json({
+//             status: true,
+//             message: 'Login Successfully',
+//             data: user,
+//             token
+//           });
+//         } else {
+//           return res.json({
+//             status: false,
+//             message: 'Password does not match'
+//           });
+//         }
+//       } else {
+//         return res.json({
+//           status: false,
+//           message: 'No Talent Found'
+//         });
+//       }
+//     } 
+//     if (userType === 'talent'&&type==='adult') {
+//       const user = await adultmodel.findOne({ kidsEmail: adultEmail });
+
+//       if (user) {
+//         const passwordMatch = await bcrypt.compare(adultpassword, user.talentPassword);
+
+//         if (passwordMatch) {
+//           const token = auth.gettoken(user._id, user.email);
+
+//           return res.json({
+//             status: true,
+//             message: 'Login Successfully',
+//             data: user,
+//             token
+//           });
+//         } else {
+//           return res.json({
+//             status: false,
+//             message: 'Password does not match'
+//           });
+//         }
+//       } else {
+//         return res.json({
+//           status: false,
+//           message: 'No Talent Found'
+//         });
+//       }
+//     } else if (userType === 'brand') {
+//       const brand = await brandsmodel.findOne({ brandEmail: username });
+//       console.log("brand",brand)
+//       if (brand) {
+//         const passwordMatch = await bcrypt.compare(password, brand.brandPassword);
+
+//         if (passwordMatch) {
+//           const token = auth.gettoken(brand._id, brand.brandEmail);
+
+//           return res.json({
+//             status: true,
+//             message: 'Login Successfully',
+//             data: brand,
+//             token
+//           });
+//         } else {
+//           return res.json({
+//             status: false,
+//             message: 'Password does not match'
+//           });
+//         }
+//       } else {
+//         return res.json({
+//           status: false,
+//           message: 'No Brand Found'
+//         });
+//       }
+//     } else {
+//       return res.json({
+//         status: false,
+//         message: 'Invalid UserType'
+//       });
+//     }
+//   } catch (error) {
+//     return res.json({
+//       status: false,
+//       message: 'Error during login'
+//     });
+//   }
+// };
+/**
+ *********editBrands*****
+ * @param {*} req from user
+ * @param {*} res return data
+ * @param {*} next undefined
+ */
+
+
+ const editBrands = async (req, res) => {
   try {
-    const username = req.body.brandEmail;
-    const password = req.body.brandPassword;
-    const tusername =req.body.talentEmail;
-    const tpassword = req.body.talentPassword;
-    const userType = req.body.userType;
+    const userId = req.body.user_id || req.params.user_id;
 
-    if (userType === 'talent') {
-      const user = await usermodel.findOne({ talentEmail: tusername });
+    /* Authentication */
+    const authResult = await auth.CheckAuth(req.headers["x-access-token"], userId);
+    if (!authResult) {
+      return res.json({ status: false, msg: 'Authentication failed' });
+    }
+    /* Authentication */
 
-      if (user) {
-        const passwordMatch = await bcrypt.compare(tpassword, user.talentPassword);
+    const user_id = req.body.user_id || req.params.user_id;
+    const updateFields = {
+      isActive: true, // Assuming isActive is always set to true
+      brandName: req.body.brandName,
+      brandEmail: req.body.brandEmail,
+      brandPassword: hashedPass,
+      brandPhone: req.body.brandPhone,
+      brandZipCode: req.body.brandZipCode,
+      enableTracking: req.body.enableTracking,
+      howHearAboutAs: req.body.howHearAboutAs,
+      jobTitle: req.body.jobTitle,
+      jobLocation: req.body.jobLocation,
+      jobAge: req.body.jobAge,
+      jobGender: req.body.jobGender,
+      jobSocialFollowers: req.body.jobSocialFollowers,
+      jobLanguages: req.body.jobLanguages,
+      jobType: req.body.jobType,
+      jobRemote: req.body.jobRemote,
+      jobSummary: req.body.jobSummary,
+      jobYouWill: req.body.jobYouWill,
+      jobIdeallyWill: req.body.jobIdeallyWill,
+      jobAboutUs: req.body.jobAboutUs,
+      jobBenefits: req.body.jobBenefits,
+      jobPayInformation: req.body.jobPayInformation,
+      jobCurrency: req.body.jobCurrency,
+      jobFrequency: req.body.jobFrequency,
+      jobAmountType: req.body.jobAmountType,
+      jobMinPay: req.body.jobMinPay,
+      jobMaxPay: req.body.jobMaxPay,
+      jobImage: req.body.jobImage,
+      
+};
 
-        if (passwordMatch) {
-          const token = auth.gettoken(user._id, user.email);
-
-          return res.json({
-            status: true,
-            message: 'Login Successfully',
-            data: user,
-            token
-          });
-        } else {
-          return res.json({
-            status: false,
-            message: 'Password does not match'
-          });
-        }
-      } else {
-        return res.json({
-          status: false,
-          message: 'No Talent Found'
-        });
-      }
-    } else if (userType === 'brand') {
-      const brand = await brandsmodel.findOne({ brandEmail: username });
-      console.log("brand",brand)
-      if (brand) {
-        const passwordMatch = await bcrypt.compare(password, brand.brandPassword);
-
-        if (passwordMatch) {
-          const token = auth.gettoken(brand._id, brand.brandEmail);
-
-          return res.json({
-            status: true,
-            message: 'Login Successfully',
-            data: brand,
-            token
-          });
-        } else {
-          return res.json({
-            status: false,
-            message: 'Password does not match'
-          });
-        }
-      } else {
-        return res.json({
-          status: false,
-          message: 'No Brand Found'
-        });
-      }
-    } else {
-      return res.json({
-        status: false,
-        message: 'Invalid UserType'
-      });
+    try {
+      await brandsmodel.updateOne(
+        { _id: new mongoose.Types.ObjectId(user_id) },
+        { $set: updateFields }
+      );
+      res.json({ status: true, msg: 'Updated successfully' });
+    } catch (err) {
+      res.json({ status: false, msg: err.message });
     }
   } catch (error) {
-    return res.json({
-      status: false,
-      message: 'Error during login'
-    });
+    res.json({ status: false, msg: 'Error Occurred' });
+  }
+};
+/**
+ *********deleteBrands*****
+ * @param {*} req from user
+ * @param {*} res return data
+ * @param {*} next undefined
+ */
+ const deleteBrands = async (req, res) => {
+  try {
+    const userId = req.body.user_id || req.params.user_id;
+
+    /* Authentication */
+    const authResult = await auth.CheckAuth(req.headers["x-access-token"], userId);
+    if (!authResult) {
+      return res.json({ status: false, msg: 'Authentication failed' });
+    }
+    /* Authentication */
+
+    try {
+      const user_id = req.body.user_id || req.params.user_id;
+      await brandsmodel.updateOne(
+        { _id: new mongoose.Types.ObjectId(user_id) },
+        { $set: { isActive: false } }
+      );
+      res.json({ status: true, msg: 'Deleted successfully' });
+    } catch (err) {
+      res.json({ status: false, msg: err.message });
+    }
+  } catch (error) {
+    res.json({ status: false, msg: 'Invalid Token' });
+  }
+};
+/********** brandsProfile******
+* @param {*} req from user
+* @param {*} res return data
+* @param {*} next undefined
+*/
+
+
+const brandsProfile = async (req, res) => {
+  try {
+    const userId = req.body.user_id || req.params.user_id;
+
+    /* Authentication */
+    const authResult = await auth.CheckAuth(req.headers["x-access-token"], userId);
+    if (!authResult) {
+      return res.json({ status: false, msg: 'Authentication failed' });
+    }
+    /* Authentication */
+
+    const user = await brandsmodel.findOne({ _id: userId, isActive: true });
+    if (user) {
+      return res.json({ status: true, data: user });
+    } else {
+      return res.json({ status: false, msg: 'No user found' });
+    }
+  } catch (error) {
+    return res.json({ status: false, msg: 'Invalid Token' });
   }
 };
 
-
 module.exports = {
-    brandsRegister,brandsLogin,login
+    brandsRegister,brandsLogin,editBrands,deleteBrands,brandsProfile
   
   };

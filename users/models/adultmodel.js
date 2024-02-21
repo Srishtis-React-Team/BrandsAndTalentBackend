@@ -209,13 +209,18 @@ var authenticationSchema = new schema({
    verificationId:{
       type:Array
    },
+   services:{
+      type:Array
+   },
 
    // token:{
    //     type:String
    // },
    resetPasswordExpires: Date,
    created: { type: Date, default: Date.now },
-
+   otp:{
+      type:String
+   },
 
 },
    {

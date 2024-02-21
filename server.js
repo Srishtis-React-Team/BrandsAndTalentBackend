@@ -4,19 +4,50 @@ const app =express()
 const connectToDatabase = require('./connection/config');
 var path = require('path');
 const cors = require('cors');
-const session = require('express-session');//otp
 const crypto = require('crypto');//otp
+const passport=require("passport"); //google
+const auth=require("./auth"); //google
+const session=require('express-session');
+
+function isLoggedIn(req,res,next){
+  req.user?next():res.sendStatus(401);
+}
 
 app.use(express.json());
 // Enable CORS for all routes
 app.use(cors());
-//otp
+
 app.use(session({
-  secret: 'brandsandtalent', // Replace with your own secret key
+  secret: 'mysecret',
   resave: false,
-  saveUninitialized: true
+  saveUninitialized: true,
+  cookie: { secure: false },
 }));
-  //otp
+app.use(passport.initialize());
+app.use(passport.session());
+
+app.get('/auth/google',
+  passport.authenticate('google', { scope: ['email','profile'] }));
+
+app.get('/auth/google/callback', 
+  passport.authenticate('google', { 
+    successRedirect:'/auth/google/success',
+    failureRedirect: '/auth/google/failure' ,// /login
+  // function(req, res) {
+  //   // Successful authentication, redirect home.
+  //   res.redirect('/');
+  // });
+  }));
+  app.get('/auth/google/failure', (req,res)=>{
+    res.send("Something went wrong");
+  
+  });
+  
+  app.get('/auth/protected', isLoggedIn, (req, res) => {
+    let name = req.user.displayName; // Use let to declare name
+    res.send(`Hello ${name}`);
+  });
+  
 
 
 //user panel

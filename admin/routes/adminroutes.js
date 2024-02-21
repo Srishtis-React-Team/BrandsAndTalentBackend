@@ -9,10 +9,12 @@ router.post('/adminProfile/:user_id',admin.adminProfile)//for admin login
 router.post('/forgotPassword',admin.forgotPassword)//for forgotPassword
 router.post('/resetPassword',admin.resetPassword)//for resetPassword
 router.post('/fileUpload',admin.uploads.single("file"),admin.fileUpload) //File Upload Single Image
-router.post('/listCountry',admin.listCountry)
+router.post('/addCountry',admin.addCountry)
 router.post('/listCity',admin.listCity)
 router.post('/listState',admin.listState)
 router.post('/adminFetch',admin.adminFetch)
+router.post('/listLocation',admin.listLocation)
+router.get('/listCountries',admin.listCountries)
 
 
 module.exports = router
