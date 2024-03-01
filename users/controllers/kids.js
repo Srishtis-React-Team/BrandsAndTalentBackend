@@ -66,7 +66,7 @@ const adultmodel = require('../models/adultmodel.js');
 
     console.log("hashedPass", hashedPass);
 
-    const userExist = await kidsmodel.findOne({ parentEmail: req.body.parentEmail });
+    const userExist = await kidsmodel.findOne({ parentEmail: req.body.parentEmail,isActive:true });
 
     if (userExist) {
       console.log("email matches");
@@ -128,7 +128,12 @@ const adultmodel = require('../models/adultmodel.js');
         isVerified: false,
         type: 'kids',
         isActive: true,
-        otp: hashedOTP // Store hashed OTP in the user document
+        otp: hashedOTP, // Store hashed OTP in the user document
+        bodyType:req.body.bodyType,
+        industry:req.body.industry,
+        isFavorite:false,
+        bookJob:"25",
+        rating:"4"
       });
 
       // Save the new user to the database
@@ -171,7 +176,7 @@ const adultSignUp = async (req, res, next) => {
     console.log("hashedPass", hashedPass);
 
     // Check if the user already exists
-    const userExist = await adultmodel.findOne({ adultEmail: req.body.adultEmail });
+    const userExist = await adultmodel.findOne({ adultEmail: req.body.adultEmail,isActive:true });
     if (userExist) {
       console.log("email matches");
       return res.json({
@@ -196,8 +201,11 @@ const adultSignUp = async (req, res, next) => {
         isVerified: false,
         userType: 'talent',
         isActive: true,
-        type: 'adult', // Assuming type should be set to 'adult'
-        otp: hashedOTP // Store hashed OTP in the user document
+        type: 'adults', // Assuming type should be set to 'adult'
+        otp: hashedOTP,
+        isFavorite:false,
+        bookJob:'30',
+        rating:'3' // Store hashed OTP in the user document
       });
 
       // Save the new user to the database
@@ -237,7 +245,7 @@ const otpVerificationAdult = async (req, res, next) => {
     const newEmail = req.body.adultEmail;
 
     // Fetch the user from the database for the given email
-    const user = await adultmodel.findOne({ adultEmail: newEmail });
+    const user = await adultmodel.findOne({ adultEmail: newEmail,isActive:true });
     console.log("user",user)
     if (!user) {
       console.log("Error: User not found");
@@ -304,7 +312,7 @@ const otpVerification = async (req, res, next) => {
     const newEmail = req.body.parentEmail;
 
     // Fetch the user from the database for the given email
-    const user = await kidsmodel.findOne({ parentEmail: newEmail });
+    const user = await kidsmodel.findOne({ parentEmail: newEmail,isActive:true });
     if (!user) {
       console.log("Error: User not found");
       return res.json({
@@ -346,51 +354,6 @@ const otpVerification = async (req, res, next) => {
 };
 
 
-
-// const otpVerification = async (req, res, next) => {
-//   try {
-//     const inputOTP = req.body.otp;
-//     const sessionOTP = req.session.otp; // Retrieve the OTP from the session
-//     const newEmail = req.body.parentEmail;
-
-//     const isMatch = verifyOTP(sessionOTP, inputOTP);
-//     console.log(`OTP match: ${isMatch}`);
-
-//     if (isMatch) {
-//       // Update isVerified value to true for the user with the given email
-//       await kidsmodel.findOneAndUpdate({ parentEmail: newEmail }, { isVerified: true });
-
-
-//       // const mailOptions = {
-//       //   from: host,
-//       //   to: newEmail, // Use the provided newEmail
-//       //   subject: 'Welcome to Brands&Talent',
-//       //   html: getBusinessReviewEmailTemplate() // Assuming you have the email template function
-//       // };
-
-//       // await transporter.sendMail(mailOptions);
-
-//       console.log("Success: User verified and email sent");
-//       res.json({
-//         message: "User verified",
-//         status: true
-//       });
-//     } else {
-//       console.log("Error: OTP does not match");
-//       res.json({
-//         message: "OTP does not match",
-//         status: false
-//       });
-//     }
-//   } catch (error) {
-//     console.error("Error:", error);
-//     res.json({
-//       message: "An error occurred",
-//       status: false,
-//       error: error
-//     });
-//   }
-// };
 /**
 *********subscription******
 * @param {*} req from user
@@ -402,7 +365,7 @@ const subscriptionPlan = async (req, res, next) => {
 
     const newEmail = req.body.parentEmail;
     // Update isVerified value to true for the user with the given email
-    await kidsmodel.findOneAndUpdate({ parentEmail: newEmail }, { subscriptionPlan: req.body.subscriptionPlan });
+    await kidsmodel.findOneAndUpdate({ parentEmail: newEmail,isActive:true }, { subscriptionPlan: req.body.subscriptionPlan });
 
 
     const mailOptions = {
@@ -439,93 +402,64 @@ const subscriptionPlan = async (req, res, next) => {
 * @param {*} res return data
 * @param {*} next undefined
 */
-
-const kidsLogin = async (req, res, next) => {
-  const username = req.body.parentEmail;
-  const password = req.body.talentPassword;
- 
+const talentLogin = async (req, res) => {
+  const { email, password } = req.body;
 
   try {
-    const user = await kidsmodel.findOne({ $or: [{ parentEmail: username }, { parentEmail: username }] });
+    let user, type;
 
-    if (user) {
-      const passwordMatch = await bcrypt.compare(password, user.talentPassword);
+    // Attempt to find the user in the adultmodel
+    user = await adultmodel.findOne({ adultEmail: email, isActive: true });
+    type = 'adult';
 
-      if (passwordMatch) {
-        const token = auth.gettoken(user._id, user.parentEmail);
+    // If not found in adultmodel, try finding in kidsmodel
+    if (!user) {
+      user = await kidsmodel.findOne({ parentEmail: email, isActive: true });
+      type = 'kids';
+    }
 
-        return res.json({
-          status: true,
-          message: 'Login Successfully',
-          data: user,
-          token
-        });
-      } else {
-        return res.json({
-          status: false,
-          message: 'Password does not match'
-        });
-      }
-    } else {
+    // If user is still not found, return an error
+    if (!user) {
       return res.json({
         status: false,
-        message: 'No User Found'
+        message: 'User not found'
       });
     }
+
+    // Check if the provided password matches
+    const isMatch = await bcrypt.compare(password, user.talentPassword);
+    if (!isMatch) {
+      return res.json({
+        status: false,
+        message: 'Password does not match'
+      });
+    }
+
+    // Generate a token assuming auth.gettoken is a function to do so
+    const token = auth.gettoken(user._id, email);
+
+    // Return success response
+    return res.json({
+      status: true,
+      message: 'Login successful',
+      type: type,
+      data: { user, token }
+    });
+
   } catch (error) {
+    console.error('Error during login:', error);
     return res.json({
       status: false,
-      message: 'Error during login'
+      message: 'An error occurred during login',
+      error: error.toString()
     });
   }
 };
 
-/**
-*********adultLogin******
-* @param {*} req from user
-* @param {*} res return data
-* @param {*} next undefined
-*/
 
-const adultLogin = async (req, res, next) => {
-  const username = req.body.adultEmail;
-  const password = req.body.talentPassword;
-  
 
-  try {
-    const user = await adultmodel.findOne({ $or: [{ adultEmail: username }, { adultEmail: username }] });
 
-    if (user) {
-      const passwordMatch = await bcrypt.compare(password, user.talentPassword);
 
-      if (passwordMatch) {
-        const token = auth.gettoken(user._id, user.adultEmail);
-
-        return res.json({
-          status: true,
-          message: 'Login Successfully',
-          data: user,
-          token
-        });
-      } else {
-        return res.json({
-          status: false,
-          message: 'Password does not match'
-        });
-      }
-    } else {
-      return res.json({
-        status: false,
-        message: 'No User Found'
-      });
-    }
-  } catch (error) {
-    return res.json({
-      status: false,
-      message: 'Error during login'
-    });
-  }
-};
 /********** userprofile******
 * @param {*} req from user
 * @param {*} res return data
@@ -562,11 +496,13 @@ const adultFetch = async (req, res) => {
  * @param {*} next undefined
  */
 
+
+
 const forgotPassword = async (req, res, next) => {
   try {
     const token = crypto.randomBytes(20).toString('hex');
 
-    const user = await kidsmodel.findOne({ parentEmail: req.body.parentEmail });
+    const user = await kidsmodel.findOne({ parentEmail: req.body.parentEmail,isActive:true });
 
     if (!user) {
       return res.json({
@@ -579,7 +515,7 @@ const forgotPassword = async (req, res, next) => {
     user.resetPasswordExpires = moment(Date.now()) + 3600000;
 
     await user.save();
-
+    const resetLink = `https://hybrid.sicsglobal.com/project/brandsandtalent/reset-password?${token}`;
     const transporter = nodemailer.createTransport({
       service: 'Gmail',
       auth: {
@@ -587,19 +523,22 @@ const forgotPassword = async (req, res, next) => {
         pass: pass
       }
     });
-
     const mailOptions = {
       from: host,
       to: req.body.parentEmail,
       subject: 'Password Reset',
-      text:
-        'Hello,\n\n' +
-        'You are receiving this because you (or someone else) have requested the reset of the password for your account.\n\n' +
-        'Please click on the following link, or paste this into your browser to complete the process:\n\n' +
-
-        'token' + ':' + token + '\n\n' +
-        'If you did not request this, please ignore this email and your password will remain unchanged.\n'
+      html: `
+        <p>Hello,</p>
+        <p>You are receiving this because you (or someone else) have requested the reset of the password for your account.</p>
+        <p>Please click on the following link to complete the process:</p>
+        <p><a href="${resetLink}">${resetLink}</a></p>
+        <p>If you did not request this, please ignore this email and your password will remain unchanged.</p>
+        <p>Thanks and regards,</p>
+        <p>Your HR Team</p>
+       
+      `
     };
+    
 
     await transporter.sendMail(mailOptions);
 
@@ -616,13 +555,14 @@ const forgotPassword = async (req, res, next) => {
   }
 };
 
-
 /**
- *********Reset password ******
+ *********resetPassword ******
  * @param {*} req from user
  * @param {*} res return data
  * @param {*} next undefined
  */
+
+
 const resetPassword = async (req, res, next) => {
   try {
     const hashedPass = await bcrypt.hash(req.body.password, 10);
@@ -641,7 +581,7 @@ const resetPassword = async (req, res, next) => {
     }
 
     console.log("user.Password", hashedPass);
-    user.password = hashedPass;
+    user.talentPassword = hashedPass;
 
     const mailOptions = {
       from: host,
@@ -675,7 +615,7 @@ const resetPassword = async (req, res, next) => {
  */
 
 
-const editAdult = async (req, res) => {
+const updateAdults = async (req, res) => {
   try {
     const userId = req.body.user_id || req.params.user_id;
 
@@ -741,7 +681,10 @@ const editAdult = async (req, res) => {
       threadsFollowers: req.body.threadsFollowers,
       idType: req.body.idType,
       verificationId: req.body.verificationId,
-      services:req.body.services
+      services:req.body.services,
+      bodyType:req.body.bodyType,
+      industry:req.body.industry,
+      profileStatus:false
 };
 
     try {
@@ -853,7 +796,6 @@ const kidsFetch = async (req, res, next) => {
       parentCountry: req.body.parentCountry,
       parentState: req.body.parentState,
       parentAddress: req.body.parentAddress,
-      talentPassword: hashedPass,
       confirmPassword: req.body.confirmPassword,
       profession: req.body.profession,
       relevantCategories: req.body.relevantCategories,
@@ -883,7 +825,9 @@ const kidsFetch = async (req, res, next) => {
       linkedinFollowers: req.body.linkedinFollowers,
       threadsFollowers: req.body.threadsFollowers,
       idType: req.body.idType,
-      verificationId: req.body.verificationId
+      verificationId: req.body.verificationId,
+      reviews:req.body.reviews,
+      services:req.body.services
 };
 
     try {
@@ -896,7 +840,7 @@ const kidsFetch = async (req, res, next) => {
       res.json({ status: false, msg: err.message });
     }
   } catch (error) {
-    res.json({ status: false, msg: 'Error Occurred' });
+    res.json({ status: false, msg: 'Error Occurred'});
   }
 };
 /**
@@ -905,9 +849,11 @@ const kidsFetch = async (req, res, next) => {
  * @param {*} res return data
  * @param {*} next undefined
  */
- const kidsDataFetch = async (req, res, next) => {
+ const unifiedDataFetch = async (req, res, next) => {
   try {
     const userId = req.params.user_id;
+    const type = req.params.type; // 'adult' or 'kid'
+    const dataType = parseInt(req.params.dataType);
 
     // Check authentication
     const authResult = await auth.CheckAuth(req.headers["x-access-token"], userId);
@@ -915,20 +861,27 @@ const kidsFetch = async (req, res, next) => {
       return res.json({ status: false, msg: 'Authentication failed' });
     }
 
+    let model = type === 'kid' ? kidsmodel : adultmodel;
     let query;
-    const dataType = parseInt(req.params.dataType);
+
     switch (dataType) {
       case 1:
-        query = kidsmodel.find({ _id: userId, isActive: true }).sort({ created: -1 }).select({ portfolio: 1 });
+        query = model.find({ _id: userId, isActive: true }).sort({ created: -1 }).select({ portfolio: 1 });
         break;
       case 2:
-        query = kidsmodel.find({ _id: userId, isActive: true }).sort({ created: -1 }).select({ videosAndAudios: 1 });
+        query = model.find({ _id: userId, isActive: true }).sort({ created: -1 }).select({ videosAndAudios: 1 });
         break;
       case 3:
-        query = kidsmodel.find({ _id: userId, isActive: true }).sort({ created: -1 }).select({ cv: 1 });
+        query = model.find({ _id: userId, isActive: true }).sort({ created: -1 }).select({ cv: 1 });
         break;
       case 4:
-        query = kidsmodel.find({ _id: userId, isActive: true }).sort({ created: -1 }).select({ features: 1 });
+        query = model.find({ _id: userId, isActive: true }).sort({ created: -1 }).select({ features: 1 });
+        break;
+      case 5:
+        query = model.find({ _id: userId, isActive: true }).sort({ created: -1 }).select({ reviews: 1 });
+        break;
+      case 6:
+        query = model.find({ _id: userId, isActive: true }).sort({ created: -1 }).select({ services: 1 });
         break;
       default:
         return res.json({ status: false, msg: 'Invalid request' });
@@ -940,50 +893,96 @@ const kidsFetch = async (req, res, next) => {
     res.json({ status: false, msg: 'Invalid Token' });
   }
 };
-/**
- *********adultDataFetch*****
- * @param {*} req from user
- * @param {*} res return data
- * @param {*} next undefined
- */
- const adultDataFetch = async (req, res, next) => {
-  try {
-    const userId = req.params.user_id;
 
-    // Check authentication
-    const authResult = await auth.CheckAuth(req.headers["x-access-token"], userId);
-    if (!authResult) {
-      return res.json({ status: false, msg: 'Authentication failed' });
-    }
+//  const kidsDataFetch = async (req, res, next) => {
+//   try {
+//     const userId = req.params.user_id;
 
-    let query;
-    const dataType = parseInt(req.params.dataType);
-    switch (dataType) {
-      case 1:
-        query = adultmodel.find({ _id: userId, isActive: true }).sort({ created: -1 }).select({ portfolio: 1 });
-        break;
-      case 2:
-        query = adultmodel.find({ _id: userId, isActive: true }).sort({ created: -1 }).select({ videosAndAudios: 1 });
-        break;
-      case 3:
-        query = adultmodel.find({ _id: userId, isActive: true }).sort({ created: -1 }).select({ cv: 1 });
-        break;
-      case 4:
-        query = adultmodel.find({ _id: userId, isActive: true }).sort({ created: -1 }).select({ features: 1 });
+//     // Check authentication
+//     const authResult = await auth.CheckAuth(req.headers["x-access-token"], userId);
+//     if (!authResult) {
+//       return res.json({ status: false, msg: 'Authentication failed' });
+//     }
 
-        break;
-        case 5:
-        query = adultmodel.find({ _id: userId, isActive: true }).sort({ created: -1 }).select({ services: 1 });
-      default:
-        return res.json({ status: false, msg: 'Invalid request' });
-    }
+//     let query;
+//     const dataType = parseInt(req.params.dataType);
+//     switch (dataType) {
+//       case 1:
+//         query = kidsmodel.find({ _id: userId, isActive: true }).sort({ created: -1 }).select({ portfolio: 1 });
+//         break;
+//       case 2:
+//         query = kidsmodel.find({ _id: userId, isActive: true }).sort({ created: -1 }).select({ videosAndAudios: 1 });
+//         break;
+//       case 3:
+//         query = kidsmodel.find({ _id: userId, isActive: true }).sort({ created: -1 }).select({ cv: 1 });
+//         break;
+//       case 4:
+//         query = kidsmodel.find({ _id: userId, isActive: true }).sort({ created: -1 }).select({ features: 1 });
+//         break;
+//         case 5:
+//         query = kidsmodel.find({ _id: userId, isActive: true }).sort({ created: -1 }).select({ reviews: 1 });
+//         break;
+//         case 6:
+//         query = kidsmodel.find({ _id: userId, isActive: true }).sort({ created: -1 }).select({ services: 1 });
+//         break;
+//       default:
+//         return res.json({ status: false, msg: 'Invalid request' });
+//     }
 
-    const response = await query;
-    res.json({ status: true, data: response });
-  } catch (error) {
-    res.json({ status: false, msg: 'Invalid Token' });
-  }
-};
+//     const response = await query;
+//     res.json({ status: true, data: response });
+//   } catch (error) {
+//     res.json({ status: false, msg: 'Invalid Token' });
+//   }
+// };
+// /**
+//  *********adultDataFetch*****
+//  * @param {*} req from user
+//  * @param {*} res return data
+//  * @param {*} next undefined
+//  */
+//  const adultDataFetch = async (req, res, next) => {
+//   try {
+//     const userId = req.params.user_id;
+
+//     // Check authentication
+//     const authResult = await auth.CheckAuth(req.headers["x-access-token"], userId);
+//     if (!authResult) {
+//       return res.json({ status: false, msg: 'Authentication failed' });
+//     }
+
+//     let query;
+//     const dataType = parseInt(req.params.dataType);
+//     switch (dataType) {
+//       case 1:
+//         query = adultmodel.find({ _id: userId, isActive: true }).sort({ created: -1 }).select({ portfolio: 1 });
+//         break;
+//       case 2:
+//         query = adultmodel.find({ _id: userId, isActive: true }).sort({ created: -1 }).select({ videosAndAudios: 1 });
+//         break;
+//       case 3:
+//         query = adultmodel.find({ _id: userId, isActive: true }).sort({ created: -1 }).select({ cv: 1 });
+//         break;
+//       case 4:
+//         query = adultmodel.find({ _id: userId, isActive: true }).sort({ created: -1 }).select({ features: 1 });
+//         break;
+//       case 5:
+//         query = adultmodel.find({ _id: userId, isActive: true }).sort({ created: -1 }).select({ services: 1 });
+//         break;
+//       case 6:
+//         query = adultmodel.find({ _id: userId, isActive: true }).sort({ created: -1 }).select({ reviews: 1 });
+//         break;
+
+//       default:
+//         return res.json({ status: false, msg: 'Invalid request' });
+//     }
+
+//     const response = await query;
+//     res.json({ status: true, data: response });
+//   } catch (error) {
+//     res.json({ status: false, msg: 'Invalid Token' });
+//   }
+// };
 /**
  *********file delete*****
  * @param {*} req from user
@@ -1147,10 +1146,255 @@ const kidsFetch = async (req, res, next) => {
     res.json({ status: false, msg: "Error Occurred" });
   }
 };
+/**
+ *********talentList*****
+ * @param {*} req from user
+ * @param {*} res return data
+ * @param {*} next undefined
+ */
+ const talentList = async (req, res) => {
+  try {
+    
+    // Find all active adults
+    const activeAdults = await adultmodel.find({ isActive: true }).select({bookJob:1,rating:1,isFavorite:1,AdultFirstName:1,city:1,location:1,image:1});
+
+    // Find all active kids
+    const activeKids = await kidsmodel.find({ isActive: true }).select({bookJob:1,rating:1,isFavorite:1,city:1,childFirstName:1,childLocation:1,image:1});
+
+    // Combine both lists
+    const allActiveUsers = [...activeAdults, ...activeKids];
+
+    if (allActiveUsers.length > 0) {
+      return res.json({ status: true, data: allActiveUsers });
+    } else {
+      return res.json({ status: false, msg: 'No active users found' });
+    }
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    return res.json({ status: false, msg: 'An error occurred' });
+  }
+};
+/**
+ *********talentFilterList*****
+ * @param {*} req from user
+ * @param {*} res return data
+ * @param {*} next undefined
+*/
+const talentFilterData = async (req, res) => {
+  try {
+    let filterCriteria = {
+      isActive: true,
+    };
+
+    let hasFilters = false; // Flag to identify if any filters are being applied
+
+    // Fields that can be filtered upon
+    const fieldsToCheck = [
+      "childCity", "instaFollowers", "tiktokFollowers", "twitterFollowers",
+      "youtubeFollowers", "facebookFollowers", "linkedinFollowers", "threadsFollowers",
+      "childGender", "parentCountry", "childDob", "childEthnicity", "childNationality", "languages",
+      "parentFirstName", "childFirstName"
+    ];
+
+    // Check for filters in the request body and add them to the filterCriteria
+    fieldsToCheck.forEach(field => {
+      if (req.body[field] !== undefined && req.body[field] !== '') {
+        hasFilters = true; // Indicates that at least one filter is applied
+        if (typeof req.body[field] === 'string') {
+          // Use regex for case-insensitive search for string fields
+          filterCriteria[field] = { $regex: new RegExp(req.body[field], 'i') };
+        } else {
+          // Direct matching for non-string fields
+          filterCriteria[field] = req.body[field];
+        }
+      }
+    });
+
+    // Special handling for "features" and "profession" filters, if provided
+    if (req.body.features && req.body.features.length > 0) {
+      hasFilters = true;
+      filterCriteria.features = { $all: req.body.features.map(feature => ({ $elemMatch: { label: feature.label, value: feature.value } })) };
+    }
+
+    if (req.body.profession && req.body.profession.length > 0) {
+      hasFilters = true;
+      // Adjusting query for profession to use $in for matching any provided profession
+      filterCriteria['profession.value'] = { $in: req.body.profession.map(prof => prof.value) };
+    }
+
+    // Execute the query only if there are filters set (hasFilters is true)
+    let allActiveUsers = [];
+    if (hasFilters) {
+      // Query both models concurrently only if filters are present
+      const [activeAdults, activeKids] = await Promise.all([
+        adultmodel.find(filterCriteria),
+        kidsmodel.find(filterCriteria)
+      ]);
+
+      allActiveUsers = [...activeAdults, ...activeKids];
+    }
+
+    // Respond with the query results
+    if (allActiveUsers.length > 0) {
+      res.json({ status: true, data: allActiveUsers });
+    } else {
+      res.json({ status: false, msg: 'No matching users found' });
+    }
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    res.status(500).json({ status: false, msg: 'An error occurred' });
+  }
+};
+
+
+
+
+/**
+ *********favourtites*****
+ * @param {*} req from user
+ * @param {*} res return data
+ * @param {*} next undefined
+ */
+ const setUserFavorite = async (req, res) => {
+  try {
+    const userId = req.body.user_id || req.params.user_id;
+    const type = req.body.type; // Assuming this is passed in the request to distinguish between 'kid' and 'adult'
+
+    /* Authentication */
+    const authResult = await auth.CheckAuth(req.headers["x-access-token"], userId);
+    if (!authResult) {
+      return res.json({ status: false, msg: 'Authentication failed' });
+    }
+    /* Authentication */
+
+    let Model; // Determine which model to use based on userType
+    if (type === 'kids') {
+      Model = kidsmodel;
+    } else if (type === 'adult') {
+      Model = adultmodel;
+    } else {
+      return res.json({ status: false, msg: 'Invalid user type' });
+    }
+
+    try {
+      await Model.updateOne(
+        { _id: new mongoose.Types.ObjectId(userId) },
+        { $set: { isFavorite: true } }
+      );
+      res.json({ status: true, msg: 'Set as favorite successfully' });
+    } catch (err) {
+      res.json({ status: false, msg: err.message });
+    }
+  } catch (error) {
+    res.json({ status: false, msg: 'Invalid Token' });
+  }
+};
+/**
+ *********search talent*****
+ * @param {*} req from user
+ * @param {*} res return data
+ * @param {*} next undefined
+ */
+ const searchTalent = async (req, res, next) => {
+  try {
+    const { name } = req.body; // Extract the name from the request body
+
+    // Define a query that searches for names starting with the provided input
+    const query = {
+      $or: [
+        // Commented out to match your latest request, but can be included if needed
+        // { parentFirstName: new RegExp("^" + name, "i") },
+        { childFirstName: new RegExp("^" + name, "i") },
+        { AdultFirstName: new RegExp("^" + name, "i") }
+      ]
+    };
+
+    // Execute the query on both models concurrently
+    const results = await Promise.all([
+      adultmodel.find(query),
+      kidsmodel.find(query)
+    ]);
+
+    // Combine results from both models
+    const response = [].concat(...results);
+
+    // Respond with the combined results
+    res.json({
+      status: true,
+      data: response
+    });
+  } catch (error) {
+    console.error("Error in searchTalent:", error);
+    res.json({
+      status: false,
+      message: "An error occurred while searching for talent"
+    });
+  }
+};
+
+/**
+ *********profilestatus*****
+ * @param {*} req from user
+ * @param {*} res return data
+ * @param {*} next undefined
+ */
+ const checkProfileStatus = async (req, res) => {
+  try {
+    const userId = req.body.user_id || req.params.user_id;
+
+    /* Authentication */
+    const authResult = await auth.CheckAuth(req.headers["x-access-token"], userId);
+    if (!authResult) {
+      return res.json({ status: false, msg: 'Authentication failed' });
+    }
+    /* Authentication */
+
+    let userType = '';
+    let updateResult = null;
+
+    // Check in adultmodel
+    const adultUser = await adultmodel.findOne({ _id: new mongoose.Types.ObjectId(userId) });
+    if (adultUser) {
+      userType = 'adults';
+      updateResult = await adultmodel.updateOne(
+        { _id: new mongoose.Types.ObjectId(userId) },
+        { $set: { profileStatus: true } }
+      );
+    } else {
+      // If not found in adultmodel, check in kidsmodel
+      const kidUser = await kidsmodel.findOne({ _id: new mongoose.Types.ObjectId(userId) });
+      if (kidUser) {
+        userType = 'kids';
+        updateResult = await kidsmodel.updateOne(
+          { _id: new mongoose.Types.ObjectId(userId) },
+          { $set: { profileStatus: true } }
+        );
+      }
+    }
+
+    // If user type is still empty, user was not found in either model
+    if (!userType) {
+      return res.json({ status: false, msg: 'User not found' });
+    }
+
+    // If we have an update result, we successfully updated the profile status
+    if (updateResult) {
+      return res.json({ status: true, msg: 'Set profile status successfully', type: userType });
+    } else {
+      return res.json({ status: false, msg: 'Failed to update profile status' });
+    }
+  } catch (error) {
+    console.error('Error checking profile status:', error);
+    return res.json({ status: false, msg: 'Invalid Token' });
+  }
+};
+
+
 
 module.exports = {
-  kidsSignUp, adultSignUp, kidsLogin, adultFetch, forgotPassword, resetPassword, editAdult, deleteUser, kidsFetch, otpVerification, subscriptionPlan,adultLogin,
-  otpVerificationAdult,editKids,kidsDataFetch,adultDataFetch,otpResend,otpResendAdult,
-  deleteFile
+  kidsSignUp, adultSignUp, adultFetch, forgotPassword, resetPassword, updateAdults, deleteUser, kidsFetch, otpVerification, subscriptionPlan,
+  otpVerificationAdult,editKids,unifiedDataFetch,otpResend,otpResendAdult,
+  deleteFile,talentList,talentFilterData,setUserFavorite,talentLogin,searchTalent,checkProfileStatus,
+  
 
 };

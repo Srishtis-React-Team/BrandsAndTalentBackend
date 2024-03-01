@@ -3,73 +3,77 @@ var schema = mongoose.Schema;
 
 
 var authenticationSchema = new schema({
-   
+
    adultEmail: {
       type: String
    },
-   talentPassword:{
+   talentPassword: {
       type: String
 
    },
-   confirmPassword:{
-    type: String
+   confirmPassword: {
+      type: String
 
- },
-   profession:{
+   },
+   profession: {
       type: Array
    },
-   relevantCategories:{
+   relevantCategories: {
       type: Array
    },
-   AdultFirstName:{
+   AdultFirstName: {
       type: String
    },
    AdultLastName: {
       type: String
    },
    preferredAdultFirstname: {
-    type: String
-    },
-    preferredAdultLastName: {
-    type: String
-    },
-  
-   
-   gender:{
-      type:String
+      type: String
    },
-   maritalStatus:{
-    type:String
+   preferredAdultLastName: {
+      type: String
    },
-   nationality:{
-      type:String
+
+
+   gender: {
+      type: String
    },
-   ethnicity:{
-      type:String
+   maritalStatus: {
+      type: String
    },
-   languages:{
-      type:String
+   nationality: {
+      type: String
    },
-   dob:{
-      type:Date
+   ethnicity: {
+      type: String
    },
-   contactPhone:{
-      type:String
+   languages: {
+      type: String
    },
-   contactEmail:{
-      type:String
+   dob: {
+      type: Date
    },
-   country:{
-      type:String
+   contactPhone: {
+      type: String
    },
-   city:{
-      type:String
+   contactEmail: {
+      type: String
    },
-   aboutYou:{
-      type:String
+   country: {
+      type: String
    },
-   
-   
+   city: {
+      type: String
+   },
+   aboutYou: {
+      type: String
+   },
+   location: {
+      type: String
+
+   },
+
+
    cv: {
       type: Array
    },
@@ -82,62 +86,62 @@ var authenticationSchema = new schema({
    hairColour: {
       type: String
    },
-   hairType:{
+   hairType: {
       type: String
    },
-   build:{
+   build: {
 
       type: String
    },
-   skinType:{
+   skinType: {
       type: String
    },
-   skinTone:{
+   skinTone: {
       type: String
    },
    eyeColour: {
       type: String
    },
-   hairLength:{
+   hairLength: {
       type: String
    },
    chest: {
-    type: String
- },
- waist: {
-    type: String
- },
- hipSize: {
-    type: String
- },
- dressSize:{
-    type: String
- },
- shoeSize: {
-    type: String
- },
- braSize:{
-    type: String
- },
- transgender:{
-    type: String
- },
- sexuality:{
-    type: String
- },
- height: {
       type: String
    },
- children:{
+   waist: {
       type: String
    },
-   pets:{
-      type:String
+   hipSize: {
+      type: String
    },
-   diet:{
-    type:String
+   dressSize: {
+      type: String
    },
-  weight: {
+   shoeSize: {
+      type: String
+   },
+   braSize: {
+      type: String
+   },
+   transgender: {
+      type: String
+   },
+   sexuality: {
+      type: String
+   },
+   height: {
+      type: String
+   },
+   children: {
+      type: String
+   },
+   pets: {
+      type: String
+   },
+   diet: {
+      type: String
+   },
+   weight: {
       type: String
    },
    neckToToe: {
@@ -152,8 +156,8 @@ var authenticationSchema = new schema({
    userType: {
       type: String
    },
- 
-   
+
+
    portfolio: {
       type: String
 
@@ -163,63 +167,87 @@ var authenticationSchema = new schema({
    isActive:
    {
       type: Boolean,
-      
+
    },
    resetPasswordToken:
    {
       type: String,
 
    },
-   isVerified:{
+   isVerified: {
       type: Boolean,
 
    },
-   type:{
-      type:String
+   type: {
+      type: String
 
    },
-   instaFollowers:{
-      type:String
+   instaFollowers: {
+      type: String
 
    },
-   tiktokFollowers:{
-      type:String
+   tiktokFollowers: {
+      type: String
    },
-   twitterFollowers:{
-      type:String
+   twitterFollowers: {
+      type: String
    },
-   youtubeFollowers:{
-      type:String
+   youtubeFollowers: {
+      type: String
 
    },
-   facebookFollowers:{
-      type:String
+   facebookFollowers: {
+      type: String
 
    },
-   linkedinFollowers:{
-      type:String
+   linkedinFollowers: {
+      type: String
    },
-   threadsFollowers:{
-      type:String
+   threadsFollowers: {
+      type: String
    },
-   idType:{
-      type:String
+   idType: {
+      type: String
 
    },
-   verificationId:{
-      type:Array
+   verificationId: {
+      type: Array
    },
-   services:{
-      type:Array
+   services: {
+      type: Array
    },
 
-   // token:{
-   //     type:String
-   // },
+   reviews: {
+      type: String
+   },
+
+
    resetPasswordExpires: Date,
    created: { type: Date, default: Date.now },
-   otp:{
-      type:String
+   otp: {
+      type: String
+   },
+   bodyType: {
+      type: String
+   },
+   industry: {
+      type: String
+   },
+   isFavorite: {
+      type: Boolean
+   },
+   bookJob: {
+      type: String
+   },
+   rating: {
+      type: String
+   },
+   image: {
+      type: String
+
+   },
+   profileStatus: {
+      type: Boolean
    },
 
 },

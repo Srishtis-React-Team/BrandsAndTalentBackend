@@ -8,5 +8,6 @@ router.post('/brandsLogin',brands.brandsLogin)//for brandsLogin
 router.post('/editBrands/:user_id',brands.editBrands)//for editBrands
 router.post('/deleteBrands/:user_id',brands.deleteBrands)//for deleteBrands
 router.post('/brandsProfile/:user_id',brands.brandsProfile)//for brandsProfile
+router.post('/topBrands',brands.topBrands)//for topBrands
 
 module.exports = router

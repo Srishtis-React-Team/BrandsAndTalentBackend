@@ -232,6 +232,30 @@ var authenticationSchema = new schema({
    otp:{
       type:String
    },
+   bodyType:{
+      type:String
+   },
+   industry:{
+      type:String
+   },
+   isFavorite:{
+      type:Boolean
+   },
+   bookJob:{
+      type:String
+   },
+   rating:{
+      type:String
+   },
+   image:{
+      type:String
+   },
+   services:{
+      type:Array
+   },
+   reviews:{
+      type:String
+   },
 
 },
    {

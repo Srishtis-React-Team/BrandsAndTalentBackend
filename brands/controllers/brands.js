@@ -79,7 +79,7 @@ const brandsRegister = async (req, res, next) => {
       jobAmountType: req.body.jobAmountType,
       jobMinPay: req.body.jobMinPay,
       jobMaxPay: req.body.jobMaxPay,
-      jobImage: req.body.jobImage,
+      brandImage: req.body.brandImage,
       isActive: true,
       userType: 'brand'
     };
@@ -139,7 +139,7 @@ const brandsLogin = async (req, res, next) => {
   
 
   try {
-    const brands = await brandsmodel.findOne({ $or: [{ brandEmail: username }, { brandEmail: username }] });
+    const brands = await brandsmodel.findOne({ $or: [{ brandEmail: username }, { brandEmail: username }],isActive:true });
 console.log("brands",brands)
     if (brands) {
       const passwordMatch = await bcrypt.compare(password, brands.brandPassword);
@@ -192,7 +192,7 @@ console.log("brands",brands)
    
 
 //     if (userType === 'talent'&&type==='kids') {
-//       const user = await kidsmodel.findOne({ kidsEmail: kidsEmail });
+//       const user = await kidsmodel.findOne({ kidsEmail: kidsEmail ,isActive:true});
 
 //       if (user) {
 //         const passwordMatch = await bcrypt.compare(tpassword, user.talentPassword);
@@ -220,7 +220,7 @@ console.log("brands",brands)
 //       }
 //     } 
 //     if (userType === 'talent'&&type==='adult') {
-//       const user = await adultmodel.findOne({ kidsEmail: adultEmail });
+//       const user = await adultmodel.findOne({ kidsEmail: adultEmail,isActive:true });
 
 //       if (user) {
 //         const passwordMatch = await bcrypt.compare(adultpassword, user.talentPassword);
@@ -247,7 +247,7 @@ console.log("brands",brands)
 //         });
 //       }
 //     } else if (userType === 'brand') {
-//       const brand = await brandsmodel.findOne({ brandEmail: username });
+//       const brand = await brandsmodel.findOne({ brandEmail: username,isActive:true });
 //       console.log("brand",brand)
 //       if (brand) {
 //         const passwordMatch = await bcrypt.compare(password, brand.brandPassword);
@@ -410,8 +410,31 @@ const brandsProfile = async (req, res) => {
     return res.json({ status: false, msg: 'Invalid Token' });
   }
 };
+/********** recentGigs******
+* @param {*} req from user
+* @param {*} res return data
+* @param {*} next undefined
+*/
+
+
+const topBrands = async (req, res, next) => {
+  try {
+    const response = await brandsmodel.find({ isActive: true }).select({ brandImage: 1, brandName: 1 });
+    res.json({
+      status: true,
+      data: response
+    });
+  } catch (error) {
+    res.json({
+      status: false,
+      message: "Error fetching top brands"
+    });
+  }
+};
+
+
 
 module.exports = {
-    brandsRegister,brandsLogin,editBrands,deleteBrands,brandsProfile
+    brandsRegister,brandsLogin,editBrands,deleteBrands,brandsProfile,topBrands
   
   };

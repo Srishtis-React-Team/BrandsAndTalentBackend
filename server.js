@@ -61,6 +61,7 @@ const features = require('./admin/routes/featuresroutes');
 
 //brands
 const brands = require('./brands/routes/brandroutes');
+const gigs = require('./brands/routes/gigsroutes');
 
 // Define routes
 app.use('/brandsntalent_api/users',users);
@@ -69,6 +70,7 @@ app.use('/brandsntalent_api/brands',brands);
 app.use('/brandsntalent_api/pricing',pricing);
 app.use('/brandsntalent_api/profession',profession);
 app.use('/brandsntalent_api/features',features);
+app.use('/brandsntalent_api/gigs',gigs);
 
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
