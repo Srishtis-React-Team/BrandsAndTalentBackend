@@ -1,0 +1,166 @@
+1.{{url}}customerData/listCity----get
+2.{{url}}adminNegotiator/listLocation---post
+{
+    "City":"trivandrum"
+}
+3.{{url}}tradeInVechicle/listTradeInVechicleById?user_id=6152ec12fe346217952d5b40==============post
+
+{
+    "customer_id":"61d43d08a76b590cdb2ecd24"
+}
+4.{{url}}deal_qualifier/addDeal_Qualifier?user_id=6152ec12fe346217952d5b40==========post
+
+{
+    "range_filter":["300","450","550"],
+    "discount_qualifier":{
+        "workplace":"tvm",
+        "currently_drive":"kannur"
+    },
+    "any_offer":"offer",
+    "order_status":{
+        "email":"aiswaryaleksmi97@gmail.com",
+        "text":"message"
+    },
+    "about_us":"good",
+    "customer_id":"61b3105f14bd7531189bb8a7",
+    "isActive":true
+
+    
+
+}
+5.{{url}}deal_qualifier/listDealQualifierById?user_id=6152ec12fe346217952d5b40===============post
+
+{
+  "customer_id":"61b3105f14bd7531189bb8a7"
+
+}
+6.{{url}}deal_qualifier/addCheckout?user_id=6152ec12fe346217952d5b40==============post
+
+
+{
+     "card_holder_name": "anu",
+      "card_number": "424242424242424242",
+      "date": "2021-02-08",
+      "cvc": "123",
+      "isActive":true,
+      "customer_id":"61b3105f14bd7531189bb8a7",
+      "promo_code":"2",
+      "price":"100"
+}
+7.{{url}}customerData/updateCustomerData?user_id=6152ec12fe346217952d5b40===========post
+
+{
+"user_id": "6152ec12fe346217952d5b40",
+"_id":"61b3105f14bd7531189bb8a7",
+ "firstname":"Kintu ",
+ "lastname":"Kimi",
+          "address":"gshhssjhjh",
+          "state":"test state",
+          "city":"city test",
+          "contact": "088898332",
+        "lan_no":"98765432321",
+        "dob":"2021-08-08",
+        "is_yourself":true
+        
+
+}
+
+8.{{url}}deal_qualifier/discounting??user_id=6152ec12fe346217952d5b40
+
+{
+    "promo_code":"10",
+    "price":"19",
+    "customer_id":"61b3105f14bd7531189bb8a7"
+}
+9.{{url}}tradeInVechicle/updateTradeVechicle?user_id=6152ec12fe346217952d5b40=====post
+
+{
+     "image": "",
+      "make": "car",
+      "model":"maruti",
+      "isActive":true,
+      "year":"1997",
+      "colour": "blue",
+      "price": "50000",
+      "isNegotiationOnPrice": true,
+      "customer_id": "61b3105f14bd7531189bb8a7",
+      "isTradein":"value",
+      "vechicle_paid":"true",
+      "true_payoff":[{
+          "yes":"yes"
+      }],
+      "no_payoff":[
+        "what bankcuurntwith?"
+      ],
+      "vin":"vin",
+      "mileage":"1000",
+      "mode":"mode",
+      "options":"options",
+      "door_no":1232,
+      "transmission":"transmission",
+      "engine":"engine",
+      "trade_In_condition":"trade_In_condition"
+}
+10.{{url}}customerData/updateCustomerData?user_id=6152ec12fe346217952d5b40============post
+
+{
+"user_id": "6152ec12fe346217952d5b40",
+"_id":"61b3105f14bd7531189bb8a7",
+ "firstname":"Kintu ",
+ "lastname":"Kimi",
+          "address":"gshhssjhjh",
+          "state":"test state",
+          "city":"city test",
+          "contact": "088898332",
+        "lan_no":"98765432321",
+        "dob":"2021-08-08",
+        "is_yourself":true
+        
+
+}
+11.vechicledetails
+{{url}}tradeInVechicle/add_Buy_Vechicle?user_id=6152ec12fe346217952d5b40==========post
+
+
+
+{
+    "vin_firstname":"vipin",
+    "image":"r",
+    "make":"make",
+    "model":"old",
+    "isActive":true,
+    "trim":"trim",
+    "colour":"red",
+    "additional_option":"twenty",
+    "add_second_car":"car",
+    "make_second_car":"make",
+    "model_second_car":"modle",
+    "customer_id":"61b3105f14bd7531189bb8a7"
+}
+
+12.{{url}}tradeInVechicle/listBuyVehicleById?user_id=6152ec12fe346217952d5b40========post
+{
+      "customer_id":"61b3105f14bd7531189bb8a7"
+}
+13.{{url}}fiance_Lease/addfiancing_leasing?user_id=6152ec12fe346217952d5b40=======post
+
+{
+    "isPurchase": "Purchase",
+      "term": "car",
+      "mileage": "50 miles",
+      "cashdown": true,
+      "customer_id":"61b3105f14bd7531189bb8a7",
+      "isActive":true
+}
+14.{{url}}fiance_Lease/list_fiancing_leasing_ById?user_id=6152ec12fe346217952d5b40====post
+{
+   
+      "customer_id":"61b3105f14bd7531189bb8a7"
+}
+15.{{url}}deal_qualifier/listCheckoutBId?user_id=6152ec12fe346217952d5b40===post
+{
+   
+      "customer_id":"61b3105f14bd7531189bb8a7"
+}
+     
+     

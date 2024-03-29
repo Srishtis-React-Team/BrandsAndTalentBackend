@@ -3,6 +3,9 @@ var schema = mongoose.Schema;
 
 
 var authenticationSchema = new schema({
+    position: {
+        type: String
+    },
     brandName: {
         type: String
     },
@@ -12,78 +15,7 @@ var authenticationSchema = new schema({
     brandPassword: {
         type: String
     },
-    brandPhone: {
-        type: Number
-    },
-   
-    brandZipCode: {
-        type: Number
-    },
-    enableTracking: {
-        type: String
-    },
-    howHearAboutUs: {
-        type: String
-    },
-   
-    jobTitle: {
-        type: String
-    },
-    jobLocation: {
-        type: String
-    },
-    jobAge: {
-        type: Number
-    },
-    jobGender: {
-        type: String
-    },
-    jobSocialFollowers: {
-        type: Number
-    },
-    jobLanguages: {
-        type: String
-    },
-    jobType: {
-        type: String
-    },
-    jobRemote: {
-        type: String
-    },
-    jobSummary: {
-        type: String
-    },
-    jobYouWill: {
-        type: String
-    },
-    jobIdeallyWill: {
-        type: String
-    },
-    jobAboutUs: {
-        type: String
-    },
-    jobBenefits: {
-        type: Array
-    },
-    jobPayInformation: {
-        type: String
-    },
-    jobCurrency: {
-        type: String
-    },
-    jobFrequency: {
-        type: String
-    },
-    jobAmountType: {
-        type: String
-    },
-    jobMinPay: {
-        type: String
-    },
-    jobMaxPay: {
-        type: Number
-    },
-    brandImage: {
+    confirmPassword: {
         type: String
     },
 
@@ -91,23 +23,57 @@ var authenticationSchema = new schema({
     isActive:
     {
         type: Boolean
-        
+
     },
+    isVerified:
+    {
+        type: Boolean
+
+    },
+    userType: {
+        type: String,
+
+    },
+    otp: {
+        type: String
+    },
+    brandPhone: {
+        type: String
+    },
+    brandZipCode: {
+        type: String
+    },
+    howHearAboutUs: {
+        type: String
+    },
+    address: {
+        type: String
+    },
+    logo: {
+        type: Array
+    },
+
     resetPasswordToken:
     {
         type: String,
 
     },
-    userType:{
+    googleId:
+    
+    {
         type: String,
 
     },
-   
+    facebookId:
+    {
+        type: String,
+
+    },
 
     resetPasswordExpires: Date,
-    created: { type: Date, default: Date.now }, 
+    created: { type: Date, default: Date.now },
 
-   
+
 },
     {
         timestamps: true

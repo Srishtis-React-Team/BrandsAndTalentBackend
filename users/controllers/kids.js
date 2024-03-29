@@ -10,6 +10,9 @@ var loginData = require('../../emailCredentials.js');
 const { gmail: { host, pass } } = loginData;
 const { getBusinessReviewEmailTemplate } = require('../../template.js');
 
+
+
+
 const generateAndHashOTP = async () => {
   const otp = Math.floor(1000 + Math.random() * 9000); // Generate a random 4-digit OTP
   const hashedOTP = await bcrypt.hash(otp.toString(), 10); // Hash the OTP
@@ -58,7 +61,8 @@ const adultmodel = require('../models/adultmodel.js');
  * @param {*} res return data
  * @param {*} next undefined
  */
- const kidsSignUp = async (req, res, next) => {
+
+const kidsSignUp = async (req, res, next) => {
   try {
     console.log(req.body);
 
@@ -66,7 +70,7 @@ const adultmodel = require('../models/adultmodel.js');
 
     console.log("hashedPass", hashedPass);
 
-    const userExist = await kidsmodel.findOne({ parentEmail: req.body.parentEmail,isActive:true });
+    const userExist = await kidsmodel.findOne({ parentEmail: req.body.parentEmail, isActive: true });
 
     if (userExist) {
       console.log("email matches");
@@ -111,36 +115,24 @@ const adultmodel = require('../models/adultmodel.js');
         childLocation: req.body.childLocation,
         childCity: req.body.childCity,
         childAboutYou: req.body.childAboutYou,
-        cv: req.body.cv,
-        videosAndAudios: req.body.videosAndAudios,
-        features: req.body.features,
-        portfolio: req.body.portfolio,
-        instaFollowers: req.body.instaFollowers,
-        tiktokFollowers: req.body.tiktokFollowers,
-        twitterFollowers: req.body.twitterFollowers,
-        youtubeFollowers: req.body.youtubeFollowers,
-        facebookFollowers: req.body.facebookFollowers,
-        linkedinFollowers: req.body.linkedinFollowers,
-        threadsFollowers: req.body.threadsFollowers,
-        idType: req.body.idType,
-        verificationId: req.body.verificationId,
         userType: 'talent',
         isVerified: false,
         type: 'kids',
         isActive: true,
         otp: hashedOTP, // Store hashed OTP in the user document
-        bodyType:req.body.bodyType,
-        industry:req.body.industry,
-        isFavorite:false,
-        bookJob:"25",
-        rating:"4"
+        bodyType: req.body.bodyType,
+        industry: req.body.industry,
+        isFavorite: false,
+        bookJob: "25",
+        rating: "4",
+        profileStatus: true
       });
 
       // Save the new user to the database
       await newUser.save();
 
       res.json({
-        message: "OTP sent successfully",
+        message: "Half Registered Successfully",
         status: true,
         data: req.body.parentEmail
       });
@@ -176,7 +168,7 @@ const adultSignUp = async (req, res, next) => {
     console.log("hashedPass", hashedPass);
 
     // Check if the user already exists
-    const userExist = await adultmodel.findOne({ adultEmail: req.body.adultEmail,isActive:true });
+    const userExist = await adultmodel.findOne({ adultEmail: req.body.adultEmail, isActive: true });
     if (userExist) {
       console.log("email matches");
       return res.json({
@@ -197,15 +189,17 @@ const adultSignUp = async (req, res, next) => {
       const newUser = new adultmodel({
         adultEmail: req.body.adultEmail,
         talentPassword: hashedPass,
-        confirmPassword:req.body.confirmPassword,
+        confirmPassword: req.body.confirmPassword,
         isVerified: false,
         userType: 'talent',
         isActive: true,
         type: 'adults', // Assuming type should be set to 'adult'
-        otp: hashedOTP,
-        isFavorite:false,
-        bookJob:'30',
-        rating:'3' // Store hashed OTP in the user document
+        otp: hashedOTP,// Store hashed OTP in the user document
+        isFavorite: false,
+        bookJob: '30',
+        rating: '3',
+        profileStatus: false,
+
       });
 
       // Save the new user to the database
@@ -245,8 +239,8 @@ const otpVerificationAdult = async (req, res, next) => {
     const newEmail = req.body.adultEmail;
 
     // Fetch the user from the database for the given email
-    const user = await adultmodel.findOne({ adultEmail: newEmail,isActive:true });
-    console.log("user",user)
+    const user = await adultmodel.findOne({ adultEmail: newEmail, isActive: true });
+    console.log("user", user)
     if (!user) {
       console.log("Error: User not found");
       return res.json({
@@ -266,13 +260,13 @@ const otpVerificationAdult = async (req, res, next) => {
       await adultmodel.findOneAndUpdate({ adultEmail: newEmail }, { isVerified: true });
 
       console.log("Success: User verified");
-
+      const userId = user._id; // Assuming _id is the user ID
       // Send a welcome email to the verified user
       const mailOptions = {
         from: host,
         to: newEmail,
         subject: 'Welcome to Brands&Talent',
-        html: getBusinessReviewEmailTemplate() // Assuming you have the email template function
+        html: getBusinessReviewEmailTemplate(userId.toString())// getBusinessReviewEmailTemplate() // Assuming you have the email template function
       };
 
       await transporter.sendMail(mailOptions);
@@ -312,7 +306,7 @@ const otpVerification = async (req, res, next) => {
     const newEmail = req.body.parentEmail;
 
     // Fetch the user from the database for the given email
-    const user = await kidsmodel.findOne({ parentEmail: newEmail,isActive:true });
+    const user = await kidsmodel.findOne({ parentEmail: newEmail, isActive: true });
     if (!user) {
       console.log("Error: User not found");
       return res.json({
@@ -331,11 +325,17 @@ const otpVerification = async (req, res, next) => {
       // Update isVerified value to true for the user with the given email
       await kidsmodel.findOneAndUpdate({ parentEmail: newEmail }, { isVerified: true });
 
+
       console.log("Success: User verified");
       res.json({
         message: "User verified",
-        status: true
+        status: true,
+        data: {
+          parentEmail: req.body.parentEmail,
+          userId: user._id // Assuming 'user' is a variable holding the user's data
+        }
       });
+
     } else {
       console.log("Error: OTP does not match");
       res.json({
@@ -362,27 +362,23 @@ const otpVerification = async (req, res, next) => {
 */
 const subscriptionPlan = async (req, res, next) => {
   try {
-
     const newEmail = req.body.parentEmail;
-    // Update isVerified value to true for the user with the given email
-    await kidsmodel.findOneAndUpdate({ parentEmail: newEmail,isActive:true }, { subscriptionPlan: req.body.subscriptionPlan });
 
+    // Update subscription plan for the user with the given email
 
-    const mailOptions = {
-      from: host,
-      to: newEmail, // Use the provided newEmail
-      subject: 'Welcome to Brands&Talent',
-      html: getBusinessReviewEmailTemplate() // Assuming you have the email template function
-    };
+    const userId = req.body.user_id || req.params.user_id;
+    const updatedUser = await kidsmodel.findOneAndUpdate(
+      { parentEmail: newEmail, isActive: true, _id: userId },
+      { subscriptionPlan: req.body.subscriptionPlan },
+      { new: true } // To return the updated document
+    );
 
-    await transporter.sendMail(mailOptions);
-
-    console.log("Success: User verified and email sent");
+    console.log("Success: Subscription plan updated");
     res.json({
-      message: "User verified and email sent",
-      status: true
+      message: "Subscription plan updated",
+      status: true,
+      data: updatedUser._id // Return the updated user's ID
     });
-
   } catch (error) {
     console.error("Error:", error);
     res.json({
@@ -392,8 +388,6 @@ const subscriptionPlan = async (req, res, next) => {
     });
   }
 };
-
-
 
 
 /**
@@ -412,8 +406,8 @@ const talentLogin = async (req, res) => {
     user = await adultmodel.findOne({ adultEmail: email, isActive: true });
     type = 'adult';
 
-    // If not found in adultmodel, try finding in kidsmodel
     if (!user) {
+      // If not found in adultmodel, try finding in kidsmodel
       user = await kidsmodel.findOne({ parentEmail: email, isActive: true });
       type = 'kids';
     }
@@ -426,7 +420,7 @@ const talentLogin = async (req, res) => {
       });
     }
 
-    // Check if the provided password matches
+    // Check if the provided password matches for both adult and kids accounts
     const isMatch = await bcrypt.compare(password, user.talentPassword);
     if (!isMatch) {
       return res.json({
@@ -436,29 +430,29 @@ const talentLogin = async (req, res) => {
     }
 
     // Generate a token assuming auth.gettoken is a function to do so
-    const token = auth.gettoken(user._id, email);
+    const token = auth.gettoken(user._id, email, type);
 
     // Return success response
     return res.json({
       status: true,
-      message: 'Login successful',
+      message: type === 'adult' ? 'Login successful' : 'Login successful (Kids account)',
       type: type,
-      data: { user, token }
+      data: {
+        user,
+        token,
+        email: type === 'adult' ? user.adultEmail : user.parentEmail // Returning the relevant email based on user type
+      }
     });
 
   } catch (error) {
     console.error('Error during login:', error);
-    return res.json({
+    return res.status(500).json({
       status: false,
       message: 'An error occurred during login',
       error: error.toString()
     });
   }
 };
-
-
-
-
 
 /********** userprofile******
 * @param {*} req from user
@@ -502,7 +496,7 @@ const forgotPassword = async (req, res, next) => {
   try {
     const token = crypto.randomBytes(20).toString('hex');
 
-    const user = await kidsmodel.findOne({ parentEmail: req.body.parentEmail,isActive:true });
+    const user = await kidsmodel.findOne({ parentEmail: req.body.parentEmail, isActive: true });
 
     if (!user) {
       return res.json({
@@ -538,7 +532,7 @@ const forgotPassword = async (req, res, next) => {
        
       `
     };
-    
+
 
     await transporter.sendMail(mailOptions);
 
@@ -615,15 +609,16 @@ const resetPassword = async (req, res, next) => {
  */
 
 
+
 const updateAdults = async (req, res) => {
   try {
     const userId = req.body.user_id || req.params.user_id;
 
     /* Authentication */
-    const authResult = await auth.CheckAuth(req.headers["x-access-token"], userId);
-    if (!authResult) {
-      return res.json({ status: false, msg: 'Authentication failed' });
-    }
+    // const authResult = await auth.CheckAuth(req.headers["x-access-token"], userId);
+    // if (!authResult) {
+    //   return res.json({ status: false, msg: 'Authentication failed' });
+    // }
     /* Authentication */
 
     const user_id = req.body.user_id || req.params.user_id;
@@ -632,45 +627,26 @@ const updateAdults = async (req, res) => {
 
       profession: req.body.profession,
       relevantCategories: req.body.relevantCategories,
-      AdultFirstName: req.body.AdultFirstName,
-      AdultLastName: req.body.AdultLastName,
-      preferredAdultFirstname: req.body.preferredAdultFirstname,
-      preferredAdultLastName: req.body.preferredAdultLastName,
-      gender: req.body.gender,
+      parentFirstName: req.body.parentFirstName,
+      parentLastName: req.body.parentLastName,
+      preferredChildFirstname: req.body.preferredChildFirstname,
+      preferredChildLastName: req.body.preferredChildLastName,
+      childGender: req.body.childGender,
       maritalStatus: req.body.maritalStatus,
-      nationality: req.body.nationality,
-      ethnicity: req.body.ethnicity,
+      childNationality: req.body.childNationality,
+      childEthnicity: req.body.childEthnicity,
       languages: req.body.languages,
-      dob: req.body.dob,
-      contactPhone: req.body.contactPhone,
+      childDob: req.body.childDob,
+      childPhone: req.body.childPhone,
       contactEmail: req.body.contactEmail,
       country: req.body.country,
-      city: req.body.city,
-      aboutYou: req.body.aboutYou,
+      childCity: req.body.childCity,
+      childAboutYou: req.body.childAboutYou,
       cv: req.body.cv,
       photo: req.body.photo,
       videosAndAudios: req.body.videosAndAudios,
-      hairColour: req.body.hairColour,
-      hairType: req.body.hairType,
-      build: req.body.build,
-      skinType: req.body.skinType,
-      eyeColour: req.body.eyeColour,
-      hairLength: req.body.hairLength,
-      chest: req.body.chest,
-      waist: req.body.waist,
-      hipSize: req.body.hipSize,
-      dressSize: req.body.dressSize,
-      shoeSize: req.body.shoeSize,
-      braSize: req.body.braSize,
-      transgender: req.body.transgender,
-      sexuality: req.body.sexuality,
-      height: req.body.height,
-      children: req.body.children,
-      pets: req.body.pets,
-      diet: req.body.diet,
-      weight: req.body.weight,
-      neckToToe: req.body.neckToToe,
-      insideLeg: req.body.insideLeg,
+      features: req.body.features,
+      childLocation: req.body.childLocation,
       portfolio: req.body.portfolio,
       instaFollowers: req.body.instaFollowers,
       tiktokFollowers: req.body.tiktokFollowers,
@@ -681,11 +657,13 @@ const updateAdults = async (req, res) => {
       threadsFollowers: req.body.threadsFollowers,
       idType: req.body.idType,
       verificationId: req.body.verificationId,
-      services:req.body.services,
-      bodyType:req.body.bodyType,
-      industry:req.body.industry,
-      profileStatus:false
-};
+      services: req.body.services,
+      bodyType: req.body.bodyType,
+      industry: req.body.industry,
+      profileStatus: false,
+      image: req.body.image,
+      age: req.body.age
+    };
 
     try {
       await adultmodel.updateOne(
@@ -742,14 +720,7 @@ const kidsFetch = async (req, res, next) => {
   try {
     const userId = req.body.user_id || req.params.user_id;
 
-    /* Authentication */
-    const authResult = await auth.CheckAuth(req.headers["x-access-token"], userId);
-    if (!authResult) {
-      return res.json({ status: false, msg: 'Authentication failed' });
-    }
-    /* Authentication */
-
-    kidsmodel.find({ isActive: true }).sort({ created: -1 })
+    kidsmodel.findOne({ _id: userId, isActive: true }).sort({ created: -1 })
       .then((response) => {
         res.json({
           status: true,
@@ -772,23 +743,23 @@ const kidsFetch = async (req, res, next) => {
  * @param {*} res return data
  * @param {*} next undefined
  */
-
-
- const editKids = async (req, res) => {
+const editKids = async (req, res) => {
   try {
     const userId = req.body.user_id || req.params.user_id;
 
-    /* Authentication */
-    const authResult = await auth.CheckAuth(req.headers["x-access-token"], userId);
-    if (!authResult) {
-      return res.json({ status: false, msg: 'Authentication failed' });
+
+    const user = await kidsmodel.findOne({ _id: userId, isActive: true });
+    if (!user) {
+      return res.status(404).json({ status: false, msg: 'User not found' });
     }
-    /* Authentication */
 
-    const user_id = req.body.user_id || req.params.user_id;
+
+    // Prepare the fields to be updated
     const updateFields = {
-      isActive: true, // Assuming isActive is always set to true
-
+      // Add all fields you intend to update. Avoid updating the parentEmail here as per the original logic.
+      // Example:
+      // parentFirstName: req.body.parentFirstName,
+      // Include other fields as necessary
       parentFirstName: req.body.parentFirstName,
       parentLastName: req.body.parentLastName,
       parentEmail: req.body.parentEmail,
@@ -815,8 +786,8 @@ const kidsFetch = async (req, res, next) => {
       childAboutYou: req.body.childAboutYou,
       cv: req.body.cv,
       videosAndAudios: req.body.videosAndAudios,
-      features:req.body.features,
-      portfolio:req.body.portfolio,
+      features: req.body.features,
+      portfolio: req.body.portfolio,
       instaFollowers: req.body.instaFollowers,
       tiktokFollowers: req.body.tiktokFollowers,
       twitterFollowers: req.body.twitterFollowers,
@@ -826,170 +797,153 @@ const kidsFetch = async (req, res, next) => {
       threadsFollowers: req.body.threadsFollowers,
       idType: req.body.idType,
       verificationId: req.body.verificationId,
-      reviews:req.body.reviews,
-      services:req.body.services
-};
+      reviews: req.body.reviews,
+      services: req.body.services,
+      image: req.body.image,
+      maritalStatus: req.body.maritalStatus,
 
-    try {
-      await kidsmodel.updateOne(
-        { _id: new mongoose.Types.ObjectId(user_id) },
-        { $set: updateFields }
-      );
-      res.json({ status: true, msg: 'Updated successfully' });
-    } catch (err) {
-      res.json({ status: false, msg: err.message });
-    }
+    };
+
+    // Exclude fields that should not be updated directly
+    delete updateFields.parentEmail;
+
+    await kidsmodel.updateOne({ _id: userId }, { $set: updateFields });
+    res.json({
+      status: true,
+      msg: 'Updated successfully',
+      data: {
+        user_id: userId,
+        // Do not directly return email for privacy reasons, or ensure it's appropriate to do so
+        email: user.parentEmail // Commented for privacy concerns; uncomment if necessary
+      }
+    })
+    // res.json({ status: true, msg: 'Updated successfully, OTP sent to parent email.' });
   } catch (error) {
-    res.json({ status: false, msg: 'Error Occurred'});
+    console.error(error);
+    res.status(500).json({ status: false, msg: 'Error occurred' });
   }
 };
+
 /**
- *********kidsDataFetch*****
+ *********unifiedDataFetch*****
  * @param {*} req from user
  * @param {*} res return data
  * @param {*} next undefined
  */
- const unifiedDataFetch = async (req, res, next) => {
+const unifiedDataFetch = async (req, res, next) => {
   try {
     const userId = req.params.user_id;
-    const type = req.params.type; // 'adult' or 'kid'
     const dataType = parseInt(req.params.dataType);
+    const objectId = new mongoose.Types.ObjectId(userId);
 
-    // Check authentication
-    const authResult = await auth.CheckAuth(req.headers["x-access-token"], userId);
-    if (!authResult) {
-      return res.json({ status: false, msg: 'Authentication failed' });
+    let model;
+    const kidsUser = await kidsmodel.findOne({ _id: objectId, isActive: true });
+    const adultUser = await adultmodel.findOne({ _id: objectId, isActive: true });
+
+    if (kidsUser) {
+      model = kidsmodel;
+    } else if (adultUser) {
+      model = adultmodel;
+    } else {
+      return res.status(404).json({ status: false, msg: 'User not found or not active' });
     }
-
-    let model = type === 'kid' ? kidsmodel : adultmodel;
-    let query;
 
     switch (dataType) {
-      case 1:
-        query = model.find({ _id: userId, isActive: true }).sort({ created: -1 }).select({ portfolio: 1 });
-        break;
-      case 2:
-        query = model.find({ _id: userId, isActive: true }).sort({ created: -1 }).select({ videosAndAudios: 1 });
-        break;
-      case 3:
-        query = model.find({ _id: userId, isActive: true }).sort({ created: -1 }).select({ cv: 1 });
-        break;
-      case 4:
-        query = model.find({ _id: userId, isActive: true }).sort({ created: -1 }).select({ features: 1 });
-        break;
-      case 5:
-        query = model.find({ _id: userId, isActive: true }).sort({ created: -1 }).select({ reviews: 1 });
-        break;
-      case 6:
-        query = model.find({ _id: userId, isActive: true }).sort({ created: -1 }).select({ services: 1 });
-        break;
-      default:
-        return res.json({ status: false, msg: 'Invalid request' });
-    }
+      case 1: {
+        const user = await model.findOne({ _id: objectId, isActive: true }, 'portfolio');
 
-    const response = await query;
-    res.json({ status: true, data: response });
+        if (!user || !user.portfolio || user.portfolio.length === 0) {
+          return res.status(200).json({ status: false, msg: 'Portfolio not found' });
+        }
+
+        // Transform the portfolio to the desired format
+        const fileDataArray = user.portfolio.map(item => item.fileData);
+        return res.json({ status: true, data: fileDataArray });
+      }
+      case 2:
+      case 3:
+      case 5: {
+        //case 6: {
+        const selectField = {
+          2: 'videosAndAudios',
+          3: 'cv',
+          5: 'reviews',
+          //6: 'services'
+        }[dataType];
+
+        const documents = await model.findOne({ _id: objectId, isActive: true }).select(selectField + ' _id');
+
+        if (!documents || documents.length === 0 || !documents[selectField]) {
+          return res.status(200).json({ status: false, msg: 'No data found' });
+        }
+
+        const responseData = documents[selectField].map(item => ({
+          _id: documents._id.toString(), // Convert ObjectId to String if necessary
+          id: item.id,
+          title: item.title,
+          fileData: item.fileData,
+          type: item.type
+        }));
+
+        return res.json({ status: true, data: responseData });
+      }
+      case 4: {
+        const featuresData = await model.findOne({ _id: objectId, isActive: true }, 'features');
+
+        if (!featuresData || !featuresData.features || featuresData.features.length === 0) {
+          return res.status(200).json({ status: false, msg: 'Features data not found' });
+        }
+
+        // Format the features as per requirement
+        const formattedFeatures = featuresData.features.map(feature => ({
+          label: feature.label,
+          value: feature.value
+        }));
+
+        return res.json({ status: true, data: formattedFeatures });
+      }
+      case 6: {
+        try {
+          // Assuming "services" is the correct field name in your schema
+          const serviceData = await model.findOne({ _id: objectId, isActive: true }, 'services');
+
+          if (!serviceData || !serviceData.services || serviceData.services.length === 0) {
+            return res.status(200).json({ status: false, msg: 'Services data not found' });
+          }
+
+          // Format the services as per requirement
+          const formattedServices = serviceData.services.map(service => ({
+            serviceName: service.serviceName,
+            serviceAmount: service.serviceAmount,
+            serviceDuration: service.serviceDuration,
+            editorState: service.editorState.join(' '), // Joining HTML strings if there are multiple
+            files: service.files || [], // Ensure files array exists, handle if it's undefined
+          }));
+
+          return res.json({ status: true, data: formattedServices });
+        } catch (error) {
+          console.error('Error retrieving services data:', error);
+          return res.status(500).json({ status: false, msg: 'Server error' });
+        }
+      }
+
+
+      default:
+        return res.status(400).json({ status: false, msg: 'Invalid request' });
+    }
   } catch (error) {
-    res.json({ status: false, msg: 'Invalid Token' });
+    console.error(error);
+    res.status(500).json({ status: false, msg: `Server error: ${error.message}` });
   }
 };
 
-//  const kidsDataFetch = async (req, res, next) => {
-//   try {
-//     const userId = req.params.user_id;
-
-//     // Check authentication
-//     const authResult = await auth.CheckAuth(req.headers["x-access-token"], userId);
-//     if (!authResult) {
-//       return res.json({ status: false, msg: 'Authentication failed' });
-//     }
-
-//     let query;
-//     const dataType = parseInt(req.params.dataType);
-//     switch (dataType) {
-//       case 1:
-//         query = kidsmodel.find({ _id: userId, isActive: true }).sort({ created: -1 }).select({ portfolio: 1 });
-//         break;
-//       case 2:
-//         query = kidsmodel.find({ _id: userId, isActive: true }).sort({ created: -1 }).select({ videosAndAudios: 1 });
-//         break;
-//       case 3:
-//         query = kidsmodel.find({ _id: userId, isActive: true }).sort({ created: -1 }).select({ cv: 1 });
-//         break;
-//       case 4:
-//         query = kidsmodel.find({ _id: userId, isActive: true }).sort({ created: -1 }).select({ features: 1 });
-//         break;
-//         case 5:
-//         query = kidsmodel.find({ _id: userId, isActive: true }).sort({ created: -1 }).select({ reviews: 1 });
-//         break;
-//         case 6:
-//         query = kidsmodel.find({ _id: userId, isActive: true }).sort({ created: -1 }).select({ services: 1 });
-//         break;
-//       default:
-//         return res.json({ status: false, msg: 'Invalid request' });
-//     }
-
-//     const response = await query;
-//     res.json({ status: true, data: response });
-//   } catch (error) {
-//     res.json({ status: false, msg: 'Invalid Token' });
-//   }
-// };
-// /**
-//  *********adultDataFetch*****
-//  * @param {*} req from user
-//  * @param {*} res return data
-//  * @param {*} next undefined
-//  */
-//  const adultDataFetch = async (req, res, next) => {
-//   try {
-//     const userId = req.params.user_id;
-
-//     // Check authentication
-//     const authResult = await auth.CheckAuth(req.headers["x-access-token"], userId);
-//     if (!authResult) {
-//       return res.json({ status: false, msg: 'Authentication failed' });
-//     }
-
-//     let query;
-//     const dataType = parseInt(req.params.dataType);
-//     switch (dataType) {
-//       case 1:
-//         query = adultmodel.find({ _id: userId, isActive: true }).sort({ created: -1 }).select({ portfolio: 1 });
-//         break;
-//       case 2:
-//         query = adultmodel.find({ _id: userId, isActive: true }).sort({ created: -1 }).select({ videosAndAudios: 1 });
-//         break;
-//       case 3:
-//         query = adultmodel.find({ _id: userId, isActive: true }).sort({ created: -1 }).select({ cv: 1 });
-//         break;
-//       case 4:
-//         query = adultmodel.find({ _id: userId, isActive: true }).sort({ created: -1 }).select({ features: 1 });
-//         break;
-//       case 5:
-//         query = adultmodel.find({ _id: userId, isActive: true }).sort({ created: -1 }).select({ services: 1 });
-//         break;
-//       case 6:
-//         query = adultmodel.find({ _id: userId, isActive: true }).sort({ created: -1 }).select({ reviews: 1 });
-//         break;
-
-//       default:
-//         return res.json({ status: false, msg: 'Invalid request' });
-//     }
-
-//     const response = await query;
-//     res.json({ status: true, data: response });
-//   } catch (error) {
-//     res.json({ status: false, msg: 'Invalid Token' });
-//   }
-// };
-/**
+/*
  *********file delete*****
  * @param {*} req from user
  * @param {*} res return data
  * @param {*} next undefined
  */
- const deleteFile = async (req, res, next) => {
+const deleteFile = async (req, res, next) => {
   try {
     const userId = req.body.user_id || req.params.user_id; // Replace this with the actual user ID
     const cvIdToRemove = req.body.element_id; // Replace this with the ID of the cv to remove
@@ -1042,7 +996,7 @@ const kidsFetch = async (req, res, next) => {
  * @param {*} res return data
  * @param {*} next undefined
  */
- const otpResend = async (req, res, next) => {
+const otpResend = async (req, res, next) => {
   try {
     const email = req.body.parentEmail;
 
@@ -1097,7 +1051,7 @@ const kidsFetch = async (req, res, next) => {
  * @param {*} res return data
  * @param {*} next undefined
  */
- const otpResendAdult = async (req, res, next) => {
+const otpResendAdult = async (req, res, next) => {
   try {
     const email = req.body.adultEmail;
 
@@ -1152,17 +1106,20 @@ const kidsFetch = async (req, res, next) => {
  * @param {*} res return data
  * @param {*} next undefined
  */
- const talentList = async (req, res) => {
+const talentList = async (req, res) => {
   try {
-    
+
     // Find all active adults
-    const activeAdults = await adultmodel.find({ isActive: true }).select({bookJob:1,rating:1,isFavorite:1,AdultFirstName:1,city:1,location:1,image:1});
+    const activeAdults = await adultmodel.find({ isActive: true });
 
     // Find all active kids
-    const activeKids = await kidsmodel.find({ isActive: true }).select({bookJob:1,rating:1,isFavorite:1,city:1,childFirstName:1,childLocation:1,image:1});
+    const activeKids = await kidsmodel.find({ isActive: true });
 
     // Combine both lists
-    const allActiveUsers = [...activeAdults, ...activeKids];
+    const reversedUsers = [...activeAdults, ...activeKids];
+
+    // Reverse the array
+    const allActiveUsers = reversedUsers.reverse();
 
     if (allActiveUsers.length > 0) {
       return res.json({ status: true, data: allActiveUsers });
@@ -1174,6 +1131,7 @@ const kidsFetch = async (req, res, next) => {
     return res.json({ status: false, msg: 'An error occurred' });
   }
 };
+
 /**
  *********talentFilterList*****
  * @param {*} req from user
@@ -1182,61 +1140,67 @@ const kidsFetch = async (req, res, next) => {
 */
 const talentFilterData = async (req, res) => {
   try {
-    let filterCriteria = {
-      isActive: true,
-    };
+    let orConditions = [];
 
-    let hasFilters = false; // Flag to identify if any filters are being applied
+    // Profession filter
+    if (req.body.profession && req.body.profession.length) {
+      orConditions.push({ 'profession.value': { $in: req.body.profession.map(prof => prof.value) } });
+    }
 
-    // Fields that can be filtered upon
-    const fieldsToCheck = [
-      "childCity", "instaFollowers", "tiktokFollowers", "twitterFollowers",
-      "youtubeFollowers", "facebookFollowers", "linkedinFollowers", "threadsFollowers",
-      "childGender", "parentCountry", "childDob", "childEthnicity", "childNationality", "languages",
-      "parentFirstName", "childFirstName"
-    ];
+    // Features filter
+    if (req.body.features && req.body.features.length) {
+      req.body.features.forEach(feature => {
+        let condition = {};
+        condition[`features.${feature.label}`] = feature.value;
+        orConditions.push(condition);
+      });
+    }
 
-    // Check for filters in the request body and add them to the filterCriteria
-    fieldsToCheck.forEach(field => {
-      if (req.body[field] !== undefined && req.body[field] !== '') {
-        hasFilters = true; // Indicates that at least one filter is applied
-        if (typeof req.body[field] === 'string') {
-          // Use regex for case-insensitive search for string fields
-          filterCriteria[field] = { $regex: new RegExp(req.body[field], 'i') };
-        } else {
-          // Direct matching for non-string fields
-          filterCriteria[field] = req.body[field];
-        }
+    // Age range filter converted into a date range for childDob
+    if (req.body.minAge && req.body.maxAge) {
+      const currentDate = new Date();
+      const minDateOfBirth = new Date().setFullYear(currentDate.getFullYear() - req.body.maxAge);
+      const maxDateOfBirth = new Date().setFullYear(currentDate.getFullYear() - req.body.minAge);
+      orConditions.push({ childDob: { $gte: new Date(minDateOfBirth), $lte: new Date(maxDateOfBirth) } });
+    }
+
+    // Generic string fields handling (case insensitive)
+    const fields = ['adultEmail', 'childNationality', 'gender', 'contactEmail', 'country', 'parentFirstName', 'parentLastName', 'parentEmail', 'parentMobileNo', 'parentCountry', 'parentState', 'parentAddress', 'profession.value', 'profession.label', 'relevantCategories', 'industry', 'childFirstName', 'childLastName', 'preferredChildFirstname', 'preferredChildLastName', 'childGender', 'childNationality', 'childEthnicity', 'languages', 'childPhone', 'childEmail', 'childLocation', 'childCity', 'childAboutYou', 'services', 'portfolio', 'features.label', 'features.value', 'maritalStatus']//['childCity', 'parentCountry','childNationality', 'gender', 'childEthnicity', 'languages', 'childFirstName', 'parentFirstName', 'industry','preferredChildFirstname', 'preferredChildLastName'];
+    fields.forEach(field => {
+      if (req.body[field]) {
+        let condition = {};
+        condition[field] = { $regex: new RegExp(req.body[field], 'i') }; // Case-insensitive search
+        orConditions.push(condition);
       }
     });
 
-    // Special handling for "features" and "profession" filters, if provided
-    if (req.body.features && req.body.features.length > 0) {
-      hasFilters = true;
-      filterCriteria.features = { $all: req.body.features.map(feature => ({ $elemMatch: { label: feature.label, value: feature.value } })) };
+    // Search term filter
+    if (req.body.searchTerm) {
+      const searchTerm = req.body.searchTerm;
+      const searchFields = ['adultEmail', 'childNationality', 'gender', 'contactEmail', 'country', 'parentFirstName', 'parentLastName', 'parentEmail', 'parentMobileNo', 'parentCountry', 'parentState', 'parentAddress', 'profession.value', 'profession.label', 'relevantCategories', 'industry', 'childFirstName', 'childLastName', 'preferredChildFirstname', 'preferredChildLastName', 'childGender', 'childNationality', 'childEthnicity', 'languages', 'childPhone', 'childEmail', 'childLocation', 'childCity', 'childAboutYou', 'services', 'portfolio', 'features.label', 'features.value', 'maritalStatus']//['adultEmail','childNationality', 'gender', 'contactEmail', 'country', 'parentFirstName', 'parentLastName', 'parentEmail', 'parentMobileNo', 'parentCountry', 'parentState', 'parentAddress', 'profession.value', 'profession.label', 'relevantCategories', 'industry', 'childFirstName', 'childLastName', 'preferredChildFirstname', 'preferredChildLastName', 'childGender', 'childNationality', 'childEthnicity', 'languages', 'childPhone', 'childEmail', 'childLocation', 'childCity', 'childAboutYou', 'services', 'portfolio', 'features.label', 'features.value', 'maritalStatus'];
+      const searchTermConditions = searchFields.map(field => ({ [field]: { $regex: new RegExp(searchTerm, 'i') } }));
+      orConditions.push(...searchTermConditions);
     }
 
-    if (req.body.profession && req.body.profession.length > 0) {
-      hasFilters = true;
-      // Adjusting query for profession to use $in for matching any provided profession
-      filterCriteria['profession.value'] = { $in: req.body.profession.map(prof => prof.value) };
+    // Selected terms filter
+    if (req.body.selectedTerms) {
+      const selectedTerms = req.body.selectedTerms;
+      const selectedTermsFields = ['adultEmail', 'childNationality', 'gender', 'contactEmail', 'country', 'parentFirstName', 'parentLastName', 'parentEmail', 'parentMobileNo', 'parentCountry', 'parentState', 'parentAddress', 'profession.value', 'profession.label', 'relevantCategories', 'industry', 'childFirstName', 'childLastName', 'preferredChildFirstname', 'preferredChildLastName', 'childGender', 'childNationality', 'childEthnicity', 'languages', 'childPhone', 'childEmail', 'childLocation', 'childCity', 'childAboutYou', 'services', 'portfolio', 'features.label', 'features.value', 'maritalStatus']//['adultEmail','childNationality', 'gender', 'childGender', 'contactEmail', 'country', 'parentFirstName', 'parentLastName', 'parentEmail', 'parentMobileNo', 'parentCountry', 'parentState', 'parentAddress', 'profession.value', 'profession.label','industry', 'relevantCategories', 'childFirstName', 'childLastName', 'preferredChildFirstname', 'preferredChildLastName', 'childGender', 'childNationality', 'childEthnicity', 'languages', 'childPhone', 'childEmail', 'childLocation', 'childCity', 'childAboutYou', 'services', 'portfolio', 'features.label', 'features.value', 'maritalStatus'];
+      const selectedTermsConditions = selectedTermsFields.map(field => ({ [field]: { $regex: new RegExp(selectedTerms, 'i') } }));
+      orConditions.push(...selectedTermsConditions);
     }
 
-    // Execute the query only if there are filters set (hasFilters is true)
-    let allActiveUsers = [];
-    if (hasFilters) {
-      // Query both models concurrently only if filters are present
-      const [activeAdults, activeKids] = await Promise.all([
-        adultmodel.find(filterCriteria),
-        kidsmodel.find(filterCriteria)
-      ]);
+    // Constructing the final query with all conditions
+    let query = orConditions.length ? { $or: orConditions } : {};
 
-      allActiveUsers = [...activeAdults, ...activeKids];
-    }
+    // Executing the query on both collections and combining the results
+    const adults = await adultmodel.find(query).exec();
+    const kids = await kidsmodel.find(query).exec();
+    const combinedResults = [...adults, ...kids];
 
-    // Respond with the query results
-    if (allActiveUsers.length > 0) {
-      res.json({ status: true, data: allActiveUsers });
+    // Response based on the combined results
+    if (combinedResults.length > 0) {
+      res.json({ status: true, data: combinedResults });
     } else {
       res.json({ status: false, msg: 'No matching users found' });
     }
@@ -1246,18 +1210,16 @@ const talentFilterData = async (req, res) => {
   }
 };
 
-
-
-
 /**
  *********favourtites*****
  * @param {*} req from user
  * @param {*} res return data
  * @param {*} next undefined
  */
- const setUserFavorite = async (req, res) => {
+const setUserFavorite = async (req, res) => {
   try {
     const userId = req.body.user_id || req.params.user_id;
+    const user = req.body.user
     const type = req.body.type; // Assuming this is passed in the request to distinguish between 'kid' and 'adult'
 
     /* Authentication */
@@ -1278,7 +1240,7 @@ const talentFilterData = async (req, res) => {
 
     try {
       await Model.updateOne(
-        { _id: new mongoose.Types.ObjectId(userId) },
+        { _id: new mongoose.Types.ObjectId(user) },
         { $set: { isFavorite: true } }
       );
       res.json({ status: true, msg: 'Set as favorite successfully' });
@@ -1295,7 +1257,7 @@ const talentFilterData = async (req, res) => {
  * @param {*} res return data
  * @param {*} next undefined
  */
- const searchTalent = async (req, res, next) => {
+const searchTalent = async (req, res, next) => {
   try {
     const { name } = req.body; // Extract the name from the request body
 
@@ -1305,7 +1267,7 @@ const talentFilterData = async (req, res) => {
         // Commented out to match your latest request, but can be included if needed
         // { parentFirstName: new RegExp("^" + name, "i") },
         { childFirstName: new RegExp("^" + name, "i") },
-        { AdultFirstName: new RegExp("^" + name, "i") }
+        // { AdultFirstName: new RegExp("^" + name, "i") }
       ]
     };
 
@@ -1338,15 +1300,137 @@ const talentFilterData = async (req, res) => {
  * @param {*} res return data
  * @param {*} next undefined
  */
- const checkProfileStatus = async (req, res) => {
+const checkProfileStatus = async (req, res) => {
+  try {
+    const userId = req.body.user_id || req.params.user_id;
+
+    let userType = '';
+    let profileStatus = null;
+
+    // Check in adultmodel
+    const adultUser = await adultmodel.findOne({ _id: new mongoose.Types.ObjectId(userId) }).select('profileStatus -_id');
+    if (adultUser) {
+      userType = 'adults';
+      profileStatus = adultUser.profileStatus;
+      return res.json({ status: true, msg: 'Profile status retrieved successfully', type: userType, profileStatus: profileStatus });
+    }
+
+    // If not found in adultmodel, check in kidsmodel without updating
+    const kidUser = await kidsmodel.findOne({ _id: new mongoose.Types.ObjectId(userId) }).select('profileStatus -_id');
+    if (kidUser) {
+      userType = 'kids';
+      profileStatus = kidUser.profileStatus;
+      return res.json({ status: true, msg: 'Profile status retrieved successfully', type: userType, profileStatus: profileStatus });
+    }
+
+    // If user type is still empty, user was not found in either model
+    if (!userType) {
+      return res.json({ status: false, msg: 'User not found' });
+    }
+
+  } catch (error) {
+    console.error('Error checking profile status:', error);
+    return res.json({ status: false, msg: 'Error occurred during profile status check', error: error.message });
+  }
+};
+
+// const checkProfileStatus = async (req, res) => {
+//   try {
+//     const userId = req.body.user_id || req.params.user_id;
+
+//     let userType = '';
+//     let profileStatus = null;
+
+//     // Check in adultmodel
+//     const adultUser = await adultmodel.findOne({ _id: new mongoose.Types.ObjectId(userId) }).select('profileStatus -_id'); // Adjusted to only select profileStatus
+//     if (adultUser) {
+//       userType = 'adults';
+//       profileStatus = adultUser.profileStatus;
+//       return res.json({ status: true, msg: 'Profile status retrieved successfully', type: userType, profileStatus: profileStatus });
+//     }
+
+//     // If not found in adultmodel, check in kidsmodel
+//     const kidUser = await kidsmodel.findOne({ _id: new mongoose.Types.ObjectId(userId) });
+//     if (kidUser) {
+//       userType = 'kids';
+//       // Here, since you want to update the kidsmodel, let's proceed with the update.
+//       const updateResult = await kidsmodel.updateOne(
+//         { _id: new mongoose.Types.ObjectId(userId) },
+//         { $set: { profileStatus: true } }
+//       );
+//       if (updateResult && updateResult.modifiedCount === 1) {
+//         // Assuming you want to return the updated status, fetch it again
+//         const updatedKidUser = await kidsmodel.findOne({ _id: new mongoose.Types.ObjectId(userId) }).select('profileStatus -_id');
+//         profileStatus = updatedKidUser.profileStatus;
+//         return res.json({ status: true, msg: 'Set profile status successfully', type: userType, data: profileStatus });
+//       } else {
+//         return res.json({ status: false, msg: 'Failed to update profile status for kid user' });
+//       }
+//     }
+
+//     // If user type is still empty, user was not found in either model
+//     if (!userType) {
+//       return res.json({ status: false, msg: 'User not found' });
+//     }
+
+//   } catch (error) {
+//     console.error('Error checking profile status:', error);
+//     return res.json({ status: false, msg: 'Error occurred during profile status check', error: error.message });
+//   }
+// };
+/**
+ *********getTalentById*****
+ * @param {*} req from user
+ * @param {*} res return data
+ * @param {*} next undefined
+ */
+
+const getTalentById = async (req, res, next) => {
+  try {
+    const userId = req.params.user_id;
+
+
+    let model;
+    // Assuming kidsmodel and adultmodel are correctly imported and utilized
+    const kidsUser = await kidsmodel.findOne({ _id: userId, isActive: true });
+    const adultUser = await adultmodel.findOne({ _id: userId, isActive: true });
+
+    if (kidsUser) {
+      model = kidsmodel;
+    } else if (adultUser) {
+      model = adultmodel;
+    } else {
+      return res.status(404).json({ status: false, msg: 'User not found or not active' });
+    }
+
+    // Query the model to get details of the user
+    const userDetails = await model.findOne({ _id: userId, isActive: true });
+
+    if (!userDetails) {
+      return res.status(404).json({ status: false, msg: 'User details not found' });
+    }
+
+    res.json({ status: true, data: userDetails });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ status: false, msg: `Server error: ${error.message}` });
+  }
+};
+/**
+ *********updateProfileStatus*****
+ * @param {*} req from user
+ * @param {*} res return data
+ * @param {*} next undefined
+ */
+const updateProfileStatus = async (req, res) => {
   try {
     const userId = req.body.user_id || req.params.user_id;
 
     /* Authentication */
-    const authResult = await auth.CheckAuth(req.headers["x-access-token"], userId);
-    if (!authResult) {
-      return res.json({ status: false, msg: 'Authentication failed' });
-    }
+    // const authResult = await auth.CheckAuth(req.headers["x-access-token"], userId);
+    // if (!authResult) {
+    //   return res.json({ status: false, msg: 'Authentication failed' });
+    // }
     /* Authentication */
 
     let userType = '';
@@ -1388,13 +1472,412 @@ const talentFilterData = async (req, res) => {
     return res.json({ status: false, msg: 'Invalid Token' });
   }
 };
+/**
+ *********subscriptionStatus*****
+ * @param {*} req from user
+ * @param {*} res return data
+ * @param {*} next undefined
+ */
+const subscriptionStatus = async (req, res, next) => {
+  try {
+    const { email } = req.body; // Destructuring for ease of use
+
+    // Initialize variables
+    let model;
+    let user;
+
+    // Attempt to find the user in either model
+    const kidsUser = await kidsmodel.findOne({ parentEmail: email, isActive: true });
+    const adultUser = await adultmodel.findOne({ adultEmail: email, isActive: true });
+
+    // Determine which model the user is in
+    if (kidsUser) {
+      model = kidsmodel;
+      user = kidsUser;
+    } else if (adultUser) {
+      model = adultmodel;
+      user = adultUser;
+    } else {
+      return res.status(404).json({ status: false, msg: 'User not found or not active' });
+    }
+
+    // Update isSubscription to true
+    user.isSubscribed = true;
+    await user.save();
+
+    // Assuming you have set up Nodemailer configuration correctly
+    // with transporter and host variables
+    const mailOptions = {
+      from: host, // Make sure this is defined or replace with your actual sender's email address
+      to: email, // Send to the email from the request
+      subject: 'Subscription Status Updated',
+      html: `
+      <h1>Subscription Update</h1>
+      <p>Hello,</p>
+      <p>We are pleased to inform you that your subscription status has been <strong>successfully updated</strong> to <em>active</em>.</p>
+      <p>This means you now have full access to all the premium features available on our platform. We are excited to have you explore all the great content and features designed to enhance your experience.</p>
+      <p>If you have any questions or need assistance, please do not hesitate to contact our support team.</p>
+      <p>Thank you for choosing us!</p>
+      <p>Best regards,</p>
+      <p>Brands And Talent Team</p>
+    `,
+      // You can use html key instead of text for HTML email content
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    res.json({ status: true, data: user, msg: 'Subscription updated and email sent.' });
+  } catch (error) {
+    console.error('Server error:', error);
+    res.status(500).json({ status: false, msg: `Server error: ${error.message}` });
+  }
+};
+/**
+ *********getByProfession*****
+ * @param {*} req from user
+ * @param {*} res return data
+ * @param {*} next undefined
+ */
+const getByProfession = async (req, res) => {
+  try {
+    // Directly accessing type from the body, assuming the body structure is: { "type": "Photographer" }
+    const { type } = req.body;
+
+    // Updated query to match documents where the profession array contains an object with the label matching `type`
+    const query = { 'profession.label': type };
+
+    const kidsResults = await kidsmodel.find(query).lean();
+    const adultResults = await adultmodel.find(query).lean();
+
+    // Combine results from both models
+    const combinedResults = [...kidsResults, ...adultResults];
+
+    res.json({
+      status: true,
+      data: combinedResults,
+    });
+  } catch (error) {
+    console.error('Error fetching profession data:', error);
+    res.status(500).json({ status: false, message: 'Internal server error' });
+  }
+};
+/**
+ *********logintemplate*****
+ * @param {*} req from user
+ * @param {*} res return data
+ * @param {*} next undefined
+ */
+const loginTemplate = async (req, res) => {
+  try {
+    const { parentEmail } = req.body;
+
+    // Ensure email is provided
+    if (!parentEmail) {
+      return res.status(400).json({
+        message: "Parent email is required",
+        status: false
+      });
+    }
+
+    // Update isVerified value to true for the user with the given email
+    const updatedUser = await kidsmodel.findOneAndUpdate(
+      { parentEmail: parentEmail, isActive: true },
+      { $set: { isVerified: true } },
+      { new: true } // Return the updated document
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({
+        message: "User not found or already verified",
+        status: false
+      });
+    }
+    const userId = updatedUser._id; // Assuming _id is the user ID
+    const mailOptions = {
+      from: host,
+      to: parentEmail, // Use the parentEmail from req.body
+      subject: 'Welcome to Brands&Talent',
+      html: getBusinessReviewEmailTemplate(userId.toString())//getBusinessReviewEmailTemplate() // Assuming this function returns your email template's HTML
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    console.log("Success: User verified and email sent");
+    res.json({
+      message: "User verified and email sent",
+      status: true
+    });
+
+  } catch (error) {
+    console.error("Error:", error);
+    res.status(500).json({
+      message: "An error occurred",
+      status: false,
+      error: error.toString()
+    });
+  }
+};
+/**
+********getPlanByType******
+* @param {*} req from user
+* @param {*} res return data
+* @param {*} next undefined
+*/
+const getPlanByType = async (req, res, next) => {
+  try {
+    const userId = req.params.userId;
+
+    /* Authentication (Uncomment and adjust as necessary)
+    const authResult = await auth.CheckAuth(req.headers["x-access-token"], userId);
+    if (!authResult) {
+      return res.status(401).json({ status: false, msg: 'Authentication failed' });
+    }
+    */
+
+    let plan = await kidsmodel.findOne({ _id: userId, isActive: true }).populate('subscriptionId');
+
+    if (!plan) {
+      plan = await adultmodel.findOne({ _id: userId, isActive: true }).populate('subscriptionId');
+    }
+
+    if (!plan) {
+      return res.status(404).json({
+        status: false,
+        message: 'Plan not found'
+      });
+    }
+
+    res.json({
+      status: true,
+      data: plan
+    });
+
+  } catch (error) {
+    console.error("Error fetching plan:", error);
+    res.status(500).json({
+      status: false,
+      message: 'Server error'
+    });
+  }
+};
+/**
+ *********remove favourtites*****
+ * @param {*} req from user
+ * @param {*} res return data
+ * @param {*} next undefined
+ */
+const removeFavorite = async (req, res) => {
+  try {
+    const userId = req.body.user_id || req.params.user_id;
+    const user = req.body.user
+    const type = req.body.type; // Assuming this is passed in the request to distinguish between 'kid' and 'adult'
+
+    /* Authentication */
+    const authResult = await auth.CheckAuth(req.headers["x-access-token"], userId);
+    if (!authResult) {
+      return res.json({ status: false, msg: 'Authentication failed' });
+    }
+    /* Authentication */
+
+    let Model; // Determine which model to use based on userType
+    if (type === 'kids') {
+      Model = kidsmodel;
+    } else if (type === 'adult') {
+      Model = adultmodel;
+    } else {
+      return res.json({ status: false, msg: 'Invalid user type' });
+    }
+
+    try {
+      await Model.updateOne(
+        { _id: new mongoose.Types.ObjectId(user) },
+        { $set: { isFavorite: false } }
+      );
+      res.json({ status: true, msg: 'Remove favorite successfully' });
+    } catch (err) {
+      res.json({ status: false, msg: err.message });
+    }
+  } catch (error) {
+    res.json({ status: false, msg: 'Invalid Token' });
+  }
+};
+/**
+ *********remove favourtites*****
+ * @param {*} req from user
+ * @param {*} res return data
+ * @param {*} next undefined
+ */
+const checkUserStatus = async (req, res, next) => {
+  try {
+    const userId = req.body.user_id;
+
+    let model;
+
+    // Assuming kidsmodel and adultmodel are correctly imported and utilized
+    const kidsUser = await kidsmodel.findById({ _id: userId, isActive: true });
+    const adultUser = await adultmodel.findById({ _id: userId, isActive: true });
+
+    if (kidsUser) {
+      model = kidsmodel;
+    } else if (adultUser) {
+      model = adultmodel;
+    } else {
+      return res.status(404).json({ status: false, msg: 'New user' });
+    }
+
+    // Query the model to get details of the user
+    const userDetails = await model.findById({ _id: userId, isActive: true });
+
+    if (!userDetails) {
+      return res.json({ status: false, msg: 'New user' });
+    }
+
+    res.json({ status: true, data: userDetails, msg: 'This user is already exist' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ status: false, msg: `Server error: ${error.message}` });
+  }
+};
+/**
+*********google Sign up******
+* @param {*} req from user
+* @param {*} res return data
+* @param {*} next undefined
+*/
+const socialSignup = async (req, res, next) => {
+  try {
+    console.log(req.body);
 
 
+    // Check if the user already exists
+    const userExist = await adultmodel.findOne({ adultEmail: req.body.adultEmail, isActive: true });
+    // if (userExist) {
+    //   console.log("email matches");
+    //   return res.json({
+    //     message: "Email ID Already Exists",
+    //     status: false,
+    //     data: req.body.adultEmail
+    //   });
+    // }
+
+
+
+    // Create a new user document
+    const newUser = new adultmodel({
+      adultEmail: req.body.adultEmail,
+      googleId: req.body.googleId,
+      provider: req.body.provider,
+      isVerified: false,
+      userType: 'talent',
+      isActive: true,
+      type: 'adults',
+      isFavorite: false,
+      profileStatus: false,
+      facebookId:req.body.facebookId
+
+    });
+
+    // Save the new user to the database
+    const response = await newUser.save();
+
+    res.json({
+      message: "Save successfully",
+      status: true,
+      email: req.body.adultEmail,
+      user_id:newUser._id
+    });
+
+  } catch (error) {
+    console.error(error);
+    return res.json({
+      message: "An Error Occurred",
+      status: false,
+      error: error
+    });
+  }
+};
+/**
+********editPassword******
+* @param {*} req from user
+* @param {*} res return data
+* @param {*} next undefined
+*/
+const updateAdultPassword = async (req, res) => {
+  try {
+    const userId = req.body.user_id || req.params.user_id;
+
+    /* Authentication */
+    // Assuming auth.CheckAuth is an async function you've defined for authentication
+    // const authResult = await auth.CheckAuth(req.headers["x-access-token"], userId);
+    // if (!authResult) {
+    //   return res.json({ status: false, msg: 'Authentication failed' });
+    // }
+
+    const hashedPass = await bcrypt.hash(req.body.talentPassword, 10);
+
+    const updateResult = await adultmodel.updateOne(
+      { _id: new mongoose.Types.ObjectId(userId) },
+      { $set: { isActive: true, talentPassword: hashedPass } }
+    );
+
+    const email = req.body.adultEmail;
+
+    // Generate and hash new OTP
+    const { otp, hashedOTP } = await generateAndHashOTP();
+
+    // Compose email options
+    const mailOptions = {
+      from: host,
+      to: email,
+      subject: "Use this code to verify your account",
+      text: `Your One-Time Password (OTP) is ${otp}. Please use this code to complete your verification process. Do not share this code with anyone. Thank you for using our services.\n \nKind regards,\nTeam`,
+    };
+
+    // Send email with OTP
+    transporter.sendMail(mailOptions, async function (error, info) {
+      if (error) {
+        console.log(error);
+        return res.json({
+          message: "Error sending OTP",
+          status: false,
+          error: error
+        });
+      } else {
+        console.log("mailOptions", mailOptions);
+        console.log("Email sent: " + info.response);
+
+        // Update the OTP in the database for the user
+        try {
+          const filter = { adultEmail: email };
+          const update = { otp: hashedOTP };
+          await adultmodel.updateOne(filter, update);
+          console.log("OTP updated successfully in the database");
+        } catch (updateError) {
+          console.error("Error updating OTP in the database:", updateError);
+        }
+
+        if (updateResult.modifiedCount === 0) {
+          return res.json({ status: false, msg: 'No changes made. User not found or data is the same.' });
+        }
+
+        res.json({
+          message: "OTP sent successfully and updated in the database",
+          status: true
+        });
+      }
+    });
+  } catch (error) {
+    res.json({ status: false, msg: 'Error Occurred: ' + error.message });
+  }
+};
 
 module.exports = {
   kidsSignUp, adultSignUp, adultFetch, forgotPassword, resetPassword, updateAdults, deleteUser, kidsFetch, otpVerification, subscriptionPlan,
-  otpVerificationAdult,editKids,unifiedDataFetch,otpResend,otpResendAdult,
-  deleteFile,talentList,talentFilterData,setUserFavorite,talentLogin,searchTalent,checkProfileStatus,
-  
+  otpVerificationAdult, editKids, unifiedDataFetch, otpResend, otpResendAdult,
+  deleteFile, talentList, talentFilterData, setUserFavorite, talentLogin, searchTalent, checkProfileStatus,
+  getTalentById, updateProfileStatus, subscriptionStatus, getByProfession, loginTemplate, getPlanByType,
+  removeFavorite, checkUserStatus,socialSignup,updateAdultPassword
+
+
 
 };

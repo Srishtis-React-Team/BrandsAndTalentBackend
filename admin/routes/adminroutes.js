@@ -2,6 +2,7 @@
 var express = require('express');
 var router = express.Router();
 
+
 const admin = require('../controllers/admin')
 router.post('/addAdmin',admin.addAdmin)//for admin register
 router.post('/adminLogin',admin.adminLogin)//for admin login
@@ -15,6 +16,10 @@ router.post('/listState',admin.listState)
 router.post('/adminFetch',admin.adminFetch)
 router.post('/listLocation',admin.listLocation)
 router.get('/listCountries',admin.listCountries)
+router.post('/chatbot',admin.chatbot)
+router.get('/getAllStatesList',admin.getAllStatesList)
+router.get('/getAllCitiesList',admin.getAllCitiesList)// Assuming admin.multiUploads is your multer configuration
+
 
 
 module.exports = router

@@ -21,39 +21,39 @@ var authenticationSchema = new schema({
    relevantCategories: {
       type: Array
    },
-   AdultFirstName: {
+   parentFirstName: {
       type: String
    },
-   AdultLastName: {
+   parentLastName: {
       type: String
    },
-   preferredAdultFirstname: {
+   preferredChildFirstname: {
       type: String
    },
-   preferredAdultLastName: {
+   preferredChildLastName: {
       type: String
    },
 
 
-   gender: {
+   childGender: {
       type: String
    },
    maritalStatus: {
       type: String
    },
-   nationality: {
+   childNationality: {
       type: String
    },
-   ethnicity: {
+   childEthnicity: {
       type: String
    },
    languages: {
       type: String
    },
-   dob: {
+   childDob: {
       type: Date
    },
-   contactPhone: {
+   childPhone: {
       type: String
    },
    contactEmail: {
@@ -62,13 +62,13 @@ var authenticationSchema = new schema({
    country: {
       type: String
    },
-   city: {
+   childCity: {
       type: String
    },
-   aboutYou: {
-      type: String
+   childAboutYou: {
+      type: Array
    },
-   location: {
+   childLocation: {
       type: String
 
    },
@@ -83,73 +83,10 @@ var authenticationSchema = new schema({
    videosAndAudios: {
       type: Array
    },
-   hairColour: {
-      type: String
+   features:{
+      type: Array
    },
-   hairType: {
-      type: String
-   },
-   build: {
-
-      type: String
-   },
-   skinType: {
-      type: String
-   },
-   skinTone: {
-      type: String
-   },
-   eyeColour: {
-      type: String
-   },
-   hairLength: {
-      type: String
-   },
-   chest: {
-      type: String
-   },
-   waist: {
-      type: String
-   },
-   hipSize: {
-      type: String
-   },
-   dressSize: {
-      type: String
-   },
-   shoeSize: {
-      type: String
-   },
-   braSize: {
-      type: String
-   },
-   transgender: {
-      type: String
-   },
-   sexuality: {
-      type: String
-   },
-   height: {
-      type: String
-   },
-   children: {
-      type: String
-   },
-   pets: {
-      type: String
-   },
-   diet: {
-      type: String
-   },
-   weight: {
-      type: String
-   },
-   neckToToe: {
-      type: String
-   },
-   insideLeg: {
-      type: String
-   },
+  
    subscriptionPlan: {
       type: String
    },
@@ -159,7 +96,7 @@ var authenticationSchema = new schema({
 
 
    portfolio: {
-      type: String
+      type: Array
 
    },
 
@@ -242,13 +179,36 @@ var authenticationSchema = new schema({
    rating: {
       type: String
    },
-   image: {
-      type: String
-
+   image:{
+      type:Object,
+      default:null
    },
    profileStatus: {
       type: Boolean
    },
+   ratingDescription:{
+      type: String
+   },
+   age: {
+      type:Number
+   },
+   isSubscribed:{
+      type:Boolean,
+      default:false
+   },
+   subscriptionId:{
+      type: schema.ObjectId,
+    ref: 'Subscription'
+  },
+   googleId: {
+      type: String,
+   },
+   provider: {
+      type: String,
+   },
+   facebookId: {
+      type: String,
+    },
 
 },
    {

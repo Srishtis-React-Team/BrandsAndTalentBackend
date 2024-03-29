@@ -13,7 +13,7 @@ router.post('/resetPassword',users.resetPassword)//for resetPassword
 router.post('/updateAdults/:user_id',users.updateAdults)//for editUser
 router.post('/deleteUser/:user_id',users.deleteUser)//for deleteUser
 router.post('/otpVerification',users.otpVerification)//for otpVerification
-router.post('/subscriptionPlan',users.subscriptionPlan)//for subscriptionPlan
+router.post('/subscriptionPlan/:user_id',users.subscriptionPlan)//for subscriptionPlan
 router.post('/otpVerificationAdult',users.otpVerificationAdult)//for otpVerificationAdult
 router.post('/editKids/:user_id',users.editKids)//for editKids
 router.post('/unifiedDataFetch/:user_id/:dataType',users.unifiedDataFetch)//for kidsDataFetch
@@ -21,12 +21,20 @@ router.post('/deleteFile/:user_id',users.deleteFile)//for deleteFile
 router.post('/otpResend',users.otpResend)//for otpResend
 router.post('/otpResendAdult',users.otpResendAdult)//for otpResendAdult
 router.get('/talentList',users.talentList)//for talentList
-router.post('/talentFilterData/:user_id',users.talentFilterData)//for talentFilterData
+router.post('/talentFilterData',users.talentFilterData)//for talentFilterData
 router.post('/setUserFavorite/:user_id',users.setUserFavorite)//for talentFilterData
 router.get('/searchTalent',users.searchTalent)//for searchTalent
 router.post('/checkProfileStatus/:user_id',users.checkProfileStatus)//for checkProfileStatus
-
-
+router.post('/getTalentById/:user_id',users.getTalentById)//for searchTalent
+router.post('/updateProfileStatus/:user_id',users.updateProfileStatus)//for updateProfileStatus
+router.post('/subscriptionStatus',users.subscriptionStatus)//for subscriptionStatus
+router.post('/getByProfession',users.getByProfession)//for subscriptionStatus
+router.post('/loginTemplate',users.loginTemplate)//for loginTemplate
+router.get('/getPlanByType/:userId',users.getPlanByType)//for getPlanByType
+router.post('/removeFavorite/:user_id',users.removeFavorite)//for removeFavorite
+router.post('/checkUserStatus',users.checkUserStatus)//for checkUserStatus
+router.post('/socialSignup',users.socialSignup)//for googleSignUpAdult
+router.post('/updateAdultPassword',users.updateAdultPassword)//for updateAdultPassword
 
 module.exports = router
 

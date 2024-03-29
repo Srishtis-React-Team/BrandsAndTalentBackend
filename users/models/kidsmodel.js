@@ -93,72 +93,7 @@ var authenticationSchema = new schema({
    features:{
       type: Array
    },
-   // hairColour: {
-   //    type: String
-   // },
-   // hairType:{
-   //    type: String
-   // },
-   // build:{
-
-   //    type: String
-   // },
-   // skinType:{
-   //    type: String
-   // },
-   // skinTone:{
-   //    type: String
-   // },
-   // eyeColour: {
-   //    type: String
-   // },
-   // hairLength:{
-   //    type: String
-   // },
-   // height: {
-   //    type: String
-   // },
-   // shoeSize: {
-   //    type: String
-   // },
-   // hipSize: {
-   //    type: String
-   // },
-   // braSize:{
-   //    type: String
-   // },
-   // transgender:{
-   //    type: String
-   // },
-   // sexuality:{
-   //    type: String
-   // },
-   // children:{
-   //    type: String
-   // },
-   // pets:{
-   //    type:String
-   // },
-   // dressSize:{
-   //    type: String
-   // },
-
-   // chest: {
-   //    type: String
-   // },
-   // waist: {
-   //    type: String
-   // },
-   // weight: {
-   //    type: String
-   // },
-   // neckToToe: {
-   //    type: String
-   // },
-   // insideLeg: {
-   //    type: String
-   // },
- 
+   
    subscriptionPlan: {
       type: String
    },
@@ -248,7 +183,8 @@ var authenticationSchema = new schema({
       type:String
    },
    image:{
-      type:String
+      type:Object,
+      default:null
    },
    services:{
       type:Array
@@ -256,6 +192,42 @@ var authenticationSchema = new schema({
    reviews:{
       type:String
    },
+   maritalStatus: {
+      type:String
+   },
+   age: {
+      type:Number
+   },
+   isSubscribed:{
+      type:Boolean,
+      default:false
+   },
+   subscriptionId:{
+      type: schema.ObjectId,
+    ref: 'Subscription'
+  },
+  profileStatus: {
+   type: Boolean
+},
+googleId:{
+   type: String,
+},
+
+facebookId: {
+   type: String,
+ },
+ name: {
+   type: String,
+   trim: true,
+ },
+ photoURL: {
+   type: String,
+ },
+ provider: {
+   type: String,
+ },
+
+
 
 },
    {

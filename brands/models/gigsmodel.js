@@ -3,40 +3,90 @@ var schema = mongoose.Schema;
 
 
 var authenticationSchema = new schema({
-    companyName: {
+    jobTitle : {
         type: String
     },
-    title: {
+    jobLocation : {
         type: String
     },
-    description: {
+    streetAddress : {
         type: String
     },
-    paymentStatus: {
+    workplaceType:  {
         type: String
     },
    
-    followers: {
+    jobType : {
         type: String
     },
-    age: {
+    jobDescription : {
         type: String
     },
-    gender: {
+    skills : {
+        type: Array
+    },
+    additionalRequirements: {
         type: String
     },
-    location: {
-        type: String
+    age:{
+        type:Number
     },
-    image:{
+    gender:{
         type:String
     },
-   
-  
+    nationality:{
+        type:String
+    },
+    languages:{
+        type:String
+    },
+    questions:{
+        type:Array
+    },
+    benefits:{
+        type:Array
+    },
+    compensation:{
+        type:String
+    },
+    jobType:{
+        type:String
+    },
+    jobCurrency:{
+        type:String
+    },
+    paymentType:{
+        type:String
+    },
+    minPay:{
+        type:String
+    },
+    maxPay:{
+        type:String
+    },
+    hiringCompany:{
+        type:String
+    },
+    whyWorkWithUs:{
+        type:String
+    },
+    hiringCompanyDescription:{
+        type:String
+    },
 
+    howLikeToApply:{
+        type:String
+    },
+    workSamples:{
+        type:Array
+    },
+    jobImage:{
+        type:Array
+    },
     isActive:
     {
-        type: Boolean
+        type: Boolean,
+        default:true
         
     },
   

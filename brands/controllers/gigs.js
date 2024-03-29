@@ -14,21 +14,16 @@ const gigsmodel = require('../models/gigsmodel');
  * @param {*} res return data
  * @param {*} next undefined
  */
-const addGigs = async (req, res, next) => {
+ const createJob = async (req, res, next) => {
     try {
-        console.log(req.body);
         const add_gigs = new gigsmodel({
-            companyName: req.body.companyName,
-            title: req.body.title,
-            description: req.body.description,
-            paymentStatus: req.body.paymentStatus,
-            followers: req.body.followers,
-            age: req.body.age,
-            location: req.body.location,
-            gender:req.body.gender,
-            image:req.body.image,
-            isActive: true
-        });
+            jobTitle, jobLocation, streetAddress, workplaceType, jobType,
+            jobDescription, skills, additionalRequirements, age, gender,
+            nationality, languages, questions, benefits, compensation,
+            jobCurrency, paymentType, minPay, maxPay, hiringCompany,
+            whyWorkWithUs, hiringCompanyDescription, howLikeToApply,
+            workSamples, jobImage,// isActive: true
+        } = req.body);
 
         const response = await add_gigs.save();
 
@@ -38,12 +33,13 @@ const addGigs = async (req, res, next) => {
             data: add_gigs,
         });
     } catch (error) {
-        console.log(error);
+        console.error("Error in createJob:", error);
         return res.json({
             message: "An Error Occurred"
         });
     }
 };
+
 
 
 /**
@@ -52,7 +48,7 @@ const addGigs = async (req, res, next) => {
 * @param {*} res return data
 * @param {*} next undefined
 */
-const recentGigs = async (req, res, next) => {
+const getAllJobs = async (req, res, next) => {
 
     gigsmodel.find({ isActive: true}).sort({ created: -1 })
         .then((response) => {
@@ -67,11 +63,54 @@ const recentGigs = async (req, res, next) => {
             });
         });
   };
+  /**
+*********get job by id******
+* @param {*} req from user
+* @param {*} res return data
+* @param {*} next undefined
+*/
+const getJobsByID = async (req, res, next) => {
+    try {
+        const gigId = req.body.gigId || req.params.gigId;
+
+        /* Authentication (Uncomment and adjust as necessary)
+        const authResult = await auth.CheckAuth(req.headers["x-access-token"], userId);
+        if (!authResult) {
+          return res.status(401).json({ status: false, msg: 'Authentication failed' });
+        }
+        */
+
+        // Since we're using async/await, there's no need to use .then() and .catch() here.
+        const gig = await gigsmodel.findOne({ _id: gigId, isActive: true }).sort({ created: -1 });
+        
+        if (!gig) {
+            // If no gig is found, send a 404 not found response
+            return res.status(404).json({
+                status: false,
+                message: 'Gig not found'
+            });
+        }
+
+        // If a gig is found, send it back in the response
+        res.json({
+            status: true,
+            data: gig
+        });
+
+    } catch (error) {
+        // Log the error and send a 500 internal server error response
+        console.error("Error fetching gig:", error);
+        res.status(500).json({
+            status: false,
+            message: 'Server error'
+        });
+    }
+};
 
 
 
 
 module.exports = {
-    addGigs, recentGigs
+    createJob, getAllJobs,getJobsByID
 
 };
