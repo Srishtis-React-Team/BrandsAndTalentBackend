@@ -70,6 +70,15 @@ var authenticationSchema = new schema({
     whyWorkWithUs:{
         type:String
     },
+    product:{
+        type:String
+    },
+    valueOfProduct:{
+        type:String
+    },
+    productDescription:{
+        type:String
+    },
     hiringCompanyDescription:{
         type:String
     },

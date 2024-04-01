@@ -21,7 +21,7 @@ const gigsmodel = require('../models/gigsmodel');
             jobDescription, skills, additionalRequirements, age, gender,
             nationality, languages, questions, benefits, compensation,
             jobCurrency, paymentType, minPay, maxPay, hiringCompany,
-            whyWorkWithUs, hiringCompanyDescription, howLikeToApply,
+            whyWorkWithUs,product,valueOfProduct,productDescription, hiringCompanyDescription, howLikeToApply,
             workSamples, jobImage,// isActive: true
         } = req.body);
 

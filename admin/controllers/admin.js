@@ -744,10 +744,10 @@ function formatResponse(botResponse, userMsg) {
 // };
 
 ///
-let userName = ''; // To store the user's name
-let userAge = 0; // To store the user's age
+// let userName = ''; // To store the user's name
+// let userAge = 0; // To store the user's age
 
-let interactionStep = 0; // This should ideally be managed on a per-user basis
+// let interactionStep = 0; // This should ideally be managed on a per-user basis
 
 // const chatbot = async (req, res) => {
 //   const { message, user_id } = req.body; // Assuming the client sends a user_id
