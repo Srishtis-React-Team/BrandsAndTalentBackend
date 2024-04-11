@@ -850,7 +850,7 @@ const unifiedDataFetch = async (req, res, next) => {
 
     switch (dataType) {
       case 1: {
-        const user = await model.findOne({ _id: objectId, isActive: true }, 'portfolio');
+        const user = await model.findOne({ _id: objectId, isActive: true }, 'portfolio').sort({ createdAt: -1 });;
 
         if (!user || !user.portfolio || user.portfolio.length === 0) {
           return res.status(200).json({ status: false, msg: 'Portfolio not found' });
@@ -871,7 +871,7 @@ const unifiedDataFetch = async (req, res, next) => {
           //6: 'services'
         }[dataType];
 
-        const documents = await model.findOne({ _id: objectId, isActive: true }).select(selectField + ' _id');
+        const documents = await model.findOne({ _id: objectId, isActive: true }).select(selectField + ' _id').sort({ createdAt: -1 });;
 
         if (!documents || documents.length === 0 || !documents[selectField]) {
           return res.status(200).json({ status: false, msg: 'No data found' });
@@ -888,7 +888,7 @@ const unifiedDataFetch = async (req, res, next) => {
         return res.json({ status: true, data: responseData });
       }
       case 4: {
-        const featuresData = await model.findOne({ _id: objectId, isActive: true }, 'features');
+        const featuresData = await model.findOne({ _id: objectId, isActive: true }, 'features').sort({ createdAt: -1 });;
 
         if (!featuresData || !featuresData.features || featuresData.features.length === 0) {
           return res.status(200).json({ status: false, msg: 'Features data not found' });
@@ -905,7 +905,7 @@ const unifiedDataFetch = async (req, res, next) => {
       case 6: {
         try {
           // Assuming "services" is the correct field name in your schema
-          const serviceData = await model.findOne({ _id: objectId, isActive: true }, 'services');
+          const serviceData = await model.findOne({ _id: objectId, isActive: true }, 'services').sort({ createdAt: -1 });;
 
           if (!serviceData || !serviceData.services || serviceData.services.length === 0) {
             return res.status(200).json({ status: false, msg: 'Services data not found' });

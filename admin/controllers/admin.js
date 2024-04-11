@@ -14,6 +14,9 @@ const path = require("path");
 const { uuid } = require("uuidv4");
 const { chatAdultTemplate } = require('../../template.js');
 const { chatKidsTemplate } = require('../../template.js');
+const { chatBrandsTemplate } = require('../../template.js');
+
+
 
 
 
@@ -654,15 +657,23 @@ function getCurrentTimeInCambodia() {
 
   return `${formattedHours}:${formattedMinutes} ${amPm}`;
 }
-
-
-function formatResponse(botResponse, userMsg) {
+function formatResponse(botResponse, userMsg, sessionId) {
   return {
-      time: getCurrentTimeInCambodia(),
-      botResponse: botResponse,
-      userMsg: userMsg
+    time: getCurrentTimeInCambodia(),
+    botResponse: botResponse,
+    userMsg: userMsg,
+    sectionID: sessionId // Placeholder for sectionID, replace with actual value if available
   };
 }
+
+// function formatResponse(botResponse, userMsg,sessionId) {
+//   return {
+//       time: getCurrentTimeInCambodia(),
+//       botResponse: botResponse,
+//       userMsg: userMsg,
+//       sessionId:req.body.sessionId
+//   };
+// }
 
 
 
@@ -814,11 +825,16 @@ function formatResponse(botResponse, userMsg) {
 //   }
 
 //   res.json({ message: formatResponse(botResponse, userMsg) });
-// };
+// };  
 
 
 //28/3
+function isValidEmail(email) {
+  const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return regex.test(email);
+}
 let sessions = {}; // Simulated session storage
+
 
 const chatbot = async (req, res) => {
   const { message, sessionId } = req.body; // Assuming the client sends a sessionId
@@ -834,30 +850,52 @@ const chatbot = async (req, res) => {
 
   switch (interactionStep) {
     case 0:
-      botResponse = "Hi! Welcome to Brands & Talents.";
+      botResponse = "How can I help you ?";
       interactionStep++;
       break;
-          case 1:
-      botResponse = "What is your name? ";
+      case 1:
+        botResponse = "Could you please share your email address with me ? ";
+        interactionStep++;
+        break;
+        case 2:
+    if (isValidEmail(userMsg)) {
+      botResponse = "What is your fullname? ";
+      // Proceed with the next step or interaction
       interactionStep++;
-      break;
-    case 2:
-      userName = message; // Store the user's name
-      botResponse = `Are you brands or talent?  `;
-      interactionStep++;
-      break;
+    } else {
+      botResponse = "It seems like the email address is not valid. Could you please check and enter it again?";
+      // Optionally, you might not increment 'interactionStep' to allow the user to try again
+    }
+    break;
+    
     case 3:
-      type = message.toLowerCase();
-      if (type === 'brands') {
-        botResponse = `For brands sign up, go to this link: https://hybrid.sicsglobal.com/project/brandsandtalent/signup`;
-      } else if (type === 'talent') {
-        botResponse = `${userName}, how old are you?  `;
-      } else {
+      userName = message; // Store the user's name
+      // botResponse=`Please select your category:
+      //  Press 1 for Brand,
+      //  Press 2 for Client,
+      //  Press 3 for Talent`
+      botResponse = `Are you Brands/Client/Talent? Please press 1 for Brand ,2 for Client ,3 for Talent `;
+      interactionStep++;
+       break;
+    case 4:
+      type = userMsg
+      console.log("type",type)
+      //type = response.toLowerCase();
+      if (type == 1 || type== 2) {
+     // if (type.toLowerCase() === '1' || type.toLowerCase() === '2') {
+        botResponse = chatBrandsTemplate();
+        interactionStep = 5;
+      } else if (type ==3) {
+      //else if (type.toLowerCase() === '3') {
+        botResponse = `${userName}, how old are you?`;
+      }
+     
+       else {
         botResponse = "For further assistance, contact brandstalent123@gmail.com.";
       }
       interactionStep++;
       break;
-    case 4:
+    case 5:
       userAge = parseInt(message); // Store the user's age
       if (isNaN(userAge)) {
         botResponse = "I couldn't understand that. Can you please tell me how old you are in numbers? ";
@@ -865,6 +903,7 @@ const chatbot = async (req, res) => {
         if (userAge < 18) {
           // Use the chatKidsTemplate function here to generate the response for kids
           botResponse = chatKidsTemplate();
+          
         } else {
           // Use the chatAdultTemplate function here to generate the response for adults
           botResponse = chatAdultTemplate();
@@ -872,13 +911,13 @@ const chatbot = async (req, res) => {
         interactionStep++; // Move to the next step
       }
       break;
-    case 5:
+    case 6:
       // Handle user's request or question here. For simplicity, we move to satisfaction check.
       botResponse = "Are you satisfied with this section yes/no?";
       interactionStep++;
       break;
     // Add other cases here following your original logic
-    case 6:
+    case 7:
       if (message.toLowerCase() === "yes") {
         botResponse = "Thank you for chatting with us. Have a great day!";
       } else {
@@ -894,8 +933,10 @@ const chatbot = async (req, res) => {
 
   // Update the session
   sessions[sessionId].interactionStep = interactionStep;
+  const formattedResponse = formatResponse(botResponse, userMsg, sessionId)
 
-  res.json({ message: formatResponse(botResponse, userMsg) });
+  res.json(formattedResponse);
+  //res.json({ message: formatResponse(botResponse, userMsg,sessionId) });
 };
 // const chatbot = async (req, res) => {
 //   let botResponse;

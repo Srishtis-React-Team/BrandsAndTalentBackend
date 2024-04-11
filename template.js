@@ -86,18 +86,7 @@ const chatKidsTemplate = () => `
         target="_blank"
         >Add Profile</a
       >
-      <a
-        class="button"
-        href="https://hybrid.sicsglobal.com/project/brandsandtalent/signup"
-        target="_blank"
-        >Post Job</a
-      >
-      <a
-        class="button"
-        href="https://hybrid.sicsglobal.com/project/brandsandtalent/pricing"
-        target="_blank"
-        >Upgrade Plan</a
-      >
+     
     </div>
   </body>
 </html>
@@ -156,28 +145,86 @@ const chatAdultTemplate = () => `
         target="_blank"
         >Add Profile</a
       >
+      
+    </div>
+  </body>
+</html>
+`;
+const chatBrandsTemplate = () => `
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chatbot Buttons</title>
+    <style>
+      body {
+        font-family: "Open Sans", sans-serif;
+        margin: 0;
+        padding: 20px;
+      }
+      h4 {
+        font-family: "Open Sans", sans-serif;
+        font-size: 16px;
+      }
+      .button {
+        display: inline-block;
+        background-color: #c2124b;
+        color: #ffffff;
+        padding: 6px 10px;
+        text-decoration: none;
+        margin: 10px 0px;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+        font-family: "Open Sans", sans-serif;
+        font-size: 14px;
+        font-weight: 700;
+        text-align: center;
+        width: 100px;
+      }
+      .button-wrapper {
+        display: flex;
+        flex-direction: column;
+      }
+      p {
+        padding: 0px !important;
+      }
+      a:hover {
+        color: #ffffff;
+      }
+    </style>
+  </head>
+  <body>
+    <h4>Choose Any Options :</h4>
+    <div class="button-wrapper">
       <a
         class="button"
-        href="https://hybrid.sicsglobal.com/project/brandsandtalent/signup"
+        href="https://hybrid.sicsglobal.com/project/brandsandtalent/brand-firstGig"
         target="_blank"
-        >Post Job</a
+        >Sign Up</a
       >
       <a
         class="button"
-        href="https://hybrid.sicsglobal.com/project/brandsandtalent/pricing"
+        href="https://hybrid.sicsglobal.com/project/brandsandtalent/brand-dashboard"
         target="_blank"
-        >Upgrade Plan</a
-      >
+        >Create job
+      </a>
     </div>
   </body>
 </html>
 `;
 
+
+
 // Export the functions
 module.exports = {
     getBusinessReviewEmailTemplate,
     chatKidsTemplate,
-    chatAdultTemplate
+    chatAdultTemplate,
+    chatBrandsTemplate,
+    
+    
 };
 
 

@@ -289,6 +289,7 @@ const keyword = require('./admin/routes/keywordroutes.js');
 const brands = require('./brands/routes/brandroutes');
 const gigs = require('./brands/routes/gigsroutes');
 const reviews = require('./brands/routes/reviewroutes');
+const notification = require('./brands/routes/notification.js');
 
 // Define routes
 app.use('/brandsntalent_api/users',users);
@@ -300,7 +301,7 @@ app.use('/brandsntalent_api/features',features);
 app.use('/brandsntalent_api/gigs',gigs);
 app.use('/brandsntalent_api/reviews',reviews);
 app.use('/brandsntalent_api/keyword',keyword);
-
+app.use('/brandsntalent_api/notification',notification);
 
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

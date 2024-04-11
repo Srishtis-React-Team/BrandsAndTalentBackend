@@ -3,103 +3,117 @@ var schema = mongoose.Schema;
 
 
 var authenticationSchema = new schema({
-    jobTitle : {
+    jobTitle: {
         type: String
     },
-    jobLocation : {
+    jobLocation: {
         type: String
     },
-    streetAddress : {
+    streetAddress: {
         type: String
     },
-    workplaceType:  {
+    workplaceType: {
         type: String
     },
-   
-    jobType : {
+
+    jobType: {
         type: String
     },
-    jobDescription : {
-        type: String
+    jobDescription: {
+        type: Array
     },
-    skills : {
+    skills: {
         type: Array
     },
     additionalRequirements: {
+        type: Array
+    },
+    age: {
         type: String
     },
-    age:{
-        type:Number
+    gender: {
+        type: String
     },
-    gender:{
-        type:String
+    nationality: {
+        type: String
     },
-    nationality:{
-        type:String
+    languages: {
+        type: String
     },
-    languages:{
-        type:String
+    questions: {
+        type: Array
     },
-    questions:{
-        type:Array
+    benefits: {
+        type: Array
     },
-    benefits:{
-        type:Array
+    compensation: {
+        type: Object,
+        default: null
     },
-    compensation:{
-        type:String
+    jobType: {
+        type: String
     },
-    jobType:{
-        type:String
+    jobCurrency: {
+        type: String
     },
-    jobCurrency:{
-        type:String
-    },
-    paymentType:{
-        type:String
-    },
-    minPay:{
-        type:String
-    },
-    maxPay:{
-        type:String
-    },
-    hiringCompany:{
-        type:String
-    },
-    whyWorkWithUs:{
-        type:String
-    },
-    product:{
-        type:String
-    },
-    valueOfProduct:{
-        type:String
-    },
-    productDescription:{
-        type:String
-    },
-    hiringCompanyDescription:{
-        type:String
+    paymentType: {
+
+        type: Object,
+        default: null
+
     },
 
-    howLikeToApply:{
-        type:String
+    minPay: {
+        type: String
     },
-    workSamples:{
-        type:Array
+    maxPay: {
+        type: String
     },
-    jobImage:{
-        type:Array
+    hiringCompany: {
+        type: String
+    },
+    whyWorkWithUs: {
+        type: Array
+    },
+    product: {
+        type: String
+    },
+    valueOfProduct: {
+        type: String
+    },
+    productDescription: {
+        type: String
+    },
+    hiringCompanyDescription: {
+        type: Array
+    },
+
+    howLikeToApply: {
+        type: String
+    },
+    workSamples: {
+        type: Array
+    },
+    jobImage: {
+        type: Array
     },
     isActive:
     {
         type: Boolean,
-        default:true
-        
+        default: true
+
     },
-  
-   
+    type: {
+        type: String,
+        default: 'Posted'
+    },
+    brandId: {
+
+        type: schema.ObjectId,
+        ref: 'Brands'
+    },
+
+
 },
     {
         timestamps: true

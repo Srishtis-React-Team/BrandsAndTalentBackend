@@ -385,7 +385,7 @@ const getBrandById = async (req, res) => {
     // }
     /* Authentication */
 
-    const user = await brandsmodel.findOne({ _id: userId, isActive: true });
+    const user = await brandsmodel.findOne({ _id: userId, isActive: true }).sort({ created: -1 });
     if (user) {
       return res.json({ status: true, data: user });
     } else {
