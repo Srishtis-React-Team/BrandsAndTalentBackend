@@ -4,10 +4,19 @@ const jwt = require("jsonwebtoken");
 const authentication = require('../../middleware/auth');
 const auth = new authentication;
 const async = require('async');
+const axios = require('axios');
+const express = require("express");
+const bodyParser = require('body-parser');
+const app = express();
+app.use(bodyParser.json());
 
 
 const gigsmodel = require('../models/gigsmodel');
 const draftmodel = require("../models/draftmodel");
+const brandsmodel = require("../models/brandsmodel");
+const kidsmodel = require("../../users/models/kidsmodel");
+const adultmodel = require("../../users/models/adultmodel");
+const notificationmodel = require("../models/notificationmodel");
 
 /**
  *********brandsRegister******
@@ -50,27 +59,113 @@ const createJob = async (req, res, next) => {
 * @param {*} next undefined
 */
 const getPostedJobs = async (req, res, next) => {
-    // const userId = req.body.userId || req.params.userId;
-    /* Authentication (Uncomment and adjust as necessary)
-    const authResult = await auth.CheckAuth(req.headers["x-access-token"], userId);
-    if (!authResult) {
-      return res.status(401).json({ status: false, msg: 'Authentication failed' });
-    }
-    */
-    gigsmodel.find({ isActive: true }).sort({ created: -1 })
+    const talentId = req.body.talentId;
 
-        .then((response) => {
-            res.json({
-                status: true,
-                data: response
-            });
-        })
-        .catch((error) => {
-            res.json({
-                Status: false,
-            });
+    try {
+        // Fetching all active gigs and sorting them by creation date in descending order
+        const gigs = await gigsmodel.find({ isActive: true }).sort({ created: -1 }).exec();
+
+        // Create modified data with an "isApplied" status
+        let modifiedData = await Promise.all(gigs.map(async (gig) => {
+            const application = await notificationmodel.findOne({ gigId: gig._id, talentId: talentId });
+            return {
+                ...gig._doc,
+                isApplied: application ? "Applied" : "Apply Now"
+            };
+        }));
+
+        // Reverse the array to make it oldest to newest
+        modifiedData.reverse();
+
+        // Sending the reversed array as response
+        res.json({
+            status: true,
+            data: modifiedData
         });
+    } catch (error) {
+        res.status(500).json({
+            status: false,
+            message: 'Error fetching posted jobs',
+            error: error
+        });
+    }
 };
+
+// const getPostedJobs = async (req, res, next) => {
+//     const talentId = req.body.talentId;
+
+//     try {
+//         const gigs = await gigsmodel.find({ isActive: true }).sort({ created: -1 }).exec();
+//         let modifiedData = await Promise.all(gigs.map(async (gig) => {
+//             const application = await notificationmodel.findOne({ gigId: gig._id, talentId: talentId });
+//             return {
+//                 ...gig._doc,
+//                 isApplied: application ? "Applied" : "Apply Now"
+//             };
+//         }));
+//         res.json({
+//             status: true,
+//             data: modifiedData
+//         });
+//     } catch (error) {
+//         res.status(500).json({
+//             status: false,
+//             message: 'Error fetching posted jobs',
+//             error: error
+//         });
+//     }
+// };
+
+
+
+
+// const getPostedJobs = async (req, res, next) => {
+//     // const userId = req.body.userId || req.params.userId;
+//     /* Authentication (Uncomment and adjust as necessary)
+//     const authResult = await auth.CheckAuth(req.headers["x-access-token"], userId);
+//     if (!authResult) {
+//       return res.status(401).json({ status: false, msg: 'Authentication failed' });
+//     }
+//     */
+//     gigsmodel.find({ isActive: true }).sort({ created: -1 })
+//         .then((response) => {
+//             const reversedData = response.reverse();  // Reversing the data array
+//             res.json({
+//                 status: true,
+//                 data: reversedData  // Send reversed data
+//             });
+//         })
+//         .catch((error) => {
+//             res.status(500).json({
+//                 status: false,
+//                 message: 'Error fetching posted jobs',
+//                 error: error
+//             });
+//         });
+// };
+
+// const getPostedJobs = async (req, res, next) => {
+//     // const userId = req.body.userId || req.params.userId;
+//     /* Authentication (Uncomment and adjust as necessary)
+//     const authResult = await auth.CheckAuth(req.headers["x-access-token"], userId);
+//     if (!authResult) {
+//       return res.status(401).json({ status: false, msg: 'Authentication failed' });
+//     }
+//     */
+//     gigsmodel.find({ isActive: true }).sort({ created: -1 })
+
+//         .then((response) => {
+//             res.json({
+//                 status: true,
+//                 data: response
+//             });
+//         })
+//         .catch((error) => {
+//             res.json({
+//                 Status: false,
+//             });
+//         });
+// };
 /**
 *********get job by id******
 * @param {*} req from user
@@ -253,6 +348,7 @@ const postJobByDraft = async (req, res, next) => {
         const newGig = new gigsmodel({
             brandId: draftGig.brandId,
             jobTitle: draftGig.jobTitle,
+            jobType:draftGig.jobType,
             jobLocation: draftGig.jobLocation,
             streetAddress: draftGig.streetAddress,
             workplaceType: draftGig.workplaceType,
@@ -394,47 +490,99 @@ const postJobByDraft = async (req, res, next) => {
  * @param {*} next undefined
  */
 
-
-const editDraft = async (req, res) => {
+ const editDraft = async (req, res) => {
     try {
-        // const userId = req.body.userId || req.params.userId;
         const gigId = req.body.gigId || req.params.gigId;
 
-        // /* Authentication */
-        // const authResult = await auth.CheckAuth(req.headers["x-access-token"], userId);
-        // if (!authResult) {
-        //   return res.json({ status: false, msg: 'Authentication failed' });
-        // }
-        // /* Authentication */
-
-
-        const updateFields = new draftmodel({
+        // Extract fields from the request body
+        const {
             jobTitle, jobLocation, streetAddress, workplaceType, jobType,
             jobDescription, skills, additionalRequirements, age, gender,
             nationality, languages, questions, benefits, compensation,
             jobCurrency, paymentType, minPay, maxPay, hiringCompany,
             whyWorkWithUs, product, valueOfProduct, productDescription, hiringCompanyDescription, howLikeToApply,
-            workSamples, jobImage,// isActive: true
-        } = req.body);
+            workSamples, jobImage
+        } = req.body;
 
-        try {
-            await draftmodel.updateOne(
-                { _id: new mongoose.Types.ObjectId(gigId) },
-                { $set: updateFields }
-            );
-            res.json({
-                message: "Updated successfully",
-                status: true,
-                data: updateFields,
+        // Construct update object
+        const updateFields = {
+            jobTitle, jobLocation, streetAddress, workplaceType, jobType,
+            jobDescription, skills, additionalRequirements, age, gender,
+            nationality, languages, questions, benefits, compensation,
+            jobCurrency, paymentType, minPay, maxPay, hiringCompany,
+            whyWorkWithUs, product, valueOfProduct, productDescription, hiringCompanyDescription, howLikeToApply,
+            workSamples, jobImage
+        };
 
+        // Update the draft document
+        const updatedDraft = await draftmodel.findOneAndUpdate(
+            { _id: new mongoose.Types.ObjectId(gigId) },
+            updateFields,
+            { new: true } // Return the updated document
+        );
+
+        if (!updatedDraft) {
+            return res.status(404).json({
+                status: false,
+                message: "Draft not found"
             });
-        } catch (err) {
-            res.json({ status: false, msg: err.message });
         }
+
+        // Return the updated data in the response
+        res.json({
+            status: true,
+            message: "Updated successfully",
+            data: updatedDraft
+        });
     } catch (error) {
-        res.json({ status: false, msg: 'Error Occurred' });
+        console.error("Error occurred while updating draft:", error);
+        res.status(500).json({
+            status: false,
+            message: 'Server error'
+        });
     }
 };
+
+// const editDraft = async (req, res) => {
+//     try {
+//         // const userId = req.body.userId || req.params.userId;
+//         const gigId = req.body.gigId || req.params.gigId;
+
+//         // /* Authentication */
+//         // const authResult = await auth.CheckAuth(req.headers["x-access-token"], userId);
+//         // if (!authResult) {
+//         //   return res.json({ status: false, msg: 'Authentication failed' });
+//         // }
+//         // /* Authentication */
+
+
+//         const updateFields = new draftmodel({
+//             jobTitle, jobLocation, streetAddress, workplaceType, jobType,
+//             jobDescription, skills, additionalRequirements, age, gender,
+//             nationality, languages, questions, benefits, compensation,
+//             jobCurrency, paymentType, minPay, maxPay, hiringCompany,
+//             whyWorkWithUs, product, valueOfProduct, productDescription, hiringCompanyDescription, howLikeToApply,
+//             workSamples, jobImage,// isActive: true
+//         } = req.body);
+
+//         try {
+//             await draftmodel.updateOne(
+//                 { _id: new mongoose.Types.ObjectId(gigId) },
+//                 { $set: updateFields }
+//             );
+//             res.json({
+//                 message: "Updated successfully",
+//                 status: true,
+//                 data: updateFields,
+
+//             });
+//         } catch (err) {
+//             res.json({ status: false, msg: err.message });
+//         }
+//     } catch (error) {
+//         res.json({ status: false, msg: 'Error Occurred' });
+//     }
+// };
 /**
 *********editJob*****
 * @param {*} req from user
@@ -442,52 +590,100 @@ const editDraft = async (req, res) => {
 * @param {*} next undefined
 */
 
-
 const editJob = async (req, res) => {
     try {
-        // const userId = req.body.userId || req.params.userId;
-        // const gigId = req.body.gigId || req.params.gigId;
+        const gigId = req.body.gigId || req.params.gigId; // Ensure you get gigId from the request
 
-        /* Authentication (Uncomment and adjust as necessary)
-        const authResult = await auth.CheckAuth(req.headers["x-access-token"], userId);
-        if (!authResult) {
-          return res.status(401).json({ status: false, msg: 'Authentication failed' });
-        }
-        */
-
-        // Construct the updateFields object from the request body
-        const updateFields = new gigsmodel({
+        // Construct the updateFields object directly from the request body
+        const {
             jobTitle, jobLocation, streetAddress, workplaceType, jobType,
             jobDescription, skills, additionalRequirements, age, gender,
             nationality, languages, questions, benefits, compensation,
             jobCurrency, paymentType, minPay, maxPay, hiringCompany,
             whyWorkWithUs, product, valueOfProduct, productDescription, hiringCompanyDescription, howLikeToApply,
-            workSamples, jobImage,// isActive: true
-        } = req.body);
+            workSamples, jobImage, // isActive: true if needed
+        } = req.body;
+
+        // Use a plain object for the fields to be updated
+        const updateFields = {
+            jobTitle, jobLocation, streetAddress, workplaceType, jobType,
+            jobDescription, skills, additionalRequirements, age, gender,
+            nationality, languages, questions, benefits, compensation,
+            jobCurrency, paymentType, minPay, maxPay, hiringCompany,
+            whyWorkWithUs, product, valueOfProduct, productDescription, hiringCompanyDescription, howLikeToApply,
+            workSamples, jobImage, // Include isActive: true if updating this field as well
+        };
 
         // Perform the update
         const updateResult = await gigsmodel.updateOne(
-            { _id: new mongoose.Types.ObjectId(gigId) }, // Ensure gigId is a valid ObjectId
+            { _id: new mongoose.Types.ObjectId(gigId) },
             { $set: updateFields }
         );
 
         if (updateResult.modifiedCount === 0) {
-            return res.json({ status: false, msg: 'No changes were made.' });
+            // If no documents were modified, it means the gigId didn't match any documents
+            return res.json({ status: false, message: 'No changes were made or job not found.' });
         }
 
-       
-            res.json({
-                message: "Updated successfully",
-                status: true,
-                data: updateFields
+        // Assuming you want to return the updated document, you should use findOneAndUpdate with the { new: true } option
+        const updatedJob = await gigsmodel.findOne({ _id: new mongoose.Types.ObjectId(gigId) });
 
-            });
-     
+        res.json({
+            message: "Updated successfully",
+            status: true,
+            data: updatedJob // Return the updated document
+        });
     } catch (err) {
         console.error("Error in editJob:", err);
-        res.status(500).json({ status: false, msg: 'Error Occurred' });
+        res.status(500).json({ status: false, message: 'Error Occurred' });
     }
 };
+
+// const editJob = async (req, res) => {
+//     try {
+//         // const userId = req.body.userId || req.params.userId;
+//         // const gigId = req.body.gigId || req.params.gigId;
+
+//         /* Authentication (Uncomment and adjust as necessary)
+//         const authResult = await auth.CheckAuth(req.headers["x-access-token"], userId);
+//         if (!authResult) {
+//           return res.status(401).json({ status: false, msg: 'Authentication failed' });
+//         }
+//         */
+
+//         // Construct the updateFields object from the request body
+//         const updateFields = new gigsmodel({
+//             jobTitle, jobLocation, streetAddress, workplaceType, jobType,
+//             jobDescription, skills, additionalRequirements, age, gender,
+//             nationality, languages, questions, benefits, compensation,
+//             jobCurrency, paymentType, minPay, maxPay, hiringCompany,
+//             whyWorkWithUs, product, valueOfProduct, productDescription, hiringCompanyDescription, howLikeToApply,
+//             workSamples, jobImage,// isActive: true
+//         } = req.body);
+
+//         // Perform the update
+//         const updateResult = await gigsmodel.updateOne(
+//             { _id: new mongoose.Types.ObjectId(gigId) }, // Ensure gigId is a valid ObjectId
+//             { $set: updateResult }
+//         );
+
+//         if (updateResult.modifiedCount === 0) {
+//             return res.json({ status: false, msg: 'No changes were made.' });
+//         }
+
+       
+//             res.json({
+//                 message: "Updated successfully",
+//                 status: true,
+//                 data: updateFields
+
+//             });
+     
+//     } catch (err) {
+//         console.error("Error in editJob:", err);
+//         res.status(500).json({ status: false, msg: 'Error Occurred' });
+//     }
+// };
 /**
 *********get brand job by id******
 * @param {*} req from user
@@ -661,16 +857,22 @@ const getBrandPostedJobsByID = async (req, res, next) => {
 */
 const getAllJobs = async (req, res, next) => {
     try {
-        // const userId = req.body.userId || req.params.userId;
+        const userId = req.body.userId || req.params.userId;
+        console.log("userId",userId)
 
         // // Authentication (Uncomment and adjust as necessary)
         // const authResult = await auth.CheckAuth(req.headers["x-access-token"], userId);
         // if (!authResult) {
-        //   return res.status(401).json({ status: false, msg: 'Authentication failed' });
+        //     return res.status(401).json({ 
+        //         status: false, 
+        //         msg: 'Authentication failed', 
+        //         error: "Invalid or expired token" // Removed authResult.error, as it might not be available
+        //     });
         // }
 
-        const gigs = await gigsmodel.find({ isActive: true }).sort({ createdAt: -1 }); // Sorting gigs by creation date, newest first
-        const drafts = await draftmodel.find({ isActive: true }).sort({ createdAt: -1 }); // Sorting drafts by creation date, newest first
+        // Fetch all active gigs and drafts for the user's brandId
+        const gigs = await gigsmodel.find({ brandId: new mongoose.Types.ObjectId(userId), isActive: true }).sort({ createdAt: -1 });
+        const drafts = await draftmodel.find({ brandId: new mongoose.Types.ObjectId(userId), isActive: true }).sort({ createdAt: -1 });
 
         // Combine gigs and drafts into a single array and sort them by creation date, newest first
         const jobs = [...gigs, ...drafts].sort((a, b) => b.createdAt - a.createdAt);
@@ -680,40 +882,78 @@ const getAllJobs = async (req, res, next) => {
             data: jobs
         });
     } catch (error) {
-        res.json({
+        console.error("Error fetching all jobs:", error);
+        res.status(500).json({
             status: false,
-            error: error.message
+            error: error
         });
     }
 };
 
 // const getAllJobs = async (req, res, next) => {
 //     try {
-//         // const userId = req.body.userId || req.params.userId;
+//         const userId = req.body.userId || req.params.userId;
 
-//         // // Authentication (Uncomment and adjust as necessary)
-//         // const authResult = await auth.CheckAuth(req.headers["x-access-token"], userId);
-//         // if (!authResult) {
-//         //   return res.status(401).json({ status: false, msg: 'Authentication failed' });
-//         // }
+//         // Authentication (Uncomment and adjust as necessary)
+//         const authResult = await auth.CheckAuth(req.headers["x-access-token"], userId);
+//         if (!authResult) {
+//             return res.status(401).json({ 
+//                 status: false, 
+//                 msg: 'Authentication failed', 
+//                 error: authResult.error || "Invalid or expired token" // Provide detailed error message from the auth system if available
+//             });
+//         }
 
-//         const gigs = await gigsmodel.find({ isActive: true }).sort({ created: -1 });
-//         const drafts = await draftmodel.find({ isActive: true }).sort({ created: -1 });
+//         // Fetch all active gigs and drafts
+//         const gigs = await gigsmodel.find({brandId:new mongoose.Types.ObjectId(userId), isActive: true }).sort({ createdAt: -1 });
+//         const drafts = await draftmodel.find({brandId:new mongoose.Types.ObjectId(userId), isActive: true }).sort({ createdAt: -1 });
 
-//         // Combine gigs and drafts into a single array
-//         const jobs = [...gigs, ...drafts];
+//         // Combine gigs and drafts into a single array and sort them by creation date, newest first
+//         const jobs = [...gigs, ...drafts].sort((a, b) => b.createdAt - a.createdAt);
 
 //         res.json({
 //             status: true,
 //             data: jobs
 //         });
 //     } catch (error) {
-//         res.json({
+//         console.error("Error fetching all jobs:", error);
+//         res.status(500).json({
 //             status: false,
-//             error: error.message
+//             error: error
 //         });
 //     }
 // };
+
+// const getAllJobs = async (req, res, next) => {
+//     try {
+//         const userId = req.body.userId || req.params.userId;
+
+//         // Authentication (Uncomment and adjust as necessary)
+//         const authResult = await auth.CheckAuth(req.headers["x-access-token"], userId);
+//         if (!authResult) {
+//             return res.status(401).json({ status: false, msg: 'Authentication failed' });
+//         }
+
+//         // Fetch all active gigs and drafts
+//         const gigs = await gigsmodel.find({ isActive: true }).sort({ createdAt: -1 });
+//         const drafts = await draftmodel.find({ isActive: true }).sort({ createdAt: -1 });
+
+//         // Combine gigs and drafts into a single array and sort them by creation date, newest first
+//         const jobs = [...gigs, ...drafts].sort((a, b) => b.createdAt - a.createdAt);
+
+//         res.json({
+//             status: true,
+//             data: jobs
+//         });
+//     } catch (error) {
+//         console.error("Error fetching all jobs:", error);
+//         res.json({
+//             status: false,
+//             error: error.message || "An error occurred while fetching all jobs."
+//         });
+//     }
+// };
+
 
 
 /**
@@ -791,11 +1031,11 @@ const getAnyJobById = async (req, res, next) => {
         }
 
         // First, try to find the job in gigsmodel
-        let job = await gigsmodel.findOne({ _id: gigId, isActive: true }).sort({ createdAt: -1 });
+        let job = await gigsmodel.findById({ _id: gigId, isActive: true }).sort({ createdAt: -1 });
 
         // If not found in gigsmodel, try to find it in draftmodel
         if (!job) {
-            job = await draftmodel.findOne({ _id: gigId, isActive: true }).sort({ createdAt: -1 });
+            job = await draftmodel.findById({ _id: gigId, isActive: true }).sort({ createdAt: -1 });
         }
 
         // If the job is not found in both models
@@ -816,12 +1056,538 @@ const getAnyJobById = async (req, res, next) => {
     }
 };
 
+/********** job count******
+* @param {*} req from user
+* @param {*} res return data
+* @param {*} next undefined
+*/
+const jobCount = async (req, res, next) => {
+    try {
+        // Extracting brandId from the request body or parameters
+        const brandId = req.body.brandId || req.params.brandId;
+
+        if (!brandId) {
+            return res.status(400).json({ status: false, message: "No brandId provided" });
+        }
+
+        // Use countDocuments for a more direct and efficient counting
+        const draftCount = await draftmodel.countDocuments({
+            brandId: new mongoose.Types.ObjectId(brandId),
+            isActive: true
+        });
+
+        const postJobCount = await gigsmodel.countDocuments({
+            brandId: new mongoose.Types.ObjectId(brandId),
+            isActive: true
+        });
+
+        // Calculate the total count of drafts and post jobs
+        const CampaignCount = draftCount + postJobCount;
+
+        // Retrieve the current brandsmodel document
+        let brand = await brandsmodel.findOne({ _id: new mongoose.Types.ObjectId(brandId) });
+
+        if (!brand) {
+            return res.status(404).json({ status: false, message: "Brand not found" });
+        }
+
+        // Update the draftCount, postJobCount, and totalCampaignCount fields
+        brand.draftCount = draftCount;
+        brand.postJobCount = postJobCount;
+        brand.campaignCount = CampaignCount;
+
+        // Save the updated brand document
+        await brand.save();
+
+        // Push the counts into an array
+        const countsArray = [
+            { type: "drafts", count: draftCount },
+            { type: "postJobs", count: postJobCount },
+            { type: "totalCampaigns", count:CampaignCount }
+        ];
+
+        res.json({
+            status: true,
+            message: "Counts updated successfully",
+            data: countsArray
+        });
+    } catch (error) {
+        console.error("Error updating counts:", error);
+        res.json({
+            status: false,
+            message: "Error updating counts"
+        });
+    }
+};
+
+/**
+*********searchJobs******
+* @param {*} req from user
+* @param {*} res return data
+* @param {*} next undefined
+*/
+const searchJobs = async (req, res, next) => {
+    try {
+        // Extract search parameters from request body
+        const { jobTitle, jobLocation } = req.body;
+
+        // Build query criteria
+        const queryCriteria = { isActive: true };
+        if (jobTitle) {
+            queryCriteria.jobTitle = { $regex: new RegExp(jobTitle, 'i') }; // Case-insensitive search for jobTitle
+        }
+        if (jobLocation) {
+            queryCriteria.jobLocation = { $regex: new RegExp(jobLocation, 'i') }; // Case-insensitive search for jobLocation
+        }
+
+        // Find matching gigs
+        const gigs = await gigsmodel.find(queryCriteria).sort({ created: -1 });
+
+        // Send response
+        res.json({
+            status: true,
+            data: gigs
+        });
+    } catch (error) {
+        // Handle errors
+        console.error("Error in searching jobs:", error);
+        res.status(500).json({
+            status: false,
+            msg: 'Failed to search jobs'
+        });
+    }
+};
+
+// const searchJobs = async (req, res, next) => {
+//     // const userId = req.body.userId || req.params.userId;
+//     /* Authentication (Uncomment and adjust as necessary)
+//     const authResult = await auth.CheckAuth(req.headers["x-access-token"], userId);
+//     if (!authResult) {
+//       return res.status(401).json({ status: false, msg: 'Authentication failed' });
+//     }
+//     */
+//     gigsmodel.find({ jobTitle:req.body.jobTitle,jobLocation:req.body.jobLocation,isActive: true }).sort({ created: -1 })
+
+//         .then((response) => {
+//             res.json({
+//                 status: true,
+//                 data: response
+//             });
+//         })
+//         .catch((error) => {
+//             res.json({
+//                 status: false,
+//             });
+//         });
+// };
+/**
+*********applyjobs******
+* @param {*} req from user
+* @param {*} res return data
+* @param {*} next undefined
+*/
+const applyJobs = async (req, res, next) => {
+    const { talentId, brandId, gigId } = req.body;
+
+    try {
+        // Find talent and brand
+        const talent = await findUserById(talentId);
+        const brand = await findUserById(brandId);
+
+        if (!talent || !brand) {
+            return res.status(404).json({ status: false, msg: 'Talent or Brand not found' });
+        }
+
+        // Determine the correct model based on the talent type
+        const talentType = await determineUserType(talentId);
+        if (!talentType) {
+            return res.status(404).json({ status: false, msg: 'User type not found for talent' });
+        }
+
+        const TalentModel = talentType === 'kid' ? kidsmodel : adultmodel;
+
+        // Update the talent document with the application details
+        await TalentModel.findByIdAndUpdate(talentId, { $set: { gigId: gigId, isApplied: true, brandId: brandId } });
+
+        // Notification content
+        const brandNotificationMessage = `A talent has applied for a job`;//gig ${gigId}
+        const talentNotificationMessage = 'You have successfully applied for the job';
+
+        // Save a single notification in the database for both brand and talent
+        await saveNotification(brandId, talentId, gigId, brandNotificationMessage, talentNotificationMessage);
+
+        // Send notifications
+        await sendNotification(brand.fcmToken, 'New Job Application', brandNotificationMessage);
+        await sendNotification(talent.fcmToken, 'Application Successful', talentNotificationMessage);
+
+        res.json({ status: true, msg: 'Application processed and notifications sent' });
+    } catch (error) {
+        console.error("Error applying for job", error);
+        res.status(500).json({ status: false, msg: error.message });
+    }
+};
+// Helper function to find a user by their ID
+async function findUserById(userId) {
+    try {
+        const brand = await brandsmodel.findOne({ _id: userId });
+        if (brand) return brand;
+
+        const kidTalent = await kidsmodel.findOne({ _id: userId });
+        if (kidTalent) return kidTalent;
+
+        const adultTalent = await adultmodel.findOne({ _id: userId });
+        if (adultTalent) return adultTalent;
+
+        return null;
+    } catch (error) {
+        console.error("Error finding user by ID:", error);
+        return null;
+    }
+}
+
+// Helper function to determine the user type based on their ID
+async function determineUserType(userId) {
+    const isBrand = await brandsmodel.exists({ _id: userId });
+    if (isBrand) return 'brand';
+
+    const isKid = await kidsmodel.exists({ _id: userId });
+    if (isKid) return 'kids';
+
+    const isAdult = await adultmodel.exists({ _id: userId });
+    if (isAdult) return 'adult';
+
+    return null;
+}
+
+// Helper function to send a notification
+const sendNotification = async (fcmToken, title, text) => {
+    if (!fcmToken) {
+        console.error("FCM Token is required");
+        return;
+    }
+
+    const notification = {
+        title,
+        text,
+    };
+
+    const notification_body = {
+        notification: notification,
+        to: fcmToken // Use 'to' for single device
+    };
+
+    try {
+        const response = await axios.post('https://fcm.googleapis.com/fcm/send', notification_body, {
+            headers: {
+                'Authorization': 'key=' + 'AAAARjamXEw:APA91bHBZ3tz5WuUrwCMI5IcuJQaufmHs2hUHUlE1su9-iPNpw3E2KTzqpVXXv2FDDa_qQV2yExoAgxgWNwF3CZAOu9IR1GO4gP04PPNK3Gv9x4UqwJUkrJFSIvEBaQZJOyjj4KujoEF', // Use environment variable for server key
+                'Content-Type': 'application/json'
+            }
+        });
+
+        console.log("Notification sent successfully", response.data);
+    } catch (error) {
+        console.error("Error sending notification", error.response ? error.response.data : error.message);
+        throw error;  // Let the calling function handle the error
+    }
+};
+// Adjusted helper function to save a single notification
+async function saveNotification(brandId, talentId, gigId, brandNotificationMessage, talentNotificationMessage) {
+    try {
+        // Fetch details of brand, talent, and gig
+        const brand = await findUserById(brandId);
+        const talent = await findUserById(talentId);
+        const gig = await gigsmodel.findById(gigId); // Replace GigModel with your actual model for gigs
+
+        // Determine user types for brand and talent
+        const brandType = await determineUserType(brandId);
+        const talentType = await determineUserType(talentId);
+
+        // Create the notification document
+        const notification = new notificationmodel({
+            notificationType: 'Job Application',
+            brandId: brandId,
+            talentId: talentId,
+            gigId: gigId,
+            brandNotificationMessage: brandNotificationMessage,
+            talentNotificationMessage: talentNotificationMessage,
+            userType: talentType, // Use talent's user type for the notification
+            brandDetails: {
+                _id: brand._id,
+                brandName: brand.brandName,
+                brandEmail: brand.brandEmail,
+                logo: brand.logo,
+                brandImage: brand.brandImage
+                // Add other brand details as needed
+            },
+            talentDetails: {
+                _id: talent._id,
+                parentFirstName: talent.parentFirstName,
+                parentLastName: talent.parentLastName,
+                parentEmail: talent.parentEmail || talent.adultEmail,
+                childFirstName: talent.childFirstName,
+                childLastName: talent.childLastName,
+                preferredChildFirstname: talent.preferredChildFirstname,
+                preferredChildLastName: talent.preferredChildLastName,
+                image: talent.image
+                // Add other talent details as needed
+            },
+            gigDetails: {
+                jobTitle: gig.jobTitle // Assuming gig has a field named jobTitle
+                // Add other gig details as needed
+            }
+        });
+
+        // Save the notification document
+        const savedNotification = await notification.save();
+        console.log("Notification saved successfully", savedNotification);
+    } catch (error) {
+        console.error("Error saving notification:", error);
+    }
+}
+
+// async function saveNotification(brandId, talentId, gigId, brandNotificationMessage, talentNotificationMessage) {
+//     try {
+//         // Fetch details of brand and talent
+//         const brand = await findUserById(brandId);
+//         const talent = await findUserById(talentId);
+
+//         // Determine user types for brand and talent
+//         const brandType = await determineUserType(brandId);
+//         const talentType = await determineUserType(talentId);
+//         // Assuming the URL or file path is stored in the fileData property
+
+
+//         // Create the notification document
+//         const notification = new notificationmodel({
+//             notificationType: 'Job Application',
+//             brandId: brandId,
+//             talentId: talentId,
+//             gigId: gigId,
+//             brandNotificationMessage: brandNotificationMessage,
+//             talentNotificationMessage: talentNotificationMessage,
+//             userType: talentType, // Use talent's user type for the notification
+//             brandDetails: {
+//                 _id: brand._id,
+//                 _id: brand._id,
+//                 brandName: brand.brandName,
+//                 brandEmail: brand.brandEmail,
+//                 logo: brand.logo,
+//                 brandImage:brand.brandImage
+//                 // Add other brand details as needed
+//             },
+//             talentDetails: {
+//                 _id: talent._id,
+//                 parentFirstName: talent.parentFirstName,
+//                 parentLastName: talent.parentLastName,
+//                 parentEmail:talent.parentEmail || talent.adultEmail,
+//                 childFirstName: talent.childFirstName,
+//                 childLastName: talent.childLastName,
+//                 preferredChildFirstname : talent.preferredChildFirstname,
+//                 preferredChildLastName : talent.preferredChildLastName,
+//                 image: talent.image
+//                 // Add other talent details as needed
+//             }
+//         });
+
+//         // Save the notification document
+//         const savedNotification = await notification.save();
+//         console.log("Notification saved successfully", savedNotification);
+//     } catch (error) {
+//         console.error("Error saving notification:", error);
+//     }
+// }
+
+// // Adjusted helper function to save a single notification
+// async function saveNotification(brandId, talentId, gigId, brandNotificationMessage, talentNotificationMessage) {
+//     try {
+//         const userType = await determineUserType(talentId);
+//         const notification = new notificationmodel({
+//             notificationType: 'Job Application',
+//             brandId: brandId,
+//             talentId: talentId,
+//             gigId: gigId,
+//             brandNotificationMessage: brandNotificationMessage,
+//             talentNotificationMessage: talentNotificationMessage,
+//             userType: userType 
+//         });
+//         const savedNotification = await notification.save();
+//         console.log("Notification saved successfully", savedNotification);
+//     } catch (error) {
+//         console.error("Error saving notification:", error);
+//     }
+// }
+
+
+/**
+ *********read Notification*****
+ * @param {*} req from user
+ * @param {*} res return data
+ * @param {*} next undefined
+ */
+ const readNotification = async (req, res) => {
+    try {
+        const notificationId = req.body.notificationId || req.params.notificationId;
+
+        // Ensure the notification ID is provided
+        if (!notificationId) {
+            return res.status(400).json({ status: false, msg: "Notification ID is required" });
+        }
+
+        try {
+            await notificationmodel.updateOne(
+                { _id: new mongoose.Types.ObjectId(notificationId) },
+                { $set: { read: true } }
+            );
+            res.json({ status: true, msg: 'Notification marked as read successfully' });
+        } catch (err) {
+            res.status(500).json({ status: false, msg: err.message });
+        }
+    } catch (err) {
+        res.status(500).json({ status: false, msg: err.message });
+    }
+};
+
+/**
+********getBrandNotification***
+* @param {*} req from user
+* @param {*} res return data
+* @param {*} next undefined
+*/
+const getBrandNotification = async (req, res, next) => {
+    try {
+        const brandId = req.body.brandId || req.params.brandId;
+
+        if (!brandId) {
+            return res.status(400).json({
+                status: false,
+                msg: 'Brand ID is required'
+            });
+        }
+
+
+        // Fetch all active notifications for the specified brandId
+        const notifications = await notificationmodel.find({
+            brandId: new mongoose.Types.ObjectId(brandId),
+            isActive: true
+        }).sort({ createdAt: -1 });
+
+        // You could uncomment and modify this if you have a draft model to fetch drafts as well
+        // const drafts = await draftmodel.find({ brandId: new mongoose.Types.ObjectId(brandId), isActive: true }).sort({ createdAt: -1 });
+
+        res.json({
+            status: true,
+            data: notifications
+        });
+    } catch (error) {
+        console.error("Error fetching notifications:", error);
+        res.status(500).json({
+            status: false,
+            msg: 'Failed to fetch notifications',
+            error: error.message
+        });
+    }
+};
+/**
+********get Talent notifications***
+* @param {*} req from user
+* @param {*} res return data
+* @param {*} next undefined
+*/
+const getTalentNotification = async (req, res, next) => {
+    try {
+        const talentId = req.body.talentId || req.params.talentId;
+
+        if (!talentId) {
+            return res.status(400).json({
+                status: false,
+                msg: 'talent ID is required'
+            });
+        }
+
+
+        // Fetch all active notifications for the specified brandId
+        const notifications = await notificationmodel.find({
+            talentId: new mongoose.Types.ObjectId(talentId),
+            isActive: true
+        }).sort({ createdAt: -1 });
+
+        // You could uncomment and modify this if you have a draft model to fetch drafts as well
+        // const drafts = await draftmodel.find({ brandId: new mongoose.Types.ObjectId(brandId), isActive: true }).sort({ createdAt: -1 });
+
+        res.json({
+            status: true,
+            data: notifications
+        });
+    } catch (error) {
+        console.error("Error fetching notifications:", error);
+        res.status(500).json({
+            status: false,
+            msg: 'Failed to fetch notifications',
+            error: error.message
+        });
+    }
+};
+
+/**
+ * Get count notifications
+ * @param {*} req from user
+ * @param {*} res return data
+ * @param {*} next undefined
+ */
+const getCountNotification = async (req, res, next) => {
+    try {
+        const talentId = req.body.userId 
+        const brandId = req.body.userId; // This can be added if you want to fetch by brandId as well.
+
+        if (!talentId && !brandId) {
+            return res.status(400).json({
+                status: false,
+                msg: 'talent ID or brand ID is required'
+            });
+        }
+
+        let query = {};
+        if (talentId) {
+            query = { talentId: new mongoose.Types.ObjectId(talentId), isActive: true };
+        } else if (brandId) {
+            query = { brandId: new mongoose.Types.ObjectId(brandId), isActive: true };
+        }
+
+        // Fetch all active notifications for the specified ID
+        const notifications = await notificationmodel.find(query).sort({ createdAt: -1 });
+
+        // Count unread notifications
+        const unreadCount = await notificationmodel.countDocuments({
+            ...query,
+            read: false
+        });
+
+        res.json({
+            status: true,
+            data: notifications,
+            unreadCount: unreadCount
+        });
+    } catch (error) {
+        console.error("Error fetching notifications:", error);
+        res.status(500).json({
+            status: false,
+            msg: 'Failed to fetch notifications',
+            error: error.message
+        });
+    }
+};
+
+
+
+
+
 
 
 
 module.exports = {
     createJob, getAllJobs, getJobsByID, draftJob, getDraftJobsByID, getDraftJobs, postJobByDraft,
     editJob, editDraft, getBrandPostedJobsByID, getBrandDraftJobsByID, getPostedJobs,
-    deleteJob, getAnyJobById
+    deleteJob, getAnyJobById,jobCount,searchJobs,applyJobs,readNotification,getBrandNotification,
+    getTalentNotification,getCountNotification
 
 };

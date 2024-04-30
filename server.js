@@ -13,6 +13,17 @@ const FacebookStrategy = require('passport-facebook').Strategy;//21/3
 const router = express.Router();  //21/3
 const kidsmodel = require('./users/models/kidsmodel.js');
 
+// server.js or app.js (your main Express server file)
+
+const http = require("http");
+const socketIO = require("socket.io");
+const addConversation = require("./brands/controllers/conversation.js"); // Update with the correct path
+const addMessage = require("./brands/controllers/message.js");
+const listByConversationId = require("./brands/controllers/conversation.js");
+
+const server = http.createServer(app);
+const io = socketIO(server); // Attach Socket.io to the server
+
 
 function isLoggedIn(req,res,next){
   req.user?next():res.sendStatus(401);
@@ -21,6 +32,22 @@ function isLoggedIn(req,res,next){
 app.use(express.json());
 // Enable CORS for all routes
 app.use(cors());
+
+//chat
+// const { createServer } = require('http')
+// const { Server } = require('socket.io')
+
+
+// const httpServer = createServer(app);
+// const io = new Server(httpServer, {
+//     cors: {
+//         origin: "*",
+
+
+//     }
+// })
+
+//chat
 
 app.use(session({
   secret: 'mysecret',
@@ -70,7 +97,7 @@ app.use((err, req, res, next) => {
 
 
 
-//chat
+
 //facebook
 passport.use(
   new FacebookStrategy(
@@ -168,77 +195,8 @@ router.get('/signout', (req, res) => {
 
 
 
-//correct
-
   
-// passport.use(new FacebookStrategy({
-//   clientID: process.env.FACEBOOK_APP_ID,
-//   clientSecret: process.env.FACEBOOK_APP_SECRET,
-//   callbackURL: "http://localhost:4014/auth/facebook/callback",
-//   profileFields: ['id', 'displayName', 'photos', 'email', 'birthday'] // Requesting email and birthday
-// },
 
-// async function(accessToken, refreshToken, profile, done) {
-//   try {
-//     // Access the email and birthday from the profile object
-//     const email = profile.emails && profile.emails.length > 0 ? profile.emails[0].value : null;
-//     const birthday = profile._json.birthday ? new Date(profile._json.birthday) : null; // Assuming birthday is returned in a standard format
-
-//     let user = await kidsmodel.findOne({ facebookId: profile.id });
-//     console.log("profile",profile)
-
-//     if (!user) {
-//       // Create a new user if not found
-//       user = new kidsmodel({
-//         facebookId: profile.id,
-//         name: profile.displayName,
-//         photoURL: profile.photos && profile.photos.length > 0 ? profile.photos[0].value : null,
-//         provider: 'facebook',
-//         parentEmail: email, // Assign the email to parentEmail
-//         birthday: birthday // Save the birthday
-//       });
-
-//       await user.save();
-//     }
-    
-//     return done(null, user);
-//   } catch (err) {
-//     console.error(err);
-//     return done(err);
-//   }
-// }));
-
-
-// passport.use(new FacebookStrategy({
-//   clientID: process.env.FACEBOOK_APP_ID,
-//   clientSecret: process.env.FACEBOOK_APP_SECRET,
-//   callbackURL: "http://localhost:4014/auth/facebook/callback",
-//   profileFields: ['id', 'displayName', 'photos', 'email'] // Specify the fields you want to access
-// },
-// async function(accessToken, refreshToken, profile, done) {
-//   try {
-//     let user = await kidsmodel.findOne({ facebookId: profile.id });
-
-//     if (!user) {
-//       // If the user doesn't exist, create a new one
-//       user = new kidsmodel({
-//         facebookId: profile.id,
-//         name: profile.displayName,
-//         photoURL: profile.photos && profile.photos.length > 0 ? profile.photos[0].value : null,
-//         provider: 'facebook', // Assuming the provider is Facebook
-//         parentEmail: profile.emails && profile.emails.length > 0 ? profile.emails[0].value : null
-//       });
-
-//       await user.save();
-//     }
-    
-//     return done(null, user);
-//   } catch (err) {
-//     console.error(err);
-//     return done(err);
-//   }
-// }
-// ));
 
 
 
@@ -290,6 +248,8 @@ const brands = require('./brands/routes/brandroutes');
 const gigs = require('./brands/routes/gigsroutes');
 const reviews = require('./brands/routes/reviewroutes');
 const notification = require('./brands/routes/notification.js');
+const conversation = require('./brands/routes/conversationroutes.js');
+const message = require('./brands/routes/messageroutes.js');
 
 // Define routes
 app.use('/brandsntalent_api/users',users);
@@ -302,6 +262,8 @@ app.use('/brandsntalent_api/gigs',gigs);
 app.use('/brandsntalent_api/reviews',reviews);
 app.use('/brandsntalent_api/keyword',keyword);
 app.use('/brandsntalent_api/notification',notification);
+app.use('/brandsntalent_api/conversation',conversation);
+app.use('/brandsntalent_api/message',message);
 
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -310,17 +272,111 @@ app.use('/upload1', express.static(path.join(__dirname, 'upload1')));
 //google sign up
 //app.use(express.static(path.join(__dirname, 'client')));
 
+//chat
+//chat code for chatgpt
+
+
+app.use(express.json()); // Middleware to parse JSON bodies
+
+// Event handler for new socket connections
+io.on("connection", (socket) => {
+  console.log("A user connected");
+
+  socket.on("disconnect", () => {
+    console.log("A user disconnected");
+  });
+});
+
+
+
+
+
+
+//chatgpt 
+let userss = [];
+
+
+
+const addUser = (userId, socketId) => {
+    if(userId&&socketId){
+        console.log('users in adduser',userss)
+    !userss.some((user) => user.userId === userId) &&
+        userss.push({ userId, socketId });
+}
+};
+
+const removeUser = (socketId) => {
+    console.log('removed user id',socketId)
+    console.log('users in remove user',userss)
+    userss = userss.filter((user) => user.socketId !== socketId);
+
+};
+
+const getUser = (userId) => {
+    console.log('user from get user function',userId)
+    if(userId){
+        console.log('users in get user',userss)
+        console.log('users.find((user) => user.userId === userId',userss.find((user) => user.userId === userId))
+    return userss.find((user) => user.userId === userId);
+    }
+};
+
+io.on("connection", (socket) => {
+    //when connect
+    console.log("a user connected.");
+    console.log('users in connection',userss)
+    //take userId and socketId from user
+    socket.on("addUser", (userId) => {
+        addUser(userId, socket.id);
+        console.log('user details', userId)
+        console.log('socket details', socket.id)
+        io.emit("getUsers", userss);
+    });
+
+    //send and get message
+    socket.on("sendMessage", ({ senderId, receiverId, text }) => {
+        const user = getUser(receiverId);
+        console.log('users in message',users)
+        console.log('fetched user details', user)
+        console.log('message from user',text)
+        console.log("conversationId",receiverId)
+        if(user){
+          console.log("user.socketId",user.socketId)
+        io.to(user.socketId).emit("getMessage", {
+            senderId,
+            text,
+        });
+    }
+    });
+
+    //when disconnect
+    socket.on("disconnect", () => {
+        console.log('users in disconnection',users)
+        console.log("a user disconnected!",socket.id);
+        removeUser(socket.id);
+        io.emit("getUsers", users);
+       
+    });
+});
+
+//chat
 
      
-try {
+//try {
    
     // Start the server
-    app.listen(4014, () => {
-      console.log('Server is listening on port 4014');
-    });
-  } catch (error) {
-    console.error('Error connecting to database:', error);
-  }
-  module.exports = router;//21/3
+  //   app.listen(4014, () => {
+  //     console.log('Server is listening on port 4014');
+  //   });
+  // } catch (error) {
+  //   console.error('Error connecting to database:', error);
+  // }
+  // httpServer.listen(4014, () => console.log(`Server running on port 4014`));
+  // module.exports = router,io;//21/3
+
+  const port = process.env.PORT || 4014;
+server.listen(port, () => {
+  console.log(`Server running on port ${port}`);
+});
 
   

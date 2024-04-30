@@ -88,9 +88,11 @@ const brandsRegister = async (req, res, next) => {
       brandEmail: req.body.brandEmail,
       brandPassword: hashedPass,
       confirmPassword: hashedPass,
+      planName :'Basic',
       isActive: true,
       userType: 'brand',
-      isVerified: false
+      isVerified: false,
+      fcmToken:req.body.fcmToken
     };
 
     const newBrand = new brandsmodel(newBrandData);
@@ -244,25 +246,27 @@ const otpVerificationBrands = async (req, res, next) => {
 * @param {*} res return data
 * @param {*} next undefined
 */
-
 const brandsLogin = async (req, res, next) => {
-  const username = req.body.brandEmail;
-  const password = req.body.brandPassword;
-
+  const { brandEmail, brandPassword, fcmToken } = req.body;
 
   try {
-    const brands = await brandsmodel.findOne({ $or: [{ brandEmail: username }, { brandEmail: username }], isActive: true });
-    console.log("brands", brands)
-    if (brands) {
-      const passwordMatch = await bcrypt.compare(password, brands.brandPassword);
+    const brand = await brandsmodel.findOne({ brandEmail: brandEmail, isActive: true });
+    console.log("Brand", brand);
+    if (brand) {
+      const passwordMatch = await bcrypt.compare(brandPassword, brand.brandPassword);
 
       if (passwordMatch) {
-        const token = auth.gettoken(brands._id, brands.brandEmail);
+        // Update the fcmToken for the brand
+        if (fcmToken) {
+          await brandsmodel.updateOne({ _id: brand._id }, { $set: { fcmToken: fcmToken } });
+        }
+
+        const token = auth.gettoken(brand._id, brand.brandEmail);
 
         return res.json({
           status: true,
           message: 'Login Successfully',
-          data: brands,
+          data: brand,
           token
         });
       } else {
@@ -278,12 +282,55 @@ const brandsLogin = async (req, res, next) => {
       });
     }
   } catch (error) {
-    return res.json({
+    console.error('Error during login:', error);
+    return res.status(500).json({
       status: false,
-      message: 'Error during login'
+      message: 'Error during login',
+      error: error.toString()
     });
   }
 };
+
+
+// const brandsLogin = async (req, res, next) => {
+//   const username = req.body.brandEmail;
+//   const password = req.body.brandPassword;
+
+
+//   try {
+//     const brands = await brandsmodel.findOne({ $or: [{ brandEmail: username }, { brandEmail: username }], isActive: true });
+//     console.log("brands", brands)
+//     if (brands) {
+//       const passwordMatch = await bcrypt.compare(password, brands.brandPassword);
+
+//       if (passwordMatch) {
+//         const token = auth.gettoken(brands._id, brands.brandEmail);
+
+//         return res.json({
+//           status: true,
+//           message: 'Login Successfully',
+//           data: brands,
+//           token
+//         });
+//       } else {
+//         return res.json({
+//           status: false,
+//           message: 'Password does not match'
+//         });
+//       }
+//     } else {
+//       return res.json({
+//         status: false,
+//         message: 'No User Found'
+//       });
+//     }
+//   } catch (error) {
+//     return res.json({
+//       status: false,
+//       message: 'Error during login'
+//     });
+//   }
+// };
 /**
 *********Brands Login******
 * @param {*} req from user
@@ -297,20 +344,19 @@ const brandsLogin = async (req, res, next) => {
  * @param {*} res return data
  * @param {*} next undefined
  */
-
-
-const editBrands = async (req, res) => {
+ const editBrands = async (req, res) => {
   try {
     const userId = req.body.user_id || req.params.user_id;
 
-    // /* Authentication */
+    /* Authentication */
+    // You can include your authentication logic here
     // const authResult = await auth.CheckAuth(req.headers["x-access-token"], userId);
     // if (!authResult) {
     //   return res.json({ status: false, msg: 'Authentication failed' });
     // }
-    // /* Authentication */
+    /* Authentication */
 
-    const user_id = req.body.user_id || req.params.user_id;
+    const brand_id = req.body.user_id || req.params.user_id;
     const updateFields = {
       isActive: true, // Assuming isActive is always set to true
       brandName: req.body.brandName,
@@ -319,16 +365,18 @@ const editBrands = async (req, res) => {
       brandZipCode: req.body.brandZipCode,
       howHearAboutAs: req.body.howHearAboutAs,
       logo: req.body.logo,
-      address: req.body.address,
-
+      brandImage:req.body.logo,
+      address: req.body.address
+      
     };
 
     try {
       await brandsmodel.updateOne(
-        { _id: new mongoose.Types.ObjectId(user_id) },
+        { _id: new mongoose.Types.ObjectId(brand_id) },
         { $set: updateFields }
       );
-      res.json({ status: true, msg: 'Updated successfully' });
+      const responseData = { status: true, msg: 'Updated successfully', data: { brand_id, ...updateFields } };
+      res.json(responseData);
     } catch (err) {
       res.json({ status: false, msg: err.message });
     }
@@ -336,6 +384,46 @@ const editBrands = async (req, res) => {
     res.json({ status: false, msg: 'Error Occurred' });
   }
 };
+
+
+
+// const editBrands = async (req, res) => {
+//   try {
+//     const userId = req.body.user_id || req.params.user_id;
+
+//     // /* Authentication */
+//     // const authResult = await auth.CheckAuth(req.headers["x-access-token"], userId);
+//     // if (!authResult) {
+//     //   return res.json({ status: false, msg: 'Authentication failed' });
+//     // }
+//     // /* Authentication */
+
+//     const user_id = req.body.user_id || req.params.user_id;
+//     const updateFields = {
+//       isActive: true, // Assuming isActive is always set to true
+//       brandName: req.body.brandName,
+//       brandEmail: req.body.brandEmail,
+//       brandPhone: req.body.brandPhone,
+//       brandZipCode: req.body.brandZipCode,
+//       howHearAboutAs: req.body.howHearAboutAs,
+//       logo: req.body.logo,
+//       address: req.body.address,
+
+//     };
+
+//     try {
+//       await brandsmodel.updateOne(
+//         { _id: new mongoose.Types.ObjectId(user_id) },
+//         { $set: updateFields }
+//       );
+//       res.json({ status: true, msg: 'Updated successfully',data:updateFields});
+//     } catch (err) {
+//       res.json({ status: false, msg: err.message });
+//     }
+//   } catch (error) {
+//     res.json({ status: false, msg: 'Error Occurred' });
+//   }
+// };
 /**
  *********deleteBrands*****
  * @param {*} req from user
@@ -422,42 +510,64 @@ const topBrands = async (req, res, next) => {
 * @param {*} res return data
 * @param {*} next undefined
 */
-
-
 const favouritesList = async (req, res) => {
   try {
-   // const userId = req.body.user_id || req.params.user_id;
-     /* Authentication */
-    // const authResult = await auth.CheckAuth(req.headers["x-access-token"], userId);
-    // if (!authResult) {
-    //   return res.json({ status: false, msg: 'Authentication failed' });
-    // }
-    /* Authentication */
-
-
     // Fetch favorites from kidsmodel
     const kidsFavorites = await kidsmodel.find({ isActive: true, isFavorite: true });
     // Fetch favorites from adultmodel
     const adultFavorites = await adultmodel.find({ isActive: true, isFavorite: true });
 
-    // Optionally, you might want to structure the response to distinguish between the two
-    const data = {
-      kidsFavorites,
-      adultFavorites
-    };
+    // Combine kidsFavorites and adultFavorites into a single array
+    const combinedFavorites = [...kidsFavorites, ...adultFavorites];
 
     res.json({
       status: true,
-      data
+      data: combinedFavorites // Send the combined array as the response
     });
   } catch (error) {
-    console.error(error); // It's good practice to log the error for debugging.
+    console.error(error); // It's good practice to log the error for debugging purposes.
     res.status(500).json({
       status: false,
       message: "Error fetching favorites"
     });
   }
 };
+
+
+// const favouritesList = async (req, res) => {
+//   try {
+//    // const userId = req.body.user_id || req.params.user_id;
+//      /* Authentication */
+//     // const authResult = await auth.CheckAuth(req.headers["x-access-token"], userId);
+//     // if (!authResult) {
+//     //   return res.json({ status: false, msg: 'Authentication failed' });
+//     // }
+//     /* Authentication */
+
+
+//     // Fetch favorites from kidsmodel
+//     const kidsFavorites = await kidsmodel.find({ isActive: true, isFavorite: true });
+//     // Fetch favorites from adultmodel
+//     const adultFavorites = await adultmodel.find({ isActive: true, isFavorite: true });
+
+//     // Optionally, you might want to structure the response to distinguish between the two
+//     const data = {
+//       kidsFavorites,
+//       adultFavorites
+//     };
+
+//     res.json({
+//       status: true,
+//       data
+//     });
+//   } catch (error) {
+//     console.error(error); // It's good practice to log the error for debugging.
+//     res.status(500).json({
+//       status: false,
+//       message: "Error fetching favorites"
+//     });
+//   }
+// };
 /********** searchData******
 * @param {*} req from user
 * @param {*} res return data
@@ -481,46 +591,7 @@ const searchDatas = async (req, res) => {
   res.json({ results: searchResults });
 
 }
-// const axios = require('axios');
-// const cheerio = require('cheerio');
 
-// const searchUrl = 'https://example.com'; // Replace with the URL you want to search
-// const searchTerm = 'test'; // Replace with the term you want to search for
-
-// async function fetchWebpage(url) {
-//   try {
-//     const response = await axios.get(url);
-//     return response.data;
-//   } catch (error) {
-//     console.error(`Error fetching the webpage: ${error}`);
-//     return null;
-//   }
-// }
-
-// function searchForTerm(html, term) {
-//   const $ = cheerio.load(html);
-//   const bodyText = $('body').text();
-
-//   // Simple search - case sensitive and matches exact occurrences
-//   const regex = new RegExp(term, 'g');
-//   const matches = bodyText.match(regex);
-
-//   if (matches) {
-//     console.log(`Found ${matches.length} occurrences of the term "${term}":`);
-//     console.log(matches);
-//   } else {
-//     console.log(`No occurrences of the term "${term}" found.`);
-//   }
-// }
-
-// async function main() {
-//   const html = await fetchWebpage(searchUrl);
-//   if (html) {
-//     searchForTerm(html, searchTerm);
-//   }
-// }
-
-// main();
 
 const socailSignUpBrands = async (req, res, next) => {
   try {

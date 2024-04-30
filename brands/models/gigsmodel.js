@@ -107,12 +107,13 @@ var authenticationSchema = new schema({
         type: String,
         default: 'Posted'
     },
+   
     brandId: {
 
         type: schema.ObjectId,
         ref: 'Brands'
     },
-
+   
 
 },
     {

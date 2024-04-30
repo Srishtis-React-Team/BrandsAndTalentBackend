@@ -106,6 +106,7 @@ var authenticationSchema = new schema({
         type:String,
         default:'Draft'
     },
+   
     brandId:{
        
         type: schema.ObjectId,

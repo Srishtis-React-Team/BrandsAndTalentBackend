@@ -10,15 +10,19 @@ const authenticationSchema = new Schema({
     isActive: {
         type: Boolean,
     },
-    user_id: {
-        type: Schema.Types.ObjectId, // Now correctly refers to the defined Schema variable
-        required: true,
+    user_id:{
+    type:  Schema.Types.ObjectId,
+    ref: 'brands'
     },
-    type: {
-        type: String,
-        required: true,
-        enum: ['kids', 'adult'], // Indicates which collection to refer to
-    },
+    // user_id: {
+    //     type: Schema.Types.ObjectId, // Now correctly refers to the defined Schema variable
+    //     required: true,
+    // },
+    // type: {
+    //     type: String,
+    //     required: true,
+    //     enum: ['kids', 'adult'], // Indicates which collection to refer to
+    // },
 },
 {
     timestamps: true

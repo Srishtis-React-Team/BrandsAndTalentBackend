@@ -69,6 +69,25 @@ var authenticationSchema = new schema({
         type: String,
 
     },
+    postJobCount:{
+        type: String,
+    },
+    draftCount:{
+        type: String,
+    },
+    campaignCount:{
+        type: String,
+    },
+    planName:{
+        type: String,
+    },
+    fcmToken :{
+        type: String,
+    },
+    brandImage:{
+        type: Array,
+    },
+   
 
     resetPasswordExpires: Date,
     created: { type: Date, default: Date.now },

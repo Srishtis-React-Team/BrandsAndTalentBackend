@@ -7,6 +7,7 @@ const cors = require('cors');
 const crypto = require('crypto');//otp
 const bodyParser = require('body-parser');
 
+
 app.use(express.json());
 // Enable CORS for all routes
 app.use(cors());

@@ -8,7 +8,7 @@ class authentication {
       `${process.env.TOKEN_KEY}`,    //TOKEN_SECRET
       
       {
-        expiresIn: "2h",
+        expiresIn: "6h",
       }
     );
 

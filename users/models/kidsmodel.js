@@ -226,7 +226,21 @@ facebookId: {
  provider: {
    type: String,
  },
-
+ isApplied:{
+   type: String,
+   default:'false'
+ },
+ brandId:{
+   type: schema.ObjectId,
+   ref: 'brands'
+ },
+ gigId:{
+   type: schema.ObjectId,
+   ref: 'gigs'
+ },
+ fcmToken :{
+   type: String,
+},
 
 
 },

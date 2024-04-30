@@ -849,15 +849,15 @@ const chatbot = async (req, res) => {
   let interactionStep = sessions[sessionId].interactionStep;
 
   switch (interactionStep) {
-    case 0:
-      botResponse = "How can I help you ?";
-      interactionStep++;
-      break;
-      case 1:
+    // case 0:
+    //   botResponse = "How can I help you ?";
+    //   interactionStep++;
+    //   break;
+      case 0:
         botResponse = "Could you please share your email address with me ? ";
         interactionStep++;
         break;
-        case 2:
+        case 1:
     if (isValidEmail(userMsg)) {
       botResponse = "What is your fullname? ";
       // Proceed with the next step or interaction
@@ -868,23 +868,23 @@ const chatbot = async (req, res) => {
     }
     break;
     
-    case 3:
+    case 2:
       userName = message; // Store the user's name
       // botResponse=`Please select your category:
       //  Press 1 for Brand,
       //  Press 2 for Client,
       //  Press 3 for Talent`
-      botResponse = `Are you Brands/Client/Talent? Please press 1 for Brand ,2 for Client ,3 for Talent `;
+      botResponse = `Are you Brands/Client/Talent? Please enter 1 for Brand ,2 for Client ,3 for Talent `;
       interactionStep++;
        break;
-    case 4:
+    case 3:
       type = userMsg
       console.log("type",type)
       //type = response.toLowerCase();
       if (type == 1 || type== 2) {
      // if (type.toLowerCase() === '1' || type.toLowerCase() === '2') {
         botResponse = chatBrandsTemplate();
-        interactionStep = 5;
+        interactionStep = 4;
       } else if (type ==3) {
       //else if (type.toLowerCase() === '3') {
         botResponse = `${userName}, how old are you?`;
@@ -895,7 +895,7 @@ const chatbot = async (req, res) => {
       }
       interactionStep++;
       break;
-    case 5:
+    case 4:
       userAge = parseInt(message); // Store the user's age
       if (isNaN(userAge)) {
         botResponse = "I couldn't understand that. Can you please tell me how old you are in numbers? ";
@@ -911,13 +911,13 @@ const chatbot = async (req, res) => {
         interactionStep++; // Move to the next step
       }
       break;
-    case 6:
+    case 5:
       // Handle user's request or question here. For simplicity, we move to satisfaction check.
       botResponse = "Are you satisfied with this section yes/no?";
       interactionStep++;
       break;
     // Add other cases here following your original logic
-    case 7:
+    case 6:
       if (message.toLowerCase() === "yes") {
         botResponse = "Thank you for chatting with us. Have a great day!";
       } else {

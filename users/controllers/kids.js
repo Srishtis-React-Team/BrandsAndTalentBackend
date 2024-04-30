@@ -204,12 +204,18 @@ const adultSignUp = async (req, res, next) => {
 
       // Save the new user to the database
       const response = await newUser.save();
-
       res.json({
         message: "OTP sent successfully",
         status: true,
-        data: req.body.adultEmail
-      });
+        data: req.body.adultEmail, // Ensure this property exists in the request body
+        id: newUser._id, // Renamed to 'userId' for clarity
+    });
+      // res.json({
+      //   message: "OTP sent successfully",
+      //   status: true,
+      //   data: req.body.adultEmail,
+       
+      // });
     } else {
       res.json({
         message: "Error sending OTP",
@@ -397,19 +403,21 @@ const subscriptionPlan = async (req, res, next) => {
 * @param {*} next undefined
 */
 const talentLogin = async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password, fcmToken } = req.body;
 
   try {
-    let user, type;
+    let user, type, model;
 
     // Attempt to find the user in the adultmodel
     user = await adultmodel.findOne({ adultEmail: email, isActive: true });
     type = 'adult';
+    model = adultmodel; // Assign the model to update the fcmToken later
 
     if (!user) {
       // If not found in adultmodel, try finding in kidsmodel
       user = await kidsmodel.findOne({ parentEmail: email, isActive: true });
       type = 'kids';
+      model = kidsmodel; // Update the model if user is a kid
     }
 
     // If user is still not found, return an error
@@ -427,6 +435,11 @@ const talentLogin = async (req, res) => {
         status: false,
         message: 'Password does not match'
       });
+    }
+
+    // Update the fcmToken for the found user
+    if (fcmToken) {
+      await model.updateOne({ _id: user._id }, { $set: { fcmToken: fcmToken } });
     }
 
     // Generate a token assuming auth.gettoken is a function to do so
@@ -453,6 +466,64 @@ const talentLogin = async (req, res) => {
     });
   }
 };
+
+// const talentLogin = async (req, res) => {
+//   const { email, password } = req.body;
+
+//   try {
+//     let user, type;
+
+//     // Attempt to find the user in the adultmodel
+//     user = await adultmodel.findOne({ adultEmail: email, isActive: true });
+//     type = 'adult';
+
+//     if (!user) {
+//       // If not found in adultmodel, try finding in kidsmodel
+//       user = await kidsmodel.findOne({ parentEmail: email, isActive: true });
+//       type = 'kids';
+//     }
+
+//     // If user is still not found, return an error
+//     if (!user) {
+//       return res.json({
+//         status: false,
+//         message: 'User not found'
+//       });
+//     }
+
+//     // Check if the provided password matches for both adult and kids accounts
+//     const isMatch = await bcrypt.compare(password, user.talentPassword);
+//     if (!isMatch) {
+//       return res.json({
+//         status: false,
+//         message: 'Password does not match'
+//       });
+//     }
+
+//     // Generate a token assuming auth.gettoken is a function to do so
+//     const token = auth.gettoken(user._id, email, type);
+
+//     // Return success response
+//     return res.json({
+//       status: true,
+//       message: type === 'adult' ? 'Login successful' : 'Login successful (Kids account)',
+//       type: type,
+//       data: {
+//         user,
+//         token,
+//         email: type === 'adult' ? user.adultEmail : user.parentEmail // Returning the relevant email based on user type
+//       }
+//     });
+
+//   } catch (error) {
+//     console.error('Error during login:', error);
+//     return res.status(500).json({
+//       status: false,
+//       message: 'An error occurred during login',
+//       error: error.toString()
+//     });
+//   }
+// };
 
 /********** userprofile******
 * @param {*} req from user
@@ -1223,10 +1294,10 @@ const setUserFavorite = async (req, res) => {
     const type = req.body.type; // Assuming this is passed in the request to distinguish between 'kid' and 'adult'
 
     /* Authentication */
-    const authResult = await auth.CheckAuth(req.headers["x-access-token"], userId);
-    if (!authResult) {
-      return res.json({ status: false, msg: 'Authentication failed' });
-    }
+    // const authResult = await auth.CheckAuth(req.headers["x-access-token"], userId);
+    // if (!authResult) {
+    //   return res.json({ status: false, msg: 'Authentication failed' });
+    // }
     /* Authentication */
 
     let Model; // Determine which model to use based on userType
@@ -1247,7 +1318,8 @@ const setUserFavorite = async (req, res) => {
     } catch (err) {
       res.json({ status: false, msg: err.message });
     }
-  } catch (error) {
+  } 
+  catch (error) {
     res.json({ status: false, msg: 'Invalid Token' });
   }
 };

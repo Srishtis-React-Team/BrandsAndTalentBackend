@@ -86,6 +86,12 @@ const chatKidsTemplate = () => `
         target="_blank"
         >Add Profile</a
       >
+      <a
+        class="button"
+        href="https://hybrid.sicsglobal.com/project/brandsandtalent/login"
+        target="_blank"
+        >Login</a
+      >
      
     </div>
   </body>
@@ -145,6 +151,12 @@ const chatAdultTemplate = () => `
         target="_blank"
         >Add Profile</a
       >
+      <a
+        class="button"
+        href="https://hybrid.sicsglobal.com/project/brandsandtalent/login"
+        target="_blank"
+        >Login</a
+      >
       
     </div>
   </body>
@@ -198,18 +210,19 @@ const chatBrandsTemplate = () => `
   <body>
     <h4>Choose Any Options :</h4>
     <div class="button-wrapper">
+      
       <a
         class="button"
         href="https://hybrid.sicsglobal.com/project/brandsandtalent/brand-firstGig"
         target="_blank"
-        >Sign Up</a
-      >
+        >Sign Up
+      </a>
       <a
         class="button"
-        href="https://hybrid.sicsglobal.com/project/brandsandtalent/brand-dashboard"
+        href="https://hybrid.sicsglobal.com/project/brandsandtalent/create-jobs"
         target="_blank"
-        >Create job
-      </a>
+        >Create job</a
+      >
     </div>
   </body>
 </html>
