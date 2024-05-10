@@ -23,6 +23,13 @@ router.post('/readNotification',gigs.readNotification)//for readNotification
 router.get('/getBrandNotification/:brandId',gigs.getBrandNotification)//for getBrandNotification
 router.get('/getTalentNotification/:talentId',gigs.getTalentNotification)//for getBrandNotification
 router.post('/getCountNotification',gigs.getCountNotification)//for getCountNotification
+router.post('/getAppliedjobs',gigs.getAppliedjobs)//for getAppliedjobs
+//router.post('/removeJobsAfterLastDate',gigs.removeJobsAfterLastDate)//for removeJobsAfterLastDate
+router.post('/selectedLevelRange',gigs.selectedLevelRange)//for selectedLevelRange
+router.post('/informSelectedLevel',gigs.informSelectedLevel)//for informSelectedLevel
+router.post('/newCandidates',gigs.newCandidates)//for newCandidates
+router.post('/getSelectionList',gigs.getSelectionList)//for getSelectionList
+
 
 
 module.exports = router

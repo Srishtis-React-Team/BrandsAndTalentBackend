@@ -87,11 +87,15 @@ var authenticationSchema = new schema({
     brandImage:{
         type: Array,
     },
+    isOnline:{
+        type:Boolean,
+        default:false
+     },
    
 
     resetPasswordExpires: Date,
     created: { type: Date, default: Date.now },
-
+    
 
 },
     {

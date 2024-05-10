@@ -19,6 +19,8 @@ const messagemodel = require("../models/messagemodel.js");
  * @param {*} res return data
  * @param {*} next undefined
  */
+
+
 const createChat = async (req, res) => {
     const { firstId, secondId } = req.body
 
@@ -132,6 +134,76 @@ const findPreviousChatUsers = async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 };
+/**
+ *******filterNames*****
+ * @param {*} req from user
+ * @param {*} res return data
+ * @param {*} next undefined
+ */
+ const filterNames = async (req, res) => {
+    const userId = req.params.userId;
+    const { startingSequence } = req.body;
+
+    // Ensure startingSequence is a string (including an empty string)
+    if (typeof startingSequence !== 'string') {
+        return res.status(400).json({ error: 'Starting sequence must be a string.' });
+    }
+
+    try {
+        // Fetch all chats where the user is a member
+        const chats = await chatmodel.find({ members: { $in: [userId] } });
+
+        // Collect IDs of other members, excluding the current user's ID
+        const otherMemberIds = chats.flatMap(chat =>
+            chat.members.filter(member => member !== userId)
+        );
+
+        // Get unique and valid ObjectIds of other members
+        const uniqueMemberIds = [...new Set(otherMemberIds)].filter(id =>
+            mongoose.Types.ObjectId.isValid(id)
+        );
+
+        if (uniqueMemberIds.length === 0) {
+            return res.status(404).json({ error: 'No valid members found' });
+        }
+
+        // Define the base query for finding members
+        const baseQuery = {
+            _id: { $in: uniqueMemberIds },
+            isActive: true // Assume you want only active members
+        };
+
+        // Adjust the query to filter by the starting sequence if it is not empty
+        if (startingSequence && startingSequence.length > 0) {
+            const regex = new RegExp(`^${startingSequence}`, 'i');
+            baseQuery.$or = [
+                { 'preferredChildFirstname': regex },
+                { 'preferredChildLastName': regex },
+                { 'brandName': regex }
+            ];
+        }
+
+        // Fetch the necessary data from each model
+        const [adults, kids, brands] = await Promise.all([
+            adultmodel.find(baseQuery),
+            kidsmodel.find(baseQuery),
+            brandsmodel.find(baseQuery)
+        ]);
+
+        // Combine all the data into a single array
+        const combinedData = [...adults, ...kids, ...brands];
+
+        // Send the response with the combined data
+        res.status(200).json({
+            data: combinedData
+        });
+    } catch (error) {
+        console.error("Error fetching data:", error);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+};
 
 
-module.exports={createChat,findUserChats,findChat,findPreviousChatUsers}
+
+
+module.exports={createChat,findUserChats,findChat,findPreviousChatUsers,filterNames}

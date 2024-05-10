@@ -48,7 +48,7 @@ var authenticationSchema = new schema({
       type: String
    },
    languages: {
-      type: String
+      type: Array
    },
    childDob: {
       type: Date
@@ -209,22 +209,35 @@ var authenticationSchema = new schema({
    facebookId: {
       type: String,
     },
+    applications: [{
+      gigId: mongoose.Schema.Types.ObjectId,
+      isApplied: Boolean,
+      brandId: mongoose.Schema.Types.ObjectId,
+      appliedDate: { type: Date, default: Date.now }
+  }],
     isApplied:{
       type: String,
       default:'false'
     },
     brandId:{
-      type: schema.ObjectId,
+      type: mongoose.Schema.Types.ObjectId,
       ref: 'brands'
     },
     gigId:{
-      type: schema.ObjectId,
-      ref: 'gigs'
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Gigs'
     },
     fcmToken :{
       type: String,
-  },
-
+   },
+   isOnline: {
+      type: Boolean,
+      default: false
+   },
+   selectedLevel: {
+      type: String,
+      default:'new'
+   },
 },
    {
       timestamps: true

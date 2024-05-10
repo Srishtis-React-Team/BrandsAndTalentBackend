@@ -8,8 +8,9 @@ const crypto = require('crypto');
 const moment = require('moment');
 var loginData = require('../../emailCredentials.js');
 const { gmail: { host, pass } } = loginData;
-const { getBusinessReviewEmailTemplate } = require('../../template.js');
+
 const nodemailer = require('nodemailer');
+const { getBusinessReviewEmailTemplate } = require('../../template.js');
 
 
 const generateAndHashOTP = async () => {
@@ -386,44 +387,6 @@ const brandsLogin = async (req, res, next) => {
 };
 
 
-
-// const editBrands = async (req, res) => {
-//   try {
-//     const userId = req.body.user_id || req.params.user_id;
-
-//     // /* Authentication */
-//     // const authResult = await auth.CheckAuth(req.headers["x-access-token"], userId);
-//     // if (!authResult) {
-//     //   return res.json({ status: false, msg: 'Authentication failed' });
-//     // }
-//     // /* Authentication */
-
-//     const user_id = req.body.user_id || req.params.user_id;
-//     const updateFields = {
-//       isActive: true, // Assuming isActive is always set to true
-//       brandName: req.body.brandName,
-//       brandEmail: req.body.brandEmail,
-//       brandPhone: req.body.brandPhone,
-//       brandZipCode: req.body.brandZipCode,
-//       howHearAboutAs: req.body.howHearAboutAs,
-//       logo: req.body.logo,
-//       address: req.body.address,
-
-//     };
-
-//     try {
-//       await brandsmodel.updateOne(
-//         { _id: new mongoose.Types.ObjectId(user_id) },
-//         { $set: updateFields }
-//       );
-//       res.json({ status: true, msg: 'Updated successfully',data:updateFields});
-//     } catch (err) {
-//       res.json({ status: false, msg: err.message });
-//     }
-//   } catch (error) {
-//     res.json({ status: false, msg: 'Error Occurred' });
-//   }
-// };
 /**
  *********deleteBrands*****
  * @param {*} req from user
@@ -465,13 +428,6 @@ const deleteBrands = async (req, res) => {
 const getBrandById = async (req, res) => {
   try {
     const userId = req.body.user_id || req.params.user_id;
-
-    /* Authentication */
-    // const authResult = await auth.CheckAuth(req.headers["x-access-token"], userId);
-    // if (!authResult) {
-    //   return res.json({ status: false, msg: 'Authentication failed' });
-    // }
-    /* Authentication */
 
     const user = await brandsmodel.findOne({ _id: userId, isActive: true }).sort({ created: -1 });
     if (user) {
@@ -534,40 +490,6 @@ const favouritesList = async (req, res) => {
 };
 
 
-// const favouritesList = async (req, res) => {
-//   try {
-//    // const userId = req.body.user_id || req.params.user_id;
-//      /* Authentication */
-//     // const authResult = await auth.CheckAuth(req.headers["x-access-token"], userId);
-//     // if (!authResult) {
-//     //   return res.json({ status: false, msg: 'Authentication failed' });
-//     // }
-//     /* Authentication */
-
-
-//     // Fetch favorites from kidsmodel
-//     const kidsFavorites = await kidsmodel.find({ isActive: true, isFavorite: true });
-//     // Fetch favorites from adultmodel
-//     const adultFavorites = await adultmodel.find({ isActive: true, isFavorite: true });
-
-//     // Optionally, you might want to structure the response to distinguish between the two
-//     const data = {
-//       kidsFavorites,
-//       adultFavorites
-//     };
-
-//     res.json({
-//       status: true,
-//       data
-//     });
-//   } catch (error) {
-//     console.error(error); // It's good practice to log the error for debugging.
-//     res.status(500).json({
-//       status: false,
-//       message: "Error fetching favorites"
-//     });
-//   }
-// };
 /********** searchData******
 * @param {*} req from user
 * @param {*} res return data
@@ -653,13 +575,7 @@ const updateBrandPassword = async (req, res) => {
   try {
     const userId = req.body.user_id || req.params.user_id;
 
-    /* Authentication */
-    // Assuming auth.CheckAuth is an async function you've defined for authentication
-    // const authResult = await auth.CheckAuth(req.headers["x-access-token"], userId);
-    // if (!authResult) {
-    //   return res.json({ status: false, msg: 'Authentication failed' });
-    // }
-
+  
     const hashedPass = await bcrypt.hash(req.body.brandPassword, 10);
 
     const updateResult = await brandsmodel.updateOne(

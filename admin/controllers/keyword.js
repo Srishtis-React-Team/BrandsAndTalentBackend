@@ -53,30 +53,6 @@ const kidsmodel = require('../../users/models/kidsmodel.js');
     }
 };
 
-// const postUserSearchKeyword = async (req, res, next) => {
-//     try {
-//         console.log(req.body);
-//         const Add_Keyword = new keywordmodel({
-//             searchedKeyword: req.body.searchedKeyword,
-//             user_id:req.body.user_id,
-//           //  type:req.body.type,
-//             isActive: true
-//         });
-
-//         const response = await Add_Keyword.save();
-
-//         return res.json({
-//             message: "Added Successfully",
-//             status: true,
-//             data: Add_Keyword,
-//         });
-//     } catch (error) {
-//         console.log(error);
-//         return res.json({
-//             message: "An Error Occurred"
-//         });
-//     }
-// };
 
 
 /**
@@ -159,33 +135,6 @@ const getUserSearchKeyword = async (req, res, next) => {
 };
 
 
-
-//  const deleteUserSearchKeyword = async (req, res) => {
-//     try {
-//       const keywordId = req.body.keywordId; // Ensure the keywordId is being passed correctly
-  
-//       const updateFields = {
-//         isActive: false, // Marking the keyword as inactive
-//       };
-  
-//       const result = await keywordmodel.updateOne(
-//         { _id: keywordId }, // Directly use the keywordId without conversion
-//         { $set: updateFields }
-//       );
-  
-//       if(result.modifiedCount === 0) {
-//         return res.json({ status: false, msg: 'Keyword not found or already inactive' });
-//       }
-  
-//       res.json({ status: true, msg: 'Removed successfully' });
-//     } catch (error) {
-//       console.error(error); // Good practice to log the error
-//       res.json({ status: false, msg: error.message });
-//     }
-//   };
-  
-  
- 
 
 module.exports = {
     postUserSearchKeyword, getUserSearchKeyword,deleteUserSearchKeyword

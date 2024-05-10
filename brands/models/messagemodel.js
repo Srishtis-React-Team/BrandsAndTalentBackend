@@ -25,6 +25,11 @@ const mongoose = require("mongoose")
      currentTime:{
         type:String
      },
+     chatFile:{
+        type:Object,
+        default:null
+
+     },
 
 
  },

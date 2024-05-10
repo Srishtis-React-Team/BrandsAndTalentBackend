@@ -189,7 +189,7 @@ const adultSignUp = async (req, res, next) => {
       const newUser = new adultmodel({
         adultEmail: req.body.adultEmail,
         talentPassword: hashedPass,
-        confirmPassword: req.body.confirmPassword,
+        confirmPassword: hashedPass,//req.body.confirmPassword,
         isVerified: false,
         userType: 'talent',
         isActive: true,
@@ -210,12 +210,7 @@ const adultSignUp = async (req, res, next) => {
         data: req.body.adultEmail, // Ensure this property exists in the request body
         id: newUser._id, // Renamed to 'userId' for clarity
     });
-      // res.json({
-      //   message: "OTP sent successfully",
-      //   status: true,
-      //   data: req.body.adultEmail,
-       
-      // });
+     
     } else {
       res.json({
         message: "Error sending OTP",
@@ -467,63 +462,6 @@ const talentLogin = async (req, res) => {
   }
 };
 
-// const talentLogin = async (req, res) => {
-//   const { email, password } = req.body;
-
-//   try {
-//     let user, type;
-
-//     // Attempt to find the user in the adultmodel
-//     user = await adultmodel.findOne({ adultEmail: email, isActive: true });
-//     type = 'adult';
-
-//     if (!user) {
-//       // If not found in adultmodel, try finding in kidsmodel
-//       user = await kidsmodel.findOne({ parentEmail: email, isActive: true });
-//       type = 'kids';
-//     }
-
-//     // If user is still not found, return an error
-//     if (!user) {
-//       return res.json({
-//         status: false,
-//         message: 'User not found'
-//       });
-//     }
-
-//     // Check if the provided password matches for both adult and kids accounts
-//     const isMatch = await bcrypt.compare(password, user.talentPassword);
-//     if (!isMatch) {
-//       return res.json({
-//         status: false,
-//         message: 'Password does not match'
-//       });
-//     }
-
-//     // Generate a token assuming auth.gettoken is a function to do so
-//     const token = auth.gettoken(user._id, email, type);
-
-//     // Return success response
-//     return res.json({
-//       status: true,
-//       message: type === 'adult' ? 'Login successful' : 'Login successful (Kids account)',
-//       type: type,
-//       data: {
-//         user,
-//         token,
-//         email: type === 'adult' ? user.adultEmail : user.parentEmail // Returning the relevant email based on user type
-//       }
-//     });
-
-//   } catch (error) {
-//     console.error('Error during login:', error);
-//     return res.status(500).json({
-//       status: false,
-//       message: 'An error occurred during login',
-//       error: error.toString()
-//     });
-//   }
-// };
 
 /********** userprofile******
 * @param {*} req from user
@@ -827,10 +765,7 @@ const editKids = async (req, res) => {
 
     // Prepare the fields to be updated
     const updateFields = {
-      // Add all fields you intend to update. Avoid updating the parentEmail here as per the original logic.
-      // Example:
-      // parentFirstName: req.body.parentFirstName,
-      // Include other fields as necessary
+     
       parentFirstName: req.body.parentFirstName,
       parentLastName: req.body.parentLastName,
       parentEmail: req.body.parentEmail,
@@ -1406,50 +1341,7 @@ const checkProfileStatus = async (req, res) => {
   }
 };
 
-// const checkProfileStatus = async (req, res) => {
-//   try {
-//     const userId = req.body.user_id || req.params.user_id;
 
-//     let userType = '';
-//     let profileStatus = null;
-
-//     // Check in adultmodel
-//     const adultUser = await adultmodel.findOne({ _id: new mongoose.Types.ObjectId(userId) }).select('profileStatus -_id'); // Adjusted to only select profileStatus
-//     if (adultUser) {
-//       userType = 'adults';
-//       profileStatus = adultUser.profileStatus;
-//       return res.json({ status: true, msg: 'Profile status retrieved successfully', type: userType, profileStatus: profileStatus });
-//     }
-
-//     // If not found in adultmodel, check in kidsmodel
-//     const kidUser = await kidsmodel.findOne({ _id: new mongoose.Types.ObjectId(userId) });
-//     if (kidUser) {
-//       userType = 'kids';
-//       // Here, since you want to update the kidsmodel, let's proceed with the update.
-//       const updateResult = await kidsmodel.updateOne(
-//         { _id: new mongoose.Types.ObjectId(userId) },
-//         { $set: { profileStatus: true } }
-//       );
-//       if (updateResult && updateResult.modifiedCount === 1) {
-//         // Assuming you want to return the updated status, fetch it again
-//         const updatedKidUser = await kidsmodel.findOne({ _id: new mongoose.Types.ObjectId(userId) }).select('profileStatus -_id');
-//         profileStatus = updatedKidUser.profileStatus;
-//         return res.json({ status: true, msg: 'Set profile status successfully', type: userType, data: profileStatus });
-//       } else {
-//         return res.json({ status: false, msg: 'Failed to update profile status for kid user' });
-//       }
-//     }
-
-//     // If user type is still empty, user was not found in either model
-//     if (!userType) {
-//       return res.json({ status: false, msg: 'User not found' });
-//     }
-
-//   } catch (error) {
-//     console.error('Error checking profile status:', error);
-//     return res.json({ status: false, msg: 'Error occurred during profile status check', error: error.message });
-//   }
-// };
 /**
  *********getTalentById*****
  * @param {*} req from user
@@ -1498,12 +1390,6 @@ const updateProfileStatus = async (req, res) => {
   try {
     const userId = req.body.user_id || req.params.user_id;
 
-    /* Authentication */
-    // const authResult = await auth.CheckAuth(req.headers["x-access-token"], userId);
-    // if (!authResult) {
-    //   return res.json({ status: false, msg: 'Authentication failed' });
-    // }
-    /* Authentication */
 
     let userType = '';
     let updateResult = null;
@@ -1823,16 +1709,7 @@ const socialSignup = async (req, res, next) => {
 
     // Check if the user already exists
     const userExist = await adultmodel.findOne({ adultEmail: req.body.adultEmail, isActive: true });
-    // if (userExist) {
-    //   console.log("email matches");
-    //   return res.json({
-    //     message: "Email ID Already Exists",
-    //     status: false,
-    //     data: req.body.adultEmail
-    //   });
-    // }
-
-
+   
 
     // Create a new user document
     const newUser = new adultmodel({

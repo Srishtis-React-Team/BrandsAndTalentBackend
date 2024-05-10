@@ -9,4 +9,7 @@ router.get('/listBrandsForChat',message.listBrandsForChat)//listBrandsForChat
 router.post('/createMessage',message.createMessage)//createMesssage 
 router.get('/getMessages/:chatId',message.getMessages)//getMessages 
 router.post('/getMessageByUser',message.getMessageByUser)//getMessageByUser
+router.post('/deleteMessage',message.deleteMessage)//deleteMessage
+
+
 module.exports = router

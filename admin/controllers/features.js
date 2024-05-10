@@ -133,58 +133,7 @@ const FileUploadMultiple = (req, res, msg) => {
     });
 };
 
-// const FileUploadMultiple = (req, res, msg) => {
-//     if (!req.files || req.files.length === 0) {
-//         return res.status(400).json({ status: false, message: "No file uploaded" });
-//     }
 
-//     // Initialize an array to hold the response data for each file
-//     let responses = [];
-
-//     // Process each file in the req.files array
-//     req.files.forEach((fileData) => {
-//         let fileType;
-//         if (fileData.mimetype.includes('video')) {
-//             fileType = 'video';
-//         } else if (fileData.mimetype.includes('audio')) {
-//             fileType = 'audio';
-//         } else if (fileData.mimetype.includes('image')) {
-//             fileType = 'image';
-//         } else if (fileData.mimetype.includes('pdf') || fileData.mimetype.includes('doc') || fileData.mimetype.includes('txt') || fileData.mimetype.includes('docx')) {
-//             fileType = 'document';
-//         } else if (fileData.mimetype.includes('webp')) {
-//             fileType = 'webp';
-//         } else {
-//             fileType = 'unknown';
-//         }
-
-//         // Use the saveFileDetails function to save details for each file
-//         const fileId = generateUniqueIdentifier(); // Directly use the generated ID
-//         saveFileDetails(fileData.filename, fileData.originalname, fileType, (err, fileId) => {
-//             if (err) {
-//                 console.error("Error saving file details:", err); // Log error without stopping the whole process
-//                 return;
-//             }
-
-//             // Append the response for this file to the responses array
-//             responses.push({
-//                 fileId: fileId,
-//                 filename: fileData.filename,
-//                 originalname: fileData.originalname,
-//                 filetype: fileType,
-//             });
-
-//             // If all files have been processed, send the response
-//             if (responses.length === req.files.length) {
-//                 res.json({
-//                     status: true,
-//                     data: responses,
-//                     message: "Files Uploaded Successfully",
-//                 });
-//             }
-//         });
-//     });
-// };
 // // Function to save file details in the database
 function saveFileDetails(filename, originalname, fileType, callback) {
     // Placeholder function for saving file details in the database

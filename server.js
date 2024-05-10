@@ -12,19 +12,108 @@ const bodyParser = require('body-parser');
 const FacebookStrategy = require('passport-facebook').Strategy;//21/3
 const router = express.Router();  //21/3
 const kidsmodel = require('./users/models/kidsmodel.js');
+const { createServer } = require('http');
+const { Server } = require('socket.io');
 
-// server.js or app.js (your main Express server file)
-
-const http = require("http");
-const socketIO = require("socket.io");
-const addConversation = require("./brands/controllers/conversation.js"); // Update with the correct path
-const addMessage = require("./brands/controllers/message.js");
-const listByConversationId = require("./brands/controllers/conversation.js");
-
-const server = http.createServer(app);
-const io = socketIO(server); // Attach Socket.io to the server
+const chatmodel = require("./brands/models/chatmodel.js");
+const brandsmodel = require("./brands/models/brandsmodel.js");
+//const io = new Server({cors: "http://localhost:3000"});
+//const httpServer = createServer(app);
+// const io = new Server(httpServer, {
+//     cors: {
+//         origin: "*",
 
 
+//     }
+// })
+const httpServer = createServer(app); // Create the HTTP server from the Express app
+const io = new Server(httpServer, {
+  cors: "http://13.234.177.61:3000"
+});
+
+let onlineUsers =[];
+
+
+ io.on("connection", (socket) => {
+  console.log("new connection",socket.id);
+  //listen to connection
+ 
+
+
+  socket.on("addNewUser", async (userId) => {
+    console.log("addNewUser", userId);
+  
+    // Check if the user is not already in the onlineUsers array
+    if (!onlineUsers.some(user => user.userId === userId)) {
+      onlineUsers.push({
+        userId,
+        socketId: socket.id,
+      });
+
+  
+      // Emit the updated list of online users
+      io.emit("getOnlineUsers", onlineUsers);
+      console.log("onlineUsers get", onlineUsers);
+        
+      // Update isOnline status in the database
+      try {
+        // Update the user in each of the models
+        await Promise.all([
+          adultmodel.updateMa({ _id: userId }, { $set: { isOnline: true } }),
+          brandsmodel.updateOne({ _id: userId }, { $set: { isOnline: true } }),
+          kidsmodel.updateOne({ _id: userId }, { $set: { isOnline: true } })
+        ]);
+  
+        console.log(`User ${userId} set to online in all models.`);
+      } catch (error) {
+        console.error("Error setting user to online:", error);
+      }
+    }
+  });
+  socket.on("createChat", async (firstId,secondId) => {
+  
+    const chat = await chatmodel.findOne({
+      members: { $all: [firstId, secondId]} // Ensure consistent order
+  });
+
+  if (chat) {
+    console.log("message testtttt",firstId)
+    console.log("message testtttt",secondId)
+      io.to(chat.socketId).emit("chatCreated",firstId,secondId );
+      console.log("message getttt",firstId)
+  } 
+});
+socket.on("sendMessage", (message) => {
+    
+  console.log("onlineUsers testttt",onlineUsers)
+  //console.log("message testststt",message)
+  const user = onlineUsers.find(user => user.userId === message.recipientId);
+
+ //console.log("uesr test",user)
+  console.log("message",message)
+  if (user) {
+    console.log("message testtttt",message)
+      io.to(user.socketId).emit("getMessage", message);
+      console.log("message getttt",message)
+
+      io.to(user.socketId).emit("getNotification", {
+          senderId: message.senderId,
+          isRead: false,
+          date: new Date(),
+      });
+  }
+});
+
+
+socket.on("disconnect",()=>{
+  onlineUsers=onlineUsers.filter((user)=>user.socketId!==socket.id);
+  io.emit("getOnlineUsers",onlineUsers)
+
+
+})
+ 
+});
+     
 function isLoggedIn(req,res,next){
   req.user?next():res.sendStatus(401);
 }
@@ -33,21 +122,7 @@ app.use(express.json());
 // Enable CORS for all routes
 app.use(cors());
 
-//chat
-// const { createServer } = require('http')
-// const { Server } = require('socket.io')
 
-
-// const httpServer = createServer(app);
-// const io = new Server(httpServer, {
-//     cors: {
-//         origin: "*",
-
-
-//     }
-// })
-
-//chat
 
 app.use(session({
   secret: 'mysecret',
@@ -65,10 +140,7 @@ app.get('/auth/google/callback',
   passport.authenticate('google', { 
     successRedirect:'/auth/google/success',
     failureRedirect: '/auth/google/failure' ,// /login
-  // function(req, res) {
-  //   // Successful authentication, redirect home.
-  //   res.redirect('/');
-  // });
+  
   }));
   app.get('/auth/google/failure', (req,res)=>{
     res.send("Something went wrong");
@@ -95,7 +167,18 @@ app.use((err, req, res, next) => {
 
 //
 
+//new
+// Increase the payload limit if dealing with large JSON bodies
+app.use(bodyParser.json({ limit: '50mb' }));
 
+// Error handling for JSON parsing errors
+app.use((err, req, res, next) => {
+  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    console.error('Bad JSON');
+    return res.status(400).send({ status: 'error', message: 'Bad JSON' }); // Bad JSON
+  }
+  next();
+});
 
 
 //facebook
@@ -194,13 +277,6 @@ router.get('/signout', (req, res) => {
 
 
 
-
-  
-
-
-
-
-
 passport.serializeUser((user, done) => done(null, user.id));
 
 passport.deserializeUser((id, done) => {
@@ -227,10 +303,7 @@ app.get('/', (req, res) => res.send('Home Page - Authentication Successful'));
 app.get('/login', (req, res) => res.send('Login Page'));
 
 
-
-
 //facebook
-  
 
 
 //user panel
@@ -269,114 +342,13 @@ app.use('/brandsntalent_api/message',message);
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/upload1', express.static(path.join(__dirname, 'upload1')));
 
-//google sign up
-//app.use(express.static(path.join(__dirname, 'client')));
-
-//chat
-//chat code for chatgpt
-
 
 app.use(express.json()); // Middleware to parse JSON bodies
 
-// Event handler for new socket connections
-io.on("connection", (socket) => {
-  console.log("A user connected");
-
-  socket.on("disconnect", () => {
-    console.log("A user disconnected");
-  });
-});
 
 
-
-
-
-
-//chatgpt 
-let userss = [];
-
-
-
-const addUser = (userId, socketId) => {
-    if(userId&&socketId){
-        console.log('users in adduser',userss)
-    !userss.some((user) => user.userId === userId) &&
-        userss.push({ userId, socketId });
-}
-};
-
-const removeUser = (socketId) => {
-    console.log('removed user id',socketId)
-    console.log('users in remove user',userss)
-    userss = userss.filter((user) => user.socketId !== socketId);
-
-};
-
-const getUser = (userId) => {
-    console.log('user from get user function',userId)
-    if(userId){
-        console.log('users in get user',userss)
-        console.log('users.find((user) => user.userId === userId',userss.find((user) => user.userId === userId))
-    return userss.find((user) => user.userId === userId);
-    }
-};
-
-io.on("connection", (socket) => {
-    //when connect
-    console.log("a user connected.");
-    console.log('users in connection',userss)
-    //take userId and socketId from user
-    socket.on("addUser", (userId) => {
-        addUser(userId, socket.id);
-        console.log('user details', userId)
-        console.log('socket details', socket.id)
-        io.emit("getUsers", userss);
-    });
-
-    //send and get message
-    socket.on("sendMessage", ({ senderId, receiverId, text }) => {
-        const user = getUser(receiverId);
-        console.log('users in message',users)
-        console.log('fetched user details', user)
-        console.log('message from user',text)
-        console.log("conversationId",receiverId)
-        if(user){
-          console.log("user.socketId",user.socketId)
-        io.to(user.socketId).emit("getMessage", {
-            senderId,
-            text,
-        });
-    }
-    });
-
-    //when disconnect
-    socket.on("disconnect", () => {
-        console.log('users in disconnection',users)
-        console.log("a user disconnected!",socket.id);
-        removeUser(socket.id);
-        io.emit("getUsers", users);
-       
-    });
-});
-
-//chat
-
-     
-//try {
-   
-    // Start the server
-  //   app.listen(4014, () => {
-  //     console.log('Server is listening on port 4014');
-  //   });
-  // } catch (error) {
-  //   console.error('Error connecting to database:', error);
-  // }
-  // httpServer.listen(4014, () => console.log(`Server running on port 4014`));
-  // module.exports = router,io;//21/3
-
-  const port = process.env.PORT || 4014;
-server.listen(port, () => {
-  console.log(`Server running on port ${port}`);
+httpServer.listen(4014, () => {
+  console.log("Server is listening on port 4014");
 });
 
   

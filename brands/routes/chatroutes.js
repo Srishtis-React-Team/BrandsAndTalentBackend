@@ -7,7 +7,7 @@ router.post('/findUserChats/:userId',chat.findUserChats)//findUserChats
 router.get('/findChat/:firstId/:secondId',chat.findChat)//findChat 
 router.post('/createChat',chat.createChat)//createChat
 router.post('/findPreviousChatUsers/:userId',chat.findPreviousChatUsers)//findPreviousChatUsers
-
+router.post('/filterNames/:userId',chat.filterNames)//filterNames
 
 
 module.exports = router

@@ -23,10 +23,10 @@ const brandsmodel = require("../../brands/models/brandsmodel");
  * @param {*} next undefined
  */
  const createMessage = async (req, res, next) => {
-  const{chatId,senderId,text,userImage,currentTime,receiverId}=req.body;
+  const{chatId,senderId,text,userImage,currentTime,receiverId,chatFile}=req.body;
 
   const message = new messagemodel({
-    chatId,senderId,text,userImage,currentTime,receiverId
+    chatId,senderId,text,userImage,currentTime,receiverId,chatFile
   })
  
    try {
@@ -166,19 +166,18 @@ const getMessages = async (req, res, next) => {
  * @param {*} res return data
  * @param {*} next undefined
  */
-const getMessageByUser = async (req, res) => {
+ const getMessageByUser = async (req, res) => {
   const { senderId, receiverId } = req.body;
 
   try {
     // Log the correct variable names
-    console.log("Fetching messages between", senderId, receiverId);
+    console.log("Fetching messages involving", senderId, "or", receiverId);
 
-    // Retrieve messages where the combination of senderId and receiverId matches
-    // in either direction (from senderId to receiverId, or vice versa)
+    // Retrieve messages where either the senderId or receiverId is one of the provided IDs
     const chats = await messagemodel.find({
-      $or: [
-        { senderId: senderId, receiverId: receiverId },
-        { senderId: receiverId, receiverId: senderId }
+      $and: [
+        { senderId: { $in: [senderId, receiverId] } },
+        { receiverId: { $in: [senderId, receiverId] } }
       ]
     });
 
@@ -191,4 +190,28 @@ const getMessageByUser = async (req, res) => {
 };
 
 
-    module.exports = { createMessage,getMessages,addMessage, listMessage ,listTalentsForChat,listBrandsForChat,getMessageByUser};
+
+/***********deleteMessage*****
+* @param {*} req from user
+* @param {*} res return data
+* @param {*} next undefined
+*/
+const deleteMessage = async (req, res) => {
+  const messageId = req.body.messageId || req.params.messageId;
+
+  // Validate messageId
+  if (!messageId || !mongoose.Types.ObjectId.isValid(messageId)) {
+    return res.status(400).json({ status: false, msg: 'Invalid messageId' });
+  }
+
+  try {
+    // Delete the message with the given messageId
+    await messagemodel.deleteOne({ _id: new mongoose.Types.ObjectId(messageId) });
+
+    res.json({ status: true, msg: 'Deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ status: false, msg: err.message });
+  }
+};
+
+    module.exports = { createMessage,getMessages,addMessage, listMessage ,listTalentsForChat,listBrandsForChat,getMessageByUser,deleteMessage};

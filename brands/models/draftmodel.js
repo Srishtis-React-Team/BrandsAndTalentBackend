@@ -111,7 +111,26 @@ var authenticationSchema = new schema({
        
         type: schema.ObjectId,
       ref: 'Brands'
-},
+    },
+    brandImage:{
+      type:String
+    },
+    country:{
+        type:String
+    },
+    state:{
+        type:String
+    },
+    city:{
+        type:String
+    },
+    // jobPostedDate:{
+    //     type:Date
+    // },
+    // lastDateForApply:{
+    //     type:Date
+    // },
+   
   
    
 },
