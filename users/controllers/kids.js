@@ -54,6 +54,8 @@ var transporter = nodemailer.createTransport({
 
 const kidsmodel = require('../models/kidsmodel.js');
 const adultmodel = require('../models/adultmodel.js');
+const { brandsRegister } = require("../../brands/controllers/brands.js");
+const brandsmodel = require("../../brands/models/brandsmodel.js");
 
 /**
  ********* signUp*****
@@ -70,15 +72,30 @@ const kidsSignUp = async (req, res, next) => {
 
     console.log("hashedPass", hashedPass);
 
-    const userExist = await kidsmodel.findOne({ parentEmail: req.body.parentEmail, isActive: true });
-
-    if (userExist) {
-      console.log("email matches");
+   // const userExist = await kidsmodel.findOne({ parentEmail: req.body.parentEmail, isActive: true });
+    // Check if the email already exists in any model
+    const userExists = await Promise.any([
+      kidsmodel.findOne({ parentEmail: req.body.parentEmail, isActive: true }).then(user => user || Promise.reject()),
+      adultmodel.findOne({ adultEmail: req.body.parentEmail, isActive: true }).then(user => user || Promise.reject()),
+      brandsmodel.findOne({ brandEmail: req.body.parentEmail, isActive: true }).then(user => user || Promise.reject())
+    ]).catch(() => null);  // Handling when no match is found
+    
+    if (userExists) {
+      console.log("Email matches");
       return res.json({
         message: "Email ID Already Exists",
         status: false
       });
     }
+    
+
+    // if (userExist) {
+    //   console.log("email matches");
+    //   return res.json({
+    //     message: "Email ID Already Exists",
+    //     status: false
+    //   });
+    // }
 
     // Generate and hash OTP
     const { otp, hashedOTP } = await generateAndHashOTP();
@@ -98,7 +115,7 @@ const kidsSignUp = async (req, res, next) => {
         parentState: req.body.parentState,
         parentAddress: req.body.parentAddress,
         talentPassword: hashedPass,
-        confirmPassword: req.body.confirmPassword,
+        confirmPassword:hashedPass, //req.body.confirmPassword,
         profession: req.body.profession,
         relevantCategories: req.body.relevantCategories,
         childFirstName: req.body.childFirstName,
@@ -125,7 +142,8 @@ const kidsSignUp = async (req, res, next) => {
         isFavorite: false,
         bookJob: "25",
         rating: "4",
-        profileStatus: true
+        profileStatus: true,
+        age:req.body.age
       });
 
       // Save the new user to the database
@@ -168,14 +186,28 @@ const adultSignUp = async (req, res, next) => {
     console.log("hashedPass", hashedPass);
 
     // Check if the user already exists
-    const userExist = await adultmodel.findOne({ adultEmail: req.body.adultEmail, isActive: true });
-    if (userExist) {
-      console.log("email matches");
+     // Check if the email already exists in any model
+     const userExists = await Promise.any([
+      kidsmodel.findOne({ parentEmail: req.body.adultEmail, isActive: true }).then(user => user || Promise.reject()),
+      adultmodel.findOne({ adultEmail: req.body.adultEmail, isActive: true }).then(user => user || Promise.reject()),
+      brandsmodel.findOne({ brandEmail: req.body.adultEmail, isActive: true }).then(user => user || Promise.reject())
+    ]).catch(() => null);  // Handling when no match is found
+    
+    if (userExists) {
+      console.log("Email matches");
       return res.json({
         message: "Email ID Already Exists",
         status: false
       });
     }
+    // const userExist = await adultmodel.findOne({ adultEmail: req.body.adultEmail, isActive: true });
+    // if (userExist) {
+    //   console.log("email matches");
+    //   return res.json({
+    //     message: "Email ID Already Exists",
+    //     status: false
+    //   });
+    // }
 
     // Generate OTP and hash it
     const { otp, hashedOTP } = await generateAndHashOTP();
@@ -242,6 +274,7 @@ const otpVerificationAdult = async (req, res, next) => {
     // Fetch the user from the database for the given email
     const user = await adultmodel.findOne({ adultEmail: newEmail, isActive: true });
     console.log("user", user)
+    console.log("otp",req.body.otp)
     if (!user) {
       console.log("Error: User not found");
       return res.json({
@@ -474,21 +507,21 @@ const adultFetch = async (req, res) => {
   try {
     const userId = req.body.user_id || req.params.user_id;
 
-    /* Authentication */
-    const authResult = await auth.CheckAuth(req.headers["x-access-token"], userId);
-    if (!authResult) {
-      return res.json({ status: false, msg: 'Authentication failed' });
-    }
-    /* Authentication */
+    // /* Authentication */
+    // const authResult = await auth.CheckAuth(req.headers["x-access-token"], userId);
+    // if (!authResult) {
+    //   return res.json({ status: false, msg: 'Authentication failed' });
+    // }
+    // /* Authentication */
 
-    const user = await adultmodel.findOne({ _id: userId, isActive: true });
+    const user = await adultmodel.findById({ _id: userId, isActive: true });
     if (user) {
       return res.json({ status: true, data: user });
     } else {
       return res.json({ status: false, msg: 'No user found' });
     }
   } catch (error) {
-    return res.json({ status: false, msg: 'Invalid Token' });
+    return res.json({ status: false, msg: 'Error Occured' });
   }
 };
 
@@ -498,15 +531,27 @@ const adultFetch = async (req, res) => {
  * @param {*} res return data
  * @param {*} next undefined
  */
-
-
-
-const forgotPassword = async (req, res, next) => {
+ const forgotPassword = async (req, res, next) => {
   try {
-    const token = crypto.randomBytes(20).toString('hex');
+    const { email } = req.body;
 
-    const user = await kidsmodel.findOne({ parentEmail: req.body.parentEmail, isActive: true });
+    // Initialize variables
+    let user;
+    let userModel;
 
+    // Try to find the user in kidsmodel
+    user = await kidsmodel.findOne({ parentEmail: email, isActive: true });
+    if (user) {
+      userModel = kidsmodel;
+    } else {
+      // If not found, try in adultmodel
+      user = await adultmodel.findOne({ adultEmail: email, isActive: true });
+      if (user) {
+        userModel = adultmodel;
+      }
+    }
+
+    // Check if user was found
     if (!user) {
       return res.json({
         status: false,
@@ -514,40 +559,46 @@ const forgotPassword = async (req, res, next) => {
       });
     }
 
+    // Generate a token for password reset
+    const token = crypto.randomBytes(20).toString('hex');
+
+    // Set the token and its expiry in the user document
     user.resetPasswordToken = token;
-    user.resetPasswordExpires = moment(Date.now()) + 3600000;
+    user.resetNews
+    user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
 
     await user.save();
+
     const resetLink = `https://hybrid.sicsglobal.com/project/brandsandtalent/reset-password?${token}`;
+
     const transporter = nodemailer.createTransport({
       service: 'Gmail',
-      auth: {
-        user: host,
-        pass: pass
-      }
-    });
+            auth: {
+              user: host,
+              pass: pass
+            }
+          });
+
     const mailOptions = {
       from: host,
-      to: req.body.parentEmail,
+      to: email,
       subject: 'Password Reset',
       html: `
         <p>Hello,</p>
         <p>You are receiving this because you (or someone else) have requested the reset of the password for your account.</p>
-        <p>Please click on the following link to complete the process:</p>
+        <p>Please click on the following link, or paste this into your browser to complete the process:</p>
         <p><a href="${resetLink}">${resetLink}</a></p>
         <p>If you did not request this, please ignore this email and your password will remain unchanged.</p>
         <p>Thanks and regards,</p>
         <p>Your HR Team</p>
-       
       `
     };
-
 
     await transporter.sendMail(mailOptions);
 
     res.json({
       status: true,
-      message: 'An e-mail has been sent to ' + req.body.parentEmail + ' with further instructions.'
+      message: `An e-mail has been sent to ${email} with further instructions.`
     });
   } catch (error) {
     console.error(error);
@@ -558,45 +609,116 @@ const forgotPassword = async (req, res, next) => {
   }
 };
 
+
+
+
+
+// const forgotPassword = async (req, res, next) => {
+//   try {
+//     const token = crypto.randomBytes(20).toString('hex');
+
+//     const user = await kidsmodel.findOne({ parentEmail: req.body.parentEmail, isActive: true });
+
+//     if (!user) {
+//       return res.json({
+//         status: false,
+//         message: 'No account with that email address exists.'
+//       });
+//     }
+
+//     user.resetPasswordToken = token;
+//     user.resetPasswordExpires = moment(Date.now()) + 3600000;
+
+//     await user.save();
+//     const resetLink = `https://hybrid.sicsglobal.com/project/brandsandtalent/reset-password?${token}`;
+//     const transporter = nodemailer.createTransport({
+//       service: 'Gmail',
+//       auth: {
+//         user: host,
+//         pass: pass
+//       }
+//     });
+//     const mailOptions = {
+//       from: host,
+//       to: req.body.parentEmail,
+//       subject: 'Password Reset',
+//       html: `
+//         <p>Hello,</p>
+//         <p>You are receiving this because you (or someone else) have requested the reset of the password for your account.</p>
+//         <p>Please click on the following link to complete the process:</p>
+//         <p><a href="${resetLink}">${resetLink}</a></p>
+//         <p>If you did not request this, please ignore this email and your password will remain unchanged.</p>
+//         <p>Thanks and regards,</p>
+//         <p>Your HR Team</p>
+       
+//       `
+//     };
+
+
+//     await transporter.sendMail(mailOptions);
+
+//     res.json({
+//       status: true,
+//       message: 'An e-mail has been sent to ' + req.body.parentEmail + ' with further instructions.'
+//     });
+//   } catch (error) {
+//     console.error(error);
+//     res.json({
+//       status: false,
+//       message: 'Error during password reset process.'
+//     });
+//   }
+// };
+
 /**
  *********resetPassword ******
  * @param {*} req from user
  * @param {*} res return data
  * @param {*} next undefined
  */
-
-
-const resetPassword = async (req, res, next) => {
+ const resetPassword = async (req, res, next) => {
   try {
-    const hashedPass = await bcrypt.hash(req.body.password, 10);
-    console.log(hashedPass);
-
-    const user = await kidsmodel.findOne({
-      resetPasswordToken: req.body.resetPasswordToken,
+    const { password, resetPasswordToken } = req.body;
+    const hashedPass = await bcrypt.hash(password, 10);
+    
+    // Attempt to find the user in the kids model
+    let user = await kidsmodel.findOne({
+      resetPasswordToken: resetPasswordToken,
       resetPasswordExpires: { $gt: moment(Date.now()) },
     });
 
+    let emailField = "parentEmail"; // Default email field
+
+    if (!user) {
+      // If not found in kids model, try adult model
+      user = await adultmodel.findOne({
+        resetPasswordToken: resetPasswordToken,
+        resetPasswordExpires: { $gt: moment(Date.now()) },
+      });
+      emailField = "adultEmail"; // Update email field if user is found in adult model
+    }
+
     if (!user) {
       return res.json({
-        Status: false,
+        status: false,
         message: 'Password reset token is invalid or has expired.',
       });
     }
 
-    console.log("user.Password", hashedPass);
+    // Update the user's password
     user.talentPassword = hashedPass;
+    await user.save(); // Save the changes to the database
 
+    // Set up email transport
     const mailOptions = {
-      from: host,
-      to: user.parentEmail,
+      from: host, // Ensure this is correctly defined in your environment
+      to: user[emailField], // Use dynamic email field
       subject: 'Password Reset',
       text: 'Hello,\n\n' +
         'This is a confirmation that the password for your account has just been changed.\n',
     };
 
-    await transporter.sendMail(mailOptions);
-
-    await user.save();
+    await transporter.sendMail(mailOptions); // Send confirmation email
 
     res.json({
       status: true,
@@ -605,10 +727,56 @@ const resetPassword = async (req, res, next) => {
   } catch (error) {
     console.error(error);
     res.json({
-      message: 'An error occurred during password reset.',
+      status: false,
+      message: 'An error occurred during the password reset.',
     });
   }
 };
+
+
+// const resetPassword = async (req, res, next) => {
+//   try {
+//     const hashedPass = await bcrypt.hash(req.body.password, 10);
+//     console.log(hashedPass);
+
+//     const user = await kidsmodel.findOne({
+//       resetPasswordToken: req.body.resetPasswordToken,
+//       resetPasswordExpires: { $gt: moment(Date.now()) },
+//     });
+
+//     if (!user) {
+//       return res.json({
+//         Status: false,
+//         message: 'Password reset token is invalid or has expired.',
+//       });
+//     }
+
+//     console.log("user.Password", hashedPass);
+//     user.talentPassword = hashedPass;
+
+//     const mailOptions = {
+//       from: host,
+//       to: user.parentEmail,
+//       subject: 'Password Reset',
+//       text: 'Hello,\n\n' +
+//         'This is a confirmation that the password for your account has just been changed.\n',
+//     };
+
+//     await transporter.sendMail(mailOptions);
+
+//     await user.save();
+
+//     res.json({
+//       status: true,
+//       message: 'Password Changed Successfully',
+//     });
+//   } catch (error) {
+//     console.error(error);
+//     res.json({
+//       message: 'An error occurred during password reset.',
+//     });
+//   }
+// };
 
 /**
  *********editUser*****
@@ -694,21 +862,20 @@ const updateAdults = async (req, res) => {
  * @param {*} res return data
  * @param {*} next undefined
  */
-const deleteUser = async (req, res) => {
+ const deleteUser = async (req, res) => {
   try {
     const userId = req.body.user_id || req.params.user_id;
 
-    /* Authentication */
-    const authResult = await auth.CheckAuth(req.headers["x-access-token"], userId);
-    if (!authResult) {
-      return res.json({ status: false, msg: 'Authentication failed' });
+    // Determine the model based on the existence of the userId in kidsmodel or adultmodel
+    const model = await determineUserModel(userId);
+
+    if (!model) {
+      return res.json({ status: false, msg: 'User not found' });
     }
-    /* Authentication */
 
     try {
-      const user_id = req.body.user_id || req.params.user_id;
-      await kidsmodel.updateOne(
-        { _id: new mongoose.Types.ObjectId(user_id) },
+      await model.updateOne(
+        { _id: new mongoose.Types.ObjectId(userId) },
         { $set: { isActive: false } }
       );
       res.json({ status: true, msg: 'Deleted successfully' });
@@ -719,6 +886,56 @@ const deleteUser = async (req, res) => {
     res.json({ status: false, msg: 'Invalid Token' });
   }
 };
+
+// Function to determine the model based on userId
+async function determineUserModel(userId) {
+  try {
+    // Check if the userId exists in kidsmodel
+    const isKid = await kidsmodel.exists({ _id: userId });
+    if (isKid) {
+      return kidsmodel;
+    }
+
+    // Check if the userId exists in adultmodel
+    const isAdult = await adultmodel.exists({ _id: userId });
+    if (isAdult) {
+      return adultmodel;
+    }
+
+    // If userId does not exist in either model, return null
+    return null;
+  } catch (error) {
+    console.error("Error determining user model:", error);
+    return null;
+  }
+}
+
+
+// const deleteUser = async (req, res) => {
+//   try {
+//     const userId = req.body.user_id || req.params.user_id;
+
+//     /* Authentication */
+//     const authResult = await auth.CheckAuth(req.headers["x-access-token"], userId);
+//     if (!authResult) {
+//       return res.json({ status: false, msg: 'Authentication failed' });
+//     }
+//     /* Authentication */
+
+//     try {
+//       const user_id = req.body.user_id || req.params.user_id;
+//       await kidsmodel.updateOne(
+//         { _id: new mongoose.Types.ObjectId(user_id) },
+//         { $set: { isActive: false } }
+//       );
+//       res.json({ status: true, msg: 'Deleted successfully' });
+//     } catch (err) {
+//       res.json({ status: false, msg: err.message });
+//     }
+//   } catch (error) {
+//     res.json({ status: false, msg: 'Invalid Token' });
+//   }
+// };
 /**
  *********fetchUser*****
  * @param {*} req from user
@@ -742,7 +959,7 @@ const kidsFetch = async (req, res, next) => {
         });
       });
   } catch (error) {
-    res.json({ status: false, msg: 'Invalid Token' });
+    res.json({ status: false, msg: 'Error Occured' });
   }
 };
 
@@ -773,7 +990,7 @@ const editKids = async (req, res) => {
       parentCountry: req.body.parentCountry,
       parentState: req.body.parentState,
       parentAddress: req.body.parentAddress,
-      confirmPassword: req.body.confirmPassword,
+     // confirmPassword: req.body.confirmPassword,
       profession: req.body.profession,
       relevantCategories: req.body.relevantCategories,
       childFirstName: req.body.childFirstName,
@@ -807,6 +1024,7 @@ const editKids = async (req, res) => {
       services: req.body.services,
       image: req.body.image,
       maritalStatus: req.body.maritalStatus,
+      age:req.body.age
 
     };
 
@@ -1008,7 +1226,7 @@ const otpResend = async (req, res, next) => {
 
     // Generate and hash new OTP
     const { otp, hashedOTP } = await generateAndHashOTP();
-
+console.log("otpp",otp)
     // Compose email options
     const mailOptions = {
       from: host,
@@ -1029,7 +1247,8 @@ const otpResend = async (req, res, next) => {
       } else {
         console.log("mailOptions", mailOptions);
         console.log("Email sent: " + info.response);
-
+        console.log("email",email)
+        console.log("otp",otp)
         // Update the OTP in the database for the user
         try {
           const filter = { parentEmail: email };
@@ -1057,6 +1276,9 @@ const otpResend = async (req, res, next) => {
  * @param {*} res return data
  * @param {*} next undefined
  */
+
+
+
 const otpResendAdult = async (req, res, next) => {
   try {
     const email = req.body.adultEmail;
@@ -1755,13 +1977,7 @@ const updateAdultPassword = async (req, res) => {
   try {
     const userId = req.body.user_id || req.params.user_id;
 
-    /* Authentication */
-    // Assuming auth.CheckAuth is an async function you've defined for authentication
-    // const authResult = await auth.CheckAuth(req.headers["x-access-token"], userId);
-    // if (!authResult) {
-    //   return res.json({ status: false, msg: 'Authentication failed' });
-    // }
-
+   
     const hashedPass = await bcrypt.hash(req.body.talentPassword, 10);
 
     const updateResult = await adultmodel.updateOne(
@@ -1819,13 +2035,129 @@ const updateAdultPassword = async (req, res) => {
     res.json({ status: false, msg: 'Error Occurred: ' + error.message });
   }
 };
+/**
+ *********Adult forgot password  ******
+ * @param {*} req from user
+ * @param {*} res return data
+ * @param {*} next undefined
+ */
 
+
+
+ const adultForgotPassword = async (req, res, next) => {
+  try {
+    const token = crypto.randomBytes(20).toString('hex');
+
+    const user = await adultmodel.findOne({ adultEmail: req.body.adultEmail, isActive: true });
+
+    if (!user) {
+      return res.json({
+        status: false,
+        message: 'No account with that email address exists.'
+      });
+    }
+
+    user.resetPasswordToken = token;
+    user.resetPasswordExpires = moment(Date.now()) + 3600000;
+
+    await user.save();
+    const resetLink = `https://hybrid.sicsglobal.com/project/brandsandtalent/reset-password?${token}`;
+    const transporter = nodemailer.createTransport({
+      service: 'Gmail',
+      auth: {
+        user: host,
+        pass: pass
+      }
+    });
+    const mailOptions = {
+      from: host,
+      to: req.body.adultEmail,
+      subject: 'Password Reset',
+      html: `
+        <p>Hello,</p>
+        <p>You are receiving this because you (or someone else) have requested the reset of the password for your account.</p>
+        <p>Please click on the following link to complete the process:</p>
+        <p><a href="${resetLink}">${resetLink}</a></p>
+        <p>If you did not request this, please ignore this email and your password will remain unchanged.</p>
+        <p>Thanks and regards,</p>
+        <p>Your HR Team</p>
+       
+      `
+    };
+
+
+    await transporter.sendMail(mailOptions);
+
+    res.json({
+      status: true,
+      message: 'An e-mail has been sent to ' + req.body.adultEmail + ' with further instructions.'
+    });
+  } catch (error) {
+    console.error(error);
+    res.json({
+      status: false,
+      message: 'Error during password reset process.'
+    });
+  }
+};
+
+/**
+ *********adult resetPassword ******
+ * @param {*} req from user
+ * @param {*} res return data
+ * @param {*} next undefined
+ */
+
+
+const adultResetPassword = async (req, res, next) => {
+  try {
+    const hashedPass = await bcrypt.hash(req.body.password, 10);
+    console.log(hashedPass);
+
+    const user = await adultmodel.findOne({
+      resetPasswordToken: req.body.resetPasswordToken,
+      resetPasswordExpires: { $gt: moment(Date.now()) },
+    });
+
+    if (!user) {
+      return res.json({
+        Status: false,
+        message: 'Password reset token is invalid or has expired.',
+      });
+    }
+
+    console.log("user.Password", hashedPass);
+    user.talentPassword = hashedPass;
+
+    const mailOptions = {
+      from: host,
+      to: user.adultEmail,
+      subject: 'Password Reset',
+      text: 'Hello,\n\n' +
+        'This is a confirmation that the password for your account has just been changed.\n',
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    await user.save();
+
+    res.json({
+      status: true,
+      message: 'Password Changed Successfully',
+    });
+  } catch (error) {
+    console.error(error);
+    res.json({
+      message: 'An error occurred during password reset.',
+    });
+  }
+};
 module.exports = {
   kidsSignUp, adultSignUp, adultFetch, forgotPassword, resetPassword, updateAdults, deleteUser, kidsFetch, otpVerification, subscriptionPlan,
   otpVerificationAdult, editKids, unifiedDataFetch, otpResend, otpResendAdult,
   deleteFile, talentList, talentFilterData, setUserFavorite, talentLogin, searchTalent, checkProfileStatus,
   getTalentById, updateProfileStatus, subscriptionStatus, getByProfession, loginTemplate, getPlanByType,
-  removeFavorite, checkUserStatus,socialSignup,updateAdultPassword
+  removeFavorite, checkUserStatus,socialSignup,updateAdultPassword,adultForgotPassword,adultResetPassword
 
 
 

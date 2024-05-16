@@ -38,7 +38,7 @@ var authenticationSchema = new schema({
         type: String
     },
     languages: {
-        type: String
+        type: Array
     },
     questions: {
         type: Array

@@ -1,0 +1,62 @@
+const mongoose = require("mongoose");
+const Schema = mongoose.Schema;
+
+const applyjobSchema = new Schema({
+
+    brandId: { type: mongoose.Schema.Types.ObjectId, ref: 'Brands', required: false },
+    talentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Talent', required: false },
+    gigId: { type: mongoose.Schema.Types.ObjectId, ref: 'Gig' },
+    selectedLevel:{type:String,default:'new'},
+    isActive: { type: Boolean, default: true },
+    read: { type: Boolean, default: false },
+    type:{type:String},
+    brandDetails: {
+        brandName: String,
+        brandEmail: String,
+        logo: Array,
+        brandImage: Array,
+    },
+    talentDetails: {
+        parentFirstName: String,
+        parentLastName: String,
+        parentEmail: String,
+        childFirstName: String,
+        childLastName: String,
+        preferredChildFirstname:String,
+        preferredChildLastName:String,
+        image: Array,
+        childGender:String,
+        maritalStatus:String,
+        childNationality:String,
+        languages:Array,
+        childDob:String,
+        childPhone:String,
+        userType:String,
+        isFavorite:String,
+        adultEmail:String,
+        parentMobileNo:String,
+     
+
+
+    },
+    gigDetails:{
+        jobTitle:String,
+        jobLocation:String,
+        streetAddress:String,
+        workplaceType:String,
+        jobType:String,
+        jobDescription:Array,
+        skills:Array,
+        additionalRequirements:Array,
+        languages:String,
+        hiringCompany:String,
+        jobImage:Array,
+
+    },
+    appliedOn: Date,
+},
+{
+    timestamps: true
+});
+
+module.exports = mongoose.model('Applyjobs', applyjobSchema);

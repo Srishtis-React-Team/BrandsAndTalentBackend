@@ -35,6 +35,9 @@ router.post('/removeFavorite/:user_id',users.removeFavorite)//for removeFavorite
 router.post('/checkUserStatus',users.checkUserStatus)//for checkUserStatus
 router.post('/socialSignup',users.socialSignup)//for googleSignUpAdult
 router.post('/updateAdultPassword',users.updateAdultPassword)//for updateAdultPassword
+router.post('/adultForgotPassword',users.adultForgotPassword)//for adultForgotPassword
+router.post('/adultResetPassword',users.adultResetPassword)//for adultResetPassword
+
 
 module.exports = router
 

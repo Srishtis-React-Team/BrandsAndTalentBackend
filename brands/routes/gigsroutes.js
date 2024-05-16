@@ -29,6 +29,10 @@ router.post('/selectedLevelRange',gigs.selectedLevelRange)//for selectedLevelRan
 router.post('/informSelectedLevel',gigs.informSelectedLevel)//for informSelectedLevel
 router.post('/newCandidates',gigs.newCandidates)//for newCandidates
 router.post('/getSelectionList',gigs.getSelectionList)//for getSelectionList
+router.post('/updateFavouriteJobs',gigs.updateFavouriteJobs)//for updateFavouriteJobs
+router.post('/findFavouritesByTalentId',gigs.findFavouritesByTalentId)//for findFavouritesByTalentId
+router.get('/getSkills',gigs.getSkills)//for getSkills
+
 
 
 

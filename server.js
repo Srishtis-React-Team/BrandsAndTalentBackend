@@ -5,27 +5,20 @@ const connectToDatabase = require('./connection/config');
 var path = require('path');
 const cors = require('cors');
 const crypto = require('crypto');//otp
+const bodyParser = require('body-parser');
 const passport=require("passport"); //google
 const auth=require("./auth"); //google
 const session=require('express-session');
-const bodyParser = require('body-parser');
-const FacebookStrategy = require('passport-facebook').Strategy;//21/3
-const router = express.Router();  //21/3
-const kidsmodel = require('./users/models/kidsmodel.js');
 const { createServer } = require('http');
 const { Server } = require('socket.io');
 
+const FacebookStrategy = require('passport-facebook').Strategy;//21/3
+const router = express.Router();  //21/3
+
+const kidsmodel = require('./users/models/kidsmodel.js');
 const chatmodel = require("./brands/models/chatmodel.js");
 const brandsmodel = require("./brands/models/brandsmodel.js");
-//const io = new Server({cors: "http://localhost:3000"});
-//const httpServer = createServer(app);
-// const io = new Server(httpServer, {
-//     cors: {
-//         origin: "*",
 
-
-//     }
-// })
 const httpServer = createServer(app); // Create the HTTP server from the Express app
 const io = new Server(httpServer, {
   cors: "http://13.234.177.61:3000"
@@ -114,13 +107,16 @@ socket.on("disconnect",()=>{
  
 });
      
+// Enable CORS for all routes
+app.use(cors());
+
+
 function isLoggedIn(req,res,next){
   req.user?next():res.sendStatus(401);
 }
 
 app.use(express.json());
-// Enable CORS for all routes
-app.use(cors());
+
 
 
 

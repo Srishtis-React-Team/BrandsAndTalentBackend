@@ -20,6 +20,7 @@ const adultmodel = require('../../users/models/adultmodel.js');
 const kidsmodel = require('../../users/models/kidsmodel.js');
 
 
+
 /**
  *********brandsRegister******
  * @param {*} req from user
@@ -133,6 +134,12 @@ const getUserSearchKeyword = async (req, res, next) => {
         res.status(500).json({ status: false, msg: error.message });
     }
 };
+
+
+
+
+
+  
 
 
 

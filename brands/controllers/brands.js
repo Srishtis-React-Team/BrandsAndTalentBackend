@@ -72,16 +72,30 @@ const brandsRegister = async (req, res, next) => {
 
     const hashedPass = await bcrypt.hash(req.body.brandPassword, 10);
     console.log("hashedPass", hashedPass);
-
-    const userExist = await brandsmodel.findOne({ brandEmail: req.body.brandEmail });
-
-    if (userExist) {
-      console.log("Email already exists");
-      return res.status(400).json({
-        message: "Email ID already exists",
+     // Check if the email already exists in any model
+     const userExists = await Promise.any([
+      kidsmodel.findOne({ parentEmail: req.body.brandEmail, isActive: true }).then(user => user || Promise.reject()),
+      adultmodel.findOne({ adultEmail: req.body.brandEmail, isActive: true }).then(user => user || Promise.reject()),
+      brandsmodel.findOne({ brandEmail: req.body.brandEmail, isActive: true }).then(user => user || Promise.reject())
+    ]).catch(() => null);  // Handling when no match is found
+    
+    if (userExists) {
+      console.log("Email matches");
+      return res.json({
+        message: "Email ID Already Exists",
         status: false
       });
     }
+
+    // const userExist = await brandsmodel.findOne({ brandEmail: req.body.brandEmail });
+
+    // if (userExist) {
+    //   console.log("Email already exists");
+    //   return res.status(400).json({
+    //     message: "Email ID already exists",
+    //     status: false
+    //   });
+    // }
 
     const newBrandData = {
       position:req.body.position,
@@ -630,9 +644,148 @@ const updateBrandPassword = async (req, res) => {
     res.json({ status: false, msg: 'Error Occurred: ' + error.message });
   }
 };
+/**
+ *********forgot password  ******
+ * @param {*} req from user
+ * @param {*} res return data
+ * @param {*} next undefined
+ */
 
+
+
+ const brandsForgotPassword = async (req, res, next) => {
+  try {
+    const token = crypto.randomBytes(20).toString('hex');
+
+    const user = await brandsmodel.findOne({ brandEmail: req.body.brandEmail, isActive: true });
+
+    if (!user) {
+      return res.json({
+        status: false,
+        message: 'No account with that email address exists.'
+      });
+    }
+
+    user.resetPasswordToken = token;
+    user.resetPasswordExpires = moment(Date.now()) + 3600000;
+
+    await user.save();
+    const resetLink = `https://hybrid.sicsglobal.com/project/brandsandtalent/reset-password/brand/${token}`;
+    const transporter = nodemailer.createTransport({
+      service: 'Gmail',
+      auth: {
+        user: host,
+        pass: pass
+      }
+    });
+    const mailOptions = {
+      from: host,
+      to: req.body.brandEmail,
+      subject: 'Password Reset',
+      html: `
+        <p>Hello,</p>
+        <p>You are receiving this because you (or someone else) have requested the reset of the password for your account.</p>
+        <p>Please click on the following link to complete the process:</p>
+        <p><a href="${resetLink}">${resetLink}</a></p>
+        <p>If you did not request this, please ignore this email and your password will remain unchanged.</p>
+        <p>Thanks and regards,</p>
+        <p>Your HR Team</p>
+       
+      `
+    };
+
+
+    await transporter.sendMail(mailOptions);
+
+    res.json({
+      status: true,
+      message: 'An e-mail has been sent to ' + req.body.brandEmail + ' with further instructions.'
+    });
+  } catch (error) {
+    console.error(error);
+    res.json({
+      status: false,
+      message: 'Error during password reset process.'
+    });
+  }
+};
+
+/**
+ *********resetPassword ******
+ * @param {*} req from user
+ * @param {*} res return data
+ * @param {*} next undefined
+ */
+
+
+const brandsResetPassword = async (req, res, next) => {
+  try {
+    const hashedPass = await bcrypt.hash(req.body.password, 10);
+    console.log(hashedPass);
+
+    const user = await brandsmodel.findOne({
+      resetPasswordToken: req.body.resetPasswordToken,
+      resetPasswordExpires: { $gt: moment(Date.now()) },
+    });
+
+    if (!user) {
+      return res.json({
+        Status: false,
+        message: 'Password reset token is invalid or has expired.',
+      });
+    }
+
+    console.log("user.Password", hashedPass);
+    user.brandPassword = hashedPass;
+
+    const mailOptions = {
+      from: host,
+      to: user.brandEmail,
+      subject: 'Password Reset',
+      text: 'Hello,\n\n' +
+        'This is a confirmation that the password for your account has just been changed.\n',
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    await user.save();
+
+    res.json({
+      status: true,
+      message: 'Password Changed Successfully',
+    });
+  } catch (error) {
+    console.error(error);
+    res.json({
+      message: 'An error occurred during password reset.',
+    });
+  }
+};
+
+/********** getBrands******
+* @param {*} req from user
+* @param {*} res return data
+* @param {*} next undefined
+*/
+
+
+const getBrands = async (req, res) => {
+  try {
+   
+
+    const user = await brandsmodel.find({  isActive: true }).sort({ created: -1 });
+    if (user) {
+      return res.json({ status: true, data: user });
+    } else {
+      return res.json({ status: false, msg: 'No user found' });
+    }
+  } catch (error) {
+    return res.json({ status: false, msg: 'Invalid Token' });
+  }
+};
 module.exports = {
   brandsRegister, otpVerificationBrands, brandsLogin, editBrands, deleteBrands, getBrandById, topBrands,
-  favouritesList,searchDatas,socailSignUpBrands,updateBrandPassword
+  favouritesList,searchDatas,socailSignUpBrands,updateBrandPassword,brandsForgotPassword,brandsResetPassword,
+  getBrands
 
 };

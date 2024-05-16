@@ -67,8 +67,6 @@ const addAdmin = async (req, res, next) => {
       email: req.body.email,
       password: hashedPass,
       image: req.body.image,
-
-
       isActive: true
     });
 

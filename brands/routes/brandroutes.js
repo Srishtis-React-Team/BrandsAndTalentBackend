@@ -13,7 +13,9 @@ router.post('/otpVerificationBrands',brands.otpVerificationBrands)//for otpVerif
 router.get('/favouritesList',brands.favouritesList)//for favouritesList
 router.post('/searchDatas',brands.searchDatas)//for searchDatas
 router.post('/socailSignUpBrands',brands.socailSignUpBrands)//for socailSignUpBrands
-router.post('/updateBrandPassword',brands.updateBrandPassword)//for updateBrandPassword
+router.post('/brandsResetPassword',brands.brandsResetPassword)//for brandsResetPassword
+router.post('/brandsForgotPassword',brands.brandsForgotPassword)//for brandsForgotPassword
+router.get('/getBrands',brands.getBrands)//for getBrands
 
 
 module.exports = router
