@@ -48,9 +48,10 @@ const applyjobSchema = new Schema({
         jobDescription:Array,
         skills:Array,
         additionalRequirements:Array,
-        languages:String,
+        languages:Array,
         hiringCompany:String,
         jobImage:Array,
+        category:String
 
     },
     appliedOn: Date,

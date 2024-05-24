@@ -16,6 +16,8 @@ router.post('/socailSignUpBrands',brands.socailSignUpBrands)//for socailSignUpBr
 router.post('/brandsResetPassword',brands.brandsResetPassword)//for brandsResetPassword
 router.post('/brandsForgotPassword',brands.brandsForgotPassword)//for brandsForgotPassword
 router.get('/getBrands',brands.getBrands)//for getBrands
-
+router.post('/deleteNotification',brands.deleteNotification)//for deleteNotification
+router.post('/updatePasswordInSettings',brands.updatePasswordInSettings)//for updatePasswordInSettings
+router.post('/activateBrandUser',brands.activateBrandUser)//for activateBrandUser
 
 module.exports = router

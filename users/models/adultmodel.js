@@ -99,6 +99,7 @@ var authenticationSchema = new schema({
       type: Array
 
    },
+  
 
 
    isActive:
@@ -238,6 +239,18 @@ var authenticationSchema = new schema({
       type: String,
       default:'new'
    },
+   inActive:
+   {
+      type: Boolean,
+      
+   },
+   subscriptionType:{
+      type:String
+   },
+   planName:{
+      type:String
+   },
+
 },
    {
       timestamps: true

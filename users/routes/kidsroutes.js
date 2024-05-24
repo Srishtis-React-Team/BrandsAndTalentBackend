@@ -37,7 +37,12 @@ router.post('/socialSignup',users.socialSignup)//for googleSignUpAdult
 router.post('/updateAdultPassword',users.updateAdultPassword)//for updateAdultPassword
 router.post('/adultForgotPassword',users.adultForgotPassword)//for adultForgotPassword
 router.post('/adultResetPassword',users.adultResetPassword)//for adultResetPassword
-
+router.post('/fetchUserData/:user_id',users.fetchUserData)//for fetchUserData
+router.get('/countUsers',users.countUsers)//for countUsers
+router.post('/activateUser/:user_id',users.activateUser)//for activateUser
+router.post('/deleteService',users.deleteService)//for deleteService
+router.post('/addServices',users.addServices)//for addServices
+router.post('/applyJobUsersList',users.applyJobUsersList)//for applyJobUsersList
 
 module.exports = router
 

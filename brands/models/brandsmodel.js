@@ -91,6 +91,13 @@ var authenticationSchema = new schema({
         type:Boolean,
         default:false
      },
+     inActive:
+   {
+      type: Boolean,
+      default:true
+      
+   },
+ 
    
 
     resetPasswordExpires: Date,

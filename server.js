@@ -98,14 +98,37 @@ socket.on("sendMessage", (message) => {
 });
 
 
-socket.on("disconnect",()=>{
-  onlineUsers=onlineUsers.filter((user)=>user.socketId!==socket.id);
-  io.emit("getOnlineUsers",onlineUsers)
+// socket.on("disconnect",()=>{
+//   onlineUsers=onlineUsers.filter((user)=>user.socketId!==socket.id);
+//   io.emit("getOnlineUsers",onlineUsers)
 
 
-})
- 
+// })
+socket.on("disconnect", async () => {
+  // Remove the user from the online users list
+  onlineUsers = onlineUsers.filter((user) => user.socketId !== socket.id);
+  io.emit("getOnlineUsers", onlineUsers);
+
+  try {
+    // Assume userId is available in the socket context, e.g., socket.userId
+    const userId = socket.userId;
+
+    // Update the user in each of the models
+    await Promise.all([
+      adultmodel.updateOne({ _id: userId }, { $set: { isOnline: false } }),
+      brandsmodel.updateOne({ _id: userId }, { $set: { isOnline: false } }),
+      kidsmodel.updateOne({ _id: userId }, { $set: { isOnline: false } })
+    ]);
+
+    console.log(`User ${userId} set to offline in all models.`);
+  } catch (error) {
+    console.error("Error setting user to offline:", error);
+  }
 });
+
+});
+ 
+
      
 // Enable CORS for all routes
 app.use(cors());

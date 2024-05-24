@@ -103,8 +103,8 @@ const listMessage = async (req, res, next) => {
   try {
     // Using Promise.all to find data from both collections
     const results = await Promise.all([
-      kidsmodel.find({ brandId: new mongoose.Types.ObjectId(brandId) }).sort({ created: -1 }),
-      adultmodel.find({ brandId: new mongoose.Types.ObjectId(brandId) }).sort({ created: -1 }),
+      kidsmodel.find({ brandId: new mongoose.Types.ObjectId(brandId),inActive:true,isActive:true }).sort({ created: -1 }),
+      adultmodel.find({ brandId: new mongoose.Types.ObjectId(brandId),inActive:true,isActive:true }).sort({ created: -1 }),
     ]);
 
     // Combine results from both collections
@@ -127,7 +127,7 @@ const listMessage = async (req, res, next) => {
 const listBrandsForChat = async (req, res, next) => {
   try {
     // Fetch data from the brand collection
-    const brands = await brandsmodel.find({ isActive: true }).sort({ created: -1 });
+    const brands = await brandsmodel.find({ isActive: true,inActive:true }).sort({ created: -1 });
 
     res.status(200).json({
       status: true,

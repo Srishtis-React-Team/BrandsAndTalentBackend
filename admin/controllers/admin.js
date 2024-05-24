@@ -144,12 +144,12 @@ const adminProfile = async (req, res) => {
   try {
     const userId = req.body.user_id || req.params.user_id;
 
-    /* Authentication */
-    const authResult = await auth.CheckAuth(req.headers["x-access-token"], userId);
-    if (!authResult) {
-      return res.json({ status: false, msg: 'Authentication failed' });
-    }
-    /* Authentication */
+    // /* Authentication */
+    // const authResult = await auth.CheckAuth(req.headers["x-access-token"], userId);
+    // if (!authResult) {
+    //   return res.json({ status: false, msg: 'Authentication failed' });
+    // }
+    // /* Authentication */
 
     const admin = await adminmodel.findOne({ _id: userId, isActive: true });
     if (admin) {

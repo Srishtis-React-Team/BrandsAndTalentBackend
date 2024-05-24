@@ -49,7 +49,7 @@ let onlineUsers =[];
       try {
         // Update the user in each of the models
         await Promise.all([
-          adultmodel.updateMa({ _id: userId }, { $set: { isOnline: true } }),
+          adultmodel.updateOne({ _id: userId }, { $set: { isOnline: true } }),
           brandsmodel.updateOne({ _id: userId }, { $set: { isOnline: true } }),
           kidsmodel.updateOne({ _id: userId }, { $set: { isOnline: true } })
         ]);
@@ -101,13 +101,34 @@ let onlineUsers =[];
 });
 
  
-  socket.on("disconnect",()=>{
-    onlineUsers=onlineUsers.filter((user)=>user.socketId!==socket.id);
-    io.emit("getOnlineUsers",onlineUsers)
+  // socket.on("disconnect",()=>{
+  //   onlineUsers=onlineUsers.filter((user)=>user.socketId!==socket.id);
+  //   io.emit("getOnlineUsers",onlineUsers)
 
   
-  })
-   
+  // })
+  socket.on("disconnect", async () => {
+    // Remove the user from the online users list
+    onlineUsers = onlineUsers.filter((user) => user.socketId !== socket.id);
+    io.emit("getOnlineUsers", onlineUsers);
+  
+    try {
+      // Assume userId is available in the socket context, e.g., socket.userId
+      const userId = socket.userId;
+  
+      // Update the user in each of the models
+      await Promise.all([
+        adultmodel.updateOne({ _id: userId }, { $set: { isOnline: false } }),
+        brandsmodel.updateOne({ _id: userId }, { $set: { isOnline: false } }),
+        kidsmodel.updateOne({ _id: userId }, { $set: { isOnline: false } })
+      ]);
+  
+      console.log(`User ${userId} set to offline in all models.`);
+    } catch (error) {
+      console.error("Error setting user to offline:", error);
+    }
+  });
+  
  });
        
 

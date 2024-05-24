@@ -30,8 +30,15 @@ router.post('/informSelectedLevel',gigs.informSelectedLevel)//for informSelected
 router.post('/newCandidates',gigs.newCandidates)//for newCandidates
 router.post('/getSelectionList',gigs.getSelectionList)//for getSelectionList
 router.post('/updateFavouriteJobs',gigs.updateFavouriteJobs)//for updateFavouriteJobs
-router.post('/findFavouritesByTalentId',gigs.findFavouritesByTalentId)//for findFavouritesByTalentId
+router.post('/getSavedJobsByTalentId',gigs.getSavedJobsByTalentId)//for getSavedJobsByTalentId
 router.get('/getSkills',gigs.getSkills)//for getSkills
+router.post('/removeFavouritesJob',gigs.removeFavouritesJob)//for removeFavouritesJob
+router.post('/updatePassword',gigs.updatePassword)//for updatePassword
+router.post('/createJobAlert',gigs.createJobAlert)//for createJobAlert
+router.post('/updateJobAlert',gigs.updateJobAlert)//for updateJobAlert
+router.post('/inviteTalentToApply',gigs.inviteTalentToApply)//for inviteTalentToApply
+
+
 
 
 

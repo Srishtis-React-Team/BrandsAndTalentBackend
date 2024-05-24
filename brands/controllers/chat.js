@@ -113,9 +113,9 @@ const findPreviousChatUsers = async (req, res) => {
 
         // Find related data for these other members in different models with isActive: true
         const [adults, kids, brands] = await Promise.all([
-            adultmodel.find({ _id: { $in: uniqueMemberIds }, isActive: true }),
-            kidsmodel.find({ _id: { $in: uniqueMemberIds }, isActive: true }),
-            brandsmodel.find({ _id: { $in: uniqueMemberIds }, isActive: true })
+            adultmodel.find({ _id: { $in: uniqueMemberIds }, isActive: true,inActive:true }),
+            kidsmodel.find({ _id: { $in: uniqueMemberIds }, isActive: true,inActive:true }),
+            brandsmodel.find({ _id: { $in: uniqueMemberIds }, isActive: true,inActive:true })
         ]);
 
         // Combine all the data into a single array
@@ -170,7 +170,8 @@ const findPreviousChatUsers = async (req, res) => {
         // Define the base query for finding members
         const baseQuery = {
             _id: { $in: uniqueMemberIds },
-            isActive: true // Assume you want only active members
+            isActive: true,
+            inActive:true // Assume you want only active members
         };
 
         // Adjust the query to filter by the starting sequence if it is not empty

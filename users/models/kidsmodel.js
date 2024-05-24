@@ -257,6 +257,17 @@ facebookId: {
       type: String,
       default:'new'
    },
+   inActive:
+   {
+      type: Boolean,
+      
+   },
+   subscriptionType:{
+      type:String
+   },
+   planName:{
+      type:String
+   },
 
 
 },

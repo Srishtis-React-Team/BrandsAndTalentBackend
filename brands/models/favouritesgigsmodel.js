@@ -46,11 +46,45 @@ const favouritejobSchema = new Schema({
         jobType:String,
         jobDescription:Array,
         skills:Array,
+        age:String, 
+        gender:String,
+        nationality:String,
+        questions:Array,
+        benefits:Array,
+        compensation: {
+            type: Object,
+            default: null
+        },
+        paymentType: {
+
+            type: Object,
+            default: null
+    
+        },
+        minPay:String,
+        maxPay:String,
+        whyWorkWithUs:Array,
+        product:String,
+        valueOfProduct:String,
+        productDescription:String,
+        hiringCompanyDescription:Array,
+        howLikeToApply:String,
+        jobCurrency:String, 
         additionalRequirements:Array,
-        languages:String,
+        languages:Array,
         hiringCompany:String,
         jobImage:Array,
-
+        matched:String,
+        workSamples:Array,
+        type: {
+            type: String,
+            default: 'Posted'
+        },
+        country:String,
+        state:String,
+        city:String,
+        lastDateForApply:Date,
+        category:String
     },
     appliedOn: Date,
 },

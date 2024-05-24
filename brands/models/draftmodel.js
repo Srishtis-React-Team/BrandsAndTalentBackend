@@ -127,9 +127,13 @@ var authenticationSchema = new schema({
     // jobPostedDate:{
     //     type:Date
     // },
-    // lastDateForApply:{
-    //     type:Date
-    // },
+    lastDateForApply:{
+        type:Date
+    },
+    category:{
+        type:String
+    }
+
    
   
    

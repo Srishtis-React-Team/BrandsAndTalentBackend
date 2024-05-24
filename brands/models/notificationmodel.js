@@ -28,7 +28,8 @@ const notificationSchema = new Schema({
         image: Array
     },
     gigDetails:{
-        jobTitle:String
+        jobTitle:String,
+        category:String
     },
     appliedOn: Date,
 },

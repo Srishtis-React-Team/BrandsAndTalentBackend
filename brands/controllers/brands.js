@@ -50,6 +50,7 @@ var transporter = nodemailer.createTransport({
 const brandsmodel = require('../models/brandsmodel.js');
 const kidsmodel = require("../../users/models/kidsmodel.js");
 const adultmodel = require("../../users/models/adultmodel.js");
+const notificationmodel = require("../models/notificationmodel.js");
 
 /**
  *********brandsRegister******
@@ -74,9 +75,9 @@ const brandsRegister = async (req, res, next) => {
     console.log("hashedPass", hashedPass);
      // Check if the email already exists in any model
      const userExists = await Promise.any([
-      kidsmodel.findOne({ parentEmail: req.body.brandEmail, isActive: true }).then(user => user || Promise.reject()),
-      adultmodel.findOne({ adultEmail: req.body.brandEmail, isActive: true }).then(user => user || Promise.reject()),
-      brandsmodel.findOne({ brandEmail: req.body.brandEmail, isActive: true }).then(user => user || Promise.reject())
+      kidsmodel.findOne({ parentEmail: req.body.brandEmail, isActive: true,inActive:true}).then(user => user || Promise.reject()),
+      adultmodel.findOne({ adultEmail: req.body.brandEmail, isActive: true,inActive:true }).then(user => user || Promise.reject()),
+      brandsmodel.findOne({ brandEmail: req.body.brandEmail, isActive: true,inActive:true }).then(user => user || Promise.reject())
     ]).catch(() => null);  // Handling when no match is found
     
     if (userExists) {
@@ -107,8 +108,16 @@ const brandsRegister = async (req, res, next) => {
       isActive: true,
       userType: 'brand',
       isVerified: false,
-      fcmToken:req.body.fcmToken
+      fcmToken:req.body.fcmToken,
+      brandPhone:req.body.brandPhone,
+      brandZipCode:req.body.brandZipCode,
+      howHearAboutAs:req.body.howHearAboutAs,
+      address:req.body.address,
+      logo:req.body.logo,
+      brandImage:req.body.brandImage
+
     };
+ 
 
     const newBrand = new brandsmodel(newBrandData);
     const savedBrand = await newBrand.save();
@@ -149,7 +158,7 @@ const otpVerificationBrands = async (req, res, next) => {
     const { otp: inputOTP, brandEmail: email } = req.body;
 
     // Fetch the user from the database for the given email
-    const user = await brandsmodel.findOne({ brandEmail: email, isActive: true });
+    const user = await brandsmodel.findOne({ brandEmail: email, isActive: true,inActive:true });
     if (!user) {
       console.log("Error: User not found for email", email); // Log for debugging; be cautious about logging sensitive information
       return res.status(404).json({
@@ -182,7 +191,7 @@ const otpVerificationBrands = async (req, res, next) => {
       res.json({
         message: "User verified",
         status: true,
-        data: { brandEmail: email ,brandUserId:user._id} // for consistency, wrap email in an object
+        data: { brandEmail: email ,brandUserId:user._id,brandName:user.brandName} // for consistency, wrap email in an object
       });
     } else {
       console.log("Error: OTP does not match for email", email); // Log for debugging
@@ -381,8 +390,11 @@ const brandsLogin = async (req, res, next) => {
       howHearAboutAs: req.body.howHearAboutAs,
       logo: req.body.logo,
       brandImage:req.body.logo,
-      address: req.body.address
-      
+      address: req.body.address,
+      brandImage:req.body.brandImage,
+      position:req.body.position,
+      inActive:true
+     
     };
 
     try {
@@ -411,12 +423,12 @@ const deleteBrands = async (req, res) => {
   try {
     const userId = req.body.user_id || req.params.user_id;
 
-    /* Authentication */
-    const authResult = await auth.CheckAuth(req.headers["x-access-token"], userId);
-    if (!authResult) {
-      return res.json({ status: false, msg: 'Authentication failed' });
-    }
-    /* Authentication */
+    // /* Authentication */
+    // const authResult = await auth.CheckAuth(req.headers["x-access-token"], userId);
+    // if (!authResult) {
+    //   return res.json({ status: false, msg: 'Authentication failed' });
+    // }
+    // /* Authentication */
 
     try {
       const user_id = req.body.user_id || req.params.user_id;
@@ -462,7 +474,7 @@ const getBrandById = async (req, res) => {
 
 const topBrands = async (req, res, next) => {
   try {
-    const response = await brandsmodel.find({ isActive: true }).select({ brandImage: 1, brandName: 1 });
+    const response = await brandsmodel.find({ isActive: true,inActive:true }).select({ brandImage: 1, brandName: 1 });
     res.json({
       status: true,
       data: response
@@ -483,9 +495,9 @@ const topBrands = async (req, res, next) => {
 const favouritesList = async (req, res) => {
   try {
     // Fetch favorites from kidsmodel
-    const kidsFavorites = await kidsmodel.find({ isActive: true, isFavorite: true });
+    const kidsFavorites = await kidsmodel.find({ isActive: true, isFavorite: true,inActive:true });
     // Fetch favorites from adultmodel
-    const adultFavorites = await adultmodel.find({ isActive: true, isFavorite: true });
+    const adultFavorites = await adultmodel.find({ isActive: true, isFavorite: true,inActive:true });
 
     // Combine kidsFavorites and adultFavorites into a single array
     const combinedFavorites = [...kidsFavorites, ...adultFavorites];
@@ -553,7 +565,8 @@ const socailSignUpBrands = async (req, res, next) => {
       isActive: true,
       isFavorite: false,
       profileStatus: false,
-      facebookId:req.body.facebookId
+      facebookId:req.body.facebookId,
+      inActive:true
 
 
  
@@ -624,7 +637,7 @@ const updateBrandPassword = async (req, res) => {
 
         // Update the OTP in the database for the user
         try {
-          await adultmodel.updateOne({ brandEmail: email }, { otp: hashedOTP });
+          await brandsmodel.updateOne({ brandEmail: email }, { otp: hashedOTP });
           console.log("OTP updated successfully in the database");
         } catch (updateError) {
           console.error("Error updating OTP in the database:", updateError);
@@ -657,7 +670,7 @@ const updateBrandPassword = async (req, res) => {
   try {
     const token = crypto.randomBytes(20).toString('hex');
 
-    const user = await brandsmodel.findOne({ brandEmail: req.body.brandEmail, isActive: true });
+    const user = await brandsmodel.findOne({ brandEmail: req.body.brandEmail, isActive: true ,inActive:true});
 
     if (!user) {
       return res.json({
@@ -773,7 +786,7 @@ const getBrands = async (req, res) => {
   try {
    
 
-    const user = await brandsmodel.find({  isActive: true }).sort({ created: -1 });
+    const user = await brandsmodel.find({  isActive: true,inActive:true }).sort({ created: -1 });
     if (user) {
       return res.json({ status: true, data: user });
     } else {
@@ -783,9 +796,123 @@ const getBrands = async (req, res) => {
     return res.json({ status: false, msg: 'Invalid Token' });
   }
 };
+
+/**
+ *  Function for Delete  notification
+ * @param {*} req from user
+ * @param {*} res return data
+ * @param {*} next undefined
+ */
+
+const deleteNotification = async (req, res, next) => {
+  try {
+    const notificationId = req.body.notificationId;
+
+    // Find the notification based on notificationId and isActive
+    const notification = await notificationmodel.findOne({ _id: notificationId, isActive: true });
+
+    if (!notification) {
+      return res.status(404).json({
+        status: false,
+        message: 'Notification not found or already inactive'
+      });
+    }
+
+    // Update the document to set isActive to false
+    const updatedNotification = await notificationmodel.findOneAndUpdate(
+      { _id: notificationId },
+      { isActive: false },
+      { new: true } // Return the updated document
+    );
+
+    // If successful, send success response
+    res.json({
+      status: true,
+      message: 'Deleted Successfully',
+      response: updatedNotification
+    });
+  } catch (error) {
+    // If an error occurs, send error response
+    console.error("Error in deleteNotification:", error);
+    res.status(500).json({
+      status: false,
+      message: 'An error occurred'
+    });
+  }
+};
+
+/**
+ * updatePasswordInSettings
+ * @param {*} req from user
+ * @param {*} res return data
+ * @param {*} next undefined
+ */
+
+const updatePasswordInSettings = async (req, res, next) => {
+  try {
+      const { brandId, password, newPassword } = req.body;
+
+      if (!brandId || !password || !newPassword) {
+          return res.status(200).json({ status: false, message: 'Missing required fields' });
+      }
+
+      let brand = await brandsmodel.findOne({ _id: brandId, isActive: true,inActive:true});
+     
+
+      const isMatch = await bcrypt.compare(password, brand.brandPassword);
+      if (!isMatch) {
+          return res.status(200).json({ status: false, message: 'Old password is incorrect' });
+      }
+
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+      brand.brandPassword = hashedPassword;
+      brand.confirmPassword = hashedPassword;
+      await brand.save();
+
+      res.json({ status: true, message: 'Password updated successfully' });
+  } catch (error) {
+      console.error("Error in updating password:", error);
+      res.status(200).json({ status: false, message: 'An error occurred' });
+  }
+};
+
+
+/**
+ *********Deactivate users*****
+ * @param {*} req from user
+ * @param {*} res return data
+ * @param {*} next undefined
+ */
+ const activateBrandUser = async (req, res) => {
+  try {
+    const userId = req.body.brandId || req.params.brandId;
+
+    if (!userId) {
+      return res.json({ status: false, msg: 'User ID is required' });
+    }
+
+    // Find the user in the brandsmodel
+    const user = await brandsmodel.findById(userId);
+    
+    if (!user) {
+      return res.json({ status: false, msg: 'User not found' });
+    }
+
+    // Update the user's inActive status
+    user.inActive = req.body.inActive;
+    await user.save();
+
+    res.json({ status: true, msg: 'Updated successfully' });
+  } catch (error) {
+    console.error("Error in activateBrandUser:", error);
+    res.json({ status: false, msg: 'Server error' });
+  }
+};
 module.exports = {
   brandsRegister, otpVerificationBrands, brandsLogin, editBrands, deleteBrands, getBrandById, topBrands,
   favouritesList,searchDatas,socailSignUpBrands,updateBrandPassword,brandsForgotPassword,brandsResetPassword,
-  getBrands
+  getBrands,deleteNotification,updatePasswordInSettings,activateBrandUser
 
 };

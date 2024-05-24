@@ -229,13 +229,13 @@ const chatBrandsTemplate = () => `
 `;
 
 
-
 // Export the functions
 module.exports = {
     getBusinessReviewEmailTemplate,
     chatKidsTemplate,
     chatAdultTemplate,
     chatBrandsTemplate,
+   
     
     
 };
