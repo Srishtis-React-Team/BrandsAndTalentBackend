@@ -12,7 +12,7 @@ var authenticationSchema = new schema({
     streetAddress : {
         type: String
     },
-    workplaceType:  {
+    employmentType:  {
         type: String
     },
    
@@ -132,7 +132,47 @@ var authenticationSchema = new schema({
     },
     category:{
         type:String
-    }
+    },
+    isApproved:{
+        type:Boolean,
+        default:false
+    },
+    minAge:{
+        type:String
+    },
+    maxAge:{
+        type:String
+    },
+    instaMin:{
+        type:String
+    } ,
+    instaMax:{
+        type:String
+    } ,
+    tikTokMin:{
+        type:String
+    } ,
+    tikTokMax:{
+        type:String
+    } ,
+    linkedInMin:{
+        type:String
+    } ,
+    linkedInMax:{
+        type:String
+    },
+    fbMin:{
+        type:String
+    },
+    fbMax:{
+        type:String
+    },
+    twitterMin:{
+        type:String
+    },
+    twitterMax:{
+        type:String
+    },
 
    
   

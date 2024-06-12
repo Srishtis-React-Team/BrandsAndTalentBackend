@@ -114,7 +114,8 @@ const brandsRegister = async (req, res, next) => {
       howHearAboutAs:req.body.howHearAboutAs,
       address:req.body.address,
       logo:req.body.logo,
-      brandImage:req.body.brandImage
+      brandImage:req.body.brandImage,
+      fcmToken:req.body.fcmToken
 
     };
  
@@ -910,9 +911,65 @@ const updatePasswordInSettings = async (req, res, next) => {
     res.json({ status: false, msg: 'Server error' });
   }
 };
+/**
+ *********Deactivate users*****
+ * @param {*} req from user
+ * @param {*} res return data
+ * @param {*} next undefined
+ */
+
+ const postSupportMail = async (req, res, next) => {
+  try {
+    const { name, enquiry, phoneNo, email } = req.body;
+
+    // Create a transporter object using the default SMTP transport
+    const transporter = nodemailer.createTransport({
+      service: 'Gmail',
+      auth: {
+        user: host,
+        pass: pass
+      }
+    });
+
+    // Define the email options
+    const mailOptions = {
+      from: host,
+      to: 'arya1@yopmail.com',
+      subject: 'Help And Support',
+      html: `
+        <p>Hello,</p>
+        <p>We have received a new support request. Here are the details:</p>
+        <p><strong>Name:</strong> ${name}</p>
+        <p><strong>Email:</strong> ${email}</p>
+        <p><strong>Phone Number:</strong> ${phoneNo}</p>
+        <p><strong>Enquiry:</strong> ${enquiry}</p>
+        <p>If you have any other questions or concerns, please don't hesitate to contact us directly.</p>
+        <p>Thanks and regards,</p>
+        <p>Your Support Team</p>
+      `
+    };
+
+    // Send the email
+    await transporter.sendMail(mailOptions);
+
+    res.json({
+      status: true,
+      message: `An e-mail has been sent to the support team with the provided details.`
+    });
+  } catch (error) {
+    console.error(error);
+    res.json({
+      status: false,
+      message: 'Error during the support request process.'
+    });
+  }
+};
+ 
+ 
+
 module.exports = {
   brandsRegister, otpVerificationBrands, brandsLogin, editBrands, deleteBrands, getBrandById, topBrands,
   favouritesList,searchDatas,socailSignUpBrands,updateBrandPassword,brandsForgotPassword,brandsResetPassword,
-  getBrands,deleteNotification,updatePasswordInSettings,activateBrandUser
+  getBrands,deleteNotification,updatePasswordInSettings,activateBrandUser,postSupportMail
 
 };

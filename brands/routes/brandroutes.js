@@ -19,5 +19,7 @@ router.get('/getBrands',brands.getBrands)//for getBrands
 router.post('/deleteNotification',brands.deleteNotification)//for deleteNotification
 router.post('/updatePasswordInSettings',brands.updatePasswordInSettings)//for updatePasswordInSettings
 router.post('/activateBrandUser',brands.activateBrandUser)//for activateBrandUser
+router.post('/postSupportMail',brands.postSupportMail)//for postSupportMail
+
 
 module.exports = router

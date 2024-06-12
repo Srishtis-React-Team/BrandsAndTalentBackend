@@ -189,8 +189,8 @@ var authenticationSchema = new schema({
    services:{
       type:Array
    },
-   reviews:{
-      type:String
+   reviews: {
+      type: Array//String
    },
    maritalStatus: {
       type:String
@@ -231,7 +231,11 @@ facebookId: {
    gigId: mongoose.Schema.Types.ObjectId,
    isApplied: Boolean,
    brandId: mongoose.Schema.Types.ObjectId,
-   appliedDate: { type: Date, default: Date.now }
+   appliedDate: { type: Date, default: Date.now },
+   selectedLevel: {
+      type: String,
+      default:'new'
+   },
   
 }],
  isApplied:{
@@ -248,6 +252,7 @@ facebookId: {
  },
    fcmToken: {
       type: String,
+      default:''
    },
    isOnline: {
       type: Boolean,
@@ -266,8 +271,13 @@ facebookId: {
       type:String
    },
    planName:{
-      type:String
+      type:String,
+      default:'Basic'
    },
+   admin_Approved:{
+      type:Boolean,
+      default:false
+   }
 
 
 },

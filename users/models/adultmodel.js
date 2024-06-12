@@ -156,7 +156,7 @@ var authenticationSchema = new schema({
    },
 
    reviews: {
-      type: String
+      type: Array//String
    },
 
 
@@ -214,7 +214,11 @@ var authenticationSchema = new schema({
       gigId: mongoose.Schema.Types.ObjectId,
       isApplied: Boolean,
       brandId: mongoose.Schema.Types.ObjectId,
-      appliedDate: { type: Date, default: Date.now }
+      appliedDate: { type: Date, default: Date.now },
+      selectedLevel: {
+         type: String,
+         default:'new'
+      },
   }],
     isApplied:{
       type: String,
@@ -230,6 +234,7 @@ var authenticationSchema = new schema({
     },
     fcmToken :{
       type: String,
+      default:''
    },
    isOnline: {
       type: Boolean,
@@ -248,8 +253,29 @@ var authenticationSchema = new schema({
       type:String
    },
    planName:{
+      type:String,
+      default:'Basic'
+   },
+   parentState:{
       type:String
    },
+   parentAddress:{
+      type:String
+   },
+   parentCountry:{
+      type:String
+   },
+   adultLegalFirstName:{
+      type:String
+   },
+   adultLegalLastName:{
+      type:String
+   },
+   admin_Approved:{
+      type:Boolean,
+      default:false
+   }
+   
 
 },
    {

@@ -170,16 +170,39 @@ const getMessages = async (req, res, next) => {
   const { senderId, receiverId } = req.body;
 
   try {
-    // Log the correct variable names
-    console.log("Fetching messages involving", senderId, "or", receiverId);
+    // Log the received senderId and receiverId
+    console.log("Fetching messages for", { senderId, receiverId });
 
-    // Retrieve messages where either the senderId or receiverId is one of the provided IDs
-    const chats = await messagemodel.find({
-      $and: [
-        { senderId: { $in: [senderId, receiverId] } },
-        { receiverId: { $in: [senderId, receiverId] } }
-      ]
-    });
+    // Build the query conditions based on provided IDs
+    let query = {};
+
+    if (senderId && receiverId) {
+      query = {
+        $and: [
+          { senderId: { $in: [senderId, receiverId] } },
+          { receiverId: { $in: [senderId, receiverId] } }
+        ]
+      };
+    } else if (senderId) {
+      query = {
+        $or: [
+          { senderId },
+          { receiverId: senderId }
+        ]
+      };
+    } else if (receiverId) {
+      query = {
+        $or: [
+          { senderId: receiverId },
+          { receiverId }
+        ]
+      };
+    } else {
+      return res.status(400).json({ error: "At least one of senderId or receiverId must be provided" });
+    }
+
+    // Retrieve messages based on the constructed query
+    const chats = await messagemodel.find(query);
 
     // Send the retrieved chats as a JSON response
     res.status(200).json(chats);
@@ -188,6 +211,30 @@ const getMessages = async (req, res, next) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
+
+
+//  const getMessageByUser = async (req, res) => {
+//   const { senderId, receiverId } = req.body;
+
+//   try {
+//     // Log the correct variable names
+//     console.log("Fetching messages involving", senderId, "or", receiverId);
+
+//     // Retrieve messages where either the senderId or receiverId is one of the provided IDs
+//     const chats = await messagemodel.find({
+//       $and: [
+//         { senderId: { $in: [senderId, receiverId] } },
+//         { receiverId: { $in: [senderId, receiverId] } }
+//       ]
+//     });
+
+//     // Send the retrieved chats as a JSON response
+//     res.status(200).json(chats);
+//   } catch (error) {
+//     console.error("Error fetching messages:", error);
+//     res.status(500).json({ error: "Internal server error" });
+//   }
+// };
 
 
 

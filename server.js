@@ -342,6 +342,7 @@ const reviews = require('./brands/routes/reviewroutes');
 const notification = require('./brands/routes/notification.js');
 const conversation = require('./brands/routes/conversationroutes.js');
 const message = require('./brands/routes/messageroutes.js');
+const socialmedia = require('./brands/routes/socialmediaroutes.js');
 
 // Define routes
 app.use('/brandsntalent_api/users',users);
@@ -356,6 +357,7 @@ app.use('/brandsntalent_api/keyword',keyword);
 app.use('/brandsntalent_api/notification',notification);
 app.use('/brandsntalent_api/conversation',conversation);
 app.use('/brandsntalent_api/message',message);
+app.use('/brandsntalent_api/socialmedia',socialmedia);
 
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

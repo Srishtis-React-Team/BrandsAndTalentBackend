@@ -146,7 +146,9 @@ const kidsSignUp = async (req, res, next) => {
         rating: "4",
         profileStatus: true,
         age:req.body.age,
-        inActive:true
+        inActive:true,
+        fcmToken:req.body.fcmToken,
+        admin_Approved:false
       });
 
       // Save the new user to the database
@@ -234,7 +236,14 @@ const adultSignUp = async (req, res, next) => {
         bookJob: '30',
         rating: '3',
         profileStatus: false,
-        inActive:true
+        inActive:false,
+        image:req.body.image,
+        fcmToken:req.body.fcmToken,
+        maritalStatus:req.body.maritalStatus,
+        parentState:req.body.parentState,
+        parentAddress:req.body.parentAddress,
+        parentCountry:req.body.parentCountry,
+        childPhone:req.body.childPhone
 
       });
 
@@ -276,7 +285,7 @@ const otpVerificationAdult = async (req, res, next) => {
     const newEmail = req.body.adultEmail;
 
     // Fetch the user from the database for the given email
-    const user = await adultmodel.findOne({ adultEmail: newEmail, isActive: true,inActive:true });
+    const user = await adultmodel.findOne({ adultEmail: newEmail, isActive: true });
     console.log("user", user)
     console.log("otp",req.body.otp)
     if (!user) {
@@ -312,7 +321,8 @@ const otpVerificationAdult = async (req, res, next) => {
       console.log("Success: User verified and email sent");
       res.json({
         message: "User verified",
-        status: true
+        status: true,
+        data:user._id
       });
     } else {
       console.log("Error: OTP does not match");
@@ -400,16 +410,38 @@ const otpVerification = async (req, res, next) => {
 */
 const subscriptionPlan = async (req, res, next) => {
   try {
-    const newEmail = req.body.parentEmail;
+    const { user_id, subscriptionPlan, planName } = req.body;
 
-    // Update subscription plan for the user with the given email
+    // Check if the user is a kid, adult, or brand based on the provided user_id
+    const isKid = req.body.hasOwnProperty('user_id');
+    const isBrand = req.body.hasOwnProperty('brand_id');
 
-    const userId = req.body.user_id || req.params.user_id;
-    const updatedUser = await kidsmodel.findOneAndUpdate(
-      { parentEmail: newEmail, isActive: true, _id: userId,inActive:true},
-      { subscriptionPlan: req.body.subscriptionPlan },
+    // Define the model based on the user type (kid, adult, or brand)
+    let UserModel;
+    if (isKid) {
+      UserModel = kidsmodel;
+    } else if (isBrand) {
+      UserModel = brandsmodel;
+    } else {
+      UserModel = adultmodel;
+    }
+
+    // Update subscription plan for the user with the given user_id
+    const query = isKid
+      ? { isActive: true, _id: user_id, inActive: true }
+      : isBrand
+      ? { _id: user_id } // Update query for brand model
+      : { _id: user_id }; // Update query for adult model
+
+    const updatedUser = await UserModel.findOneAndUpdate(
+      query,
+      { subscriptionPlan, planName },
       { new: true } // To return the updated document
     );
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
 
     console.log("Success: Subscription plan updated");
     res.json({
@@ -419,13 +451,43 @@ const subscriptionPlan = async (req, res, next) => {
     });
   } catch (error) {
     console.error("Error:", error);
-    res.json({
+    res.status(500).json({
       message: "An error occurred",
       status: false,
-      error: error
+      error: error.message
     });
   }
 };
+
+
+// const subscriptionPlan = async (req, res, next) => {
+//   try {
+//     const newEmail = req.body.parentEmail;
+
+//     // Update subscription plan for the user with the given email
+
+//     const userId = req.body.user_id || req.params.user_id;
+//     const updatedUser = await kidsmodel.findOneAndUpdate(
+//       { parentEmail: newEmail, isActive: true, _id: userId,inActive:true},
+//       { subscriptionPlan: req.body.subscriptionPlan,planName:req.body.planName },
+//       { new: true } // To return the updated document
+//     );
+
+//     console.log("Success: Subscription plan updated");
+//     res.json({
+//       message: "Subscription plan updated",
+//       status: true,
+//       data: updatedUser._id // Return the updated user's ID
+//     });
+//   } catch (error) {
+//     console.error("Error:", error);
+//     res.json({
+//       message: "An error occurred",
+//       status: false,
+//       error: error
+//     });
+//   }
+// };
 
 
 /**
@@ -813,7 +875,6 @@ const updateAdults = async (req, res) => {
       preferredChildFirstname: req.body.preferredChildFirstname,
       preferredChildLastName: req.body.preferredChildLastName,
       childGender: req.body.childGender,
-      maritalStatus: req.body.maritalStatus,
       childNationality: req.body.childNationality,
       childEthnicity: req.body.childEthnicity,
       languages: req.body.languages,
@@ -844,7 +905,14 @@ const updateAdults = async (req, res) => {
       profileStatus: false,
       image: req.body.image,
       age: req.body.age,
-      inActive:true
+      inActive:true,
+      maritalStatus:req.body.maritalStatus,
+      parentState:req.body.parentState,
+      parentAddress:req.body.parentAddress,
+      parentCountry:req.body.parentCountry,
+      adultLegalFirstName:req.body.adultLegalFirstName,
+      adultLegalLastName:req.body.adultLegalLastName,
+      reviews:req.body.reviews
     };
 
     try {
@@ -852,7 +920,7 @@ const updateAdults = async (req, res) => {
         { _id: new mongoose.Types.ObjectId(user_id) },
         { $set: updateFields }
       );
-      res.json({ status: true, msg: 'Updated successfully' });
+      res.json({ status: true, msg: 'Updated successfully',type:"adult",data:updateFields });
     } catch (err) {
       res.json({ status: false, msg: err.message });
     }
@@ -1134,23 +1202,50 @@ const unifiedDataFetch = async (req, res, next) => {
       }
       case 6: {
         try {
-          // Assuming "services" is the correct field name in your schema
-          const serviceData = await model.findOne({ _id: objectId, isActive: true,inActive:true }, 'services').sort({ createdAt: -1 });;
+          const serviceData = await model.findOne({ _id: objectId, isActive: true, inActive: true }, 'services').sort({ createdAt: -1 });
 
           if (!serviceData || !serviceData.services || serviceData.services.length === 0) {
             return res.status(200).json({ status: false, msg: 'Services data not found' });
           }
 
-          // Format the services as per requirement
-          const formattedServices = serviceData.services.map(service => ({
-            serviceName: service.serviceName,
-            serviceAmount: service.serviceAmount,
-            serviceDuration: service.serviceDuration,
-            editorState: service.editorState.join(' '), // Joining HTML strings if there are multiple
-            files: service.files || [], // Ensure files array exists, handle if it's undefined
-          }));
+          const formattedServices = serviceData.services.map(service => {
+            let editorStateString = '';
+            if (Array.isArray(service.editorState)) {
+              editorStateString = service.editorState.join(' '); // Joining HTML strings if there are multiple
+            } else if (typeof service.editorState === 'string') {
+              editorStateString = service.editorState; // Use as is if it's a string
+            } else {
+              console.error('Unexpected type for service.editorState:', typeof service.editorState);
+            }
+
+            return {
+              serviceName: service.serviceName,
+              serviceAmount: service.serviceAmount,
+              serviceDuration: service.serviceDuration,
+              editorState: editorStateString,
+              files: service.files || [], // Ensure files array exists, handle if it's undefined
+            };
+          });
 
           return res.json({ status: true, data: formattedServices });
+        // try {
+        //   // Assuming "services" is the correct field name in your schema
+        //   const serviceData = await model.findOne({ _id: objectId, isActive: true,inActive:true }, 'services').sort({ createdAt: -1 });;
+
+        //   if (!serviceData || !serviceData.services || serviceData.services.length === 0) {
+        //     return res.status(200).json({ status: false, msg: 'Services data not found' });
+        //   }
+
+        //   // Format the services as per requirement
+        //   const formattedServices = serviceData.services.map(service => ({
+        //     serviceName: service.serviceName,
+        //     serviceAmount: service.serviceAmount,
+        //     serviceDuration: service.serviceDuration,
+        //     editorState: service.editorState.join(' '), // Joining HTML strings if there are multiple
+        //     files: service.files || [], // Ensure files array exists, handle if it's undefined
+        //   }));
+
+        //   return res.json({ status: true, data: formattedServices });
         } catch (error) {
           console.error('Error retrieving services data:', error);
           return res.status(500).json({ status: false, msg: 'Server error' });
@@ -1579,6 +1674,86 @@ const searchTalent = async (req, res, next) => {
  * @param {*} res return data
  * @param {*} next undefined
  */
+//  const checkProfileStatus = async (req, res) => {
+//   try {
+//     const userId = req.body.user_id || req.params.user_id;
+
+//     if (!userId) {
+//       return res.status(400).json({ status: false, msg: 'User ID is required' });
+//     }
+
+//     let userType = '';
+//     let profileStatus = null;
+
+//     // Check in adultmodel
+//     const adultUser = await adultmodel.find({ 
+//       _id: new mongoose.Types.ObjectId(userId), 
+//       isActive: true, 
+//       inActive: true 
+//     }).select('profileStatus _id');
+
+//     if (adultUser) {
+//       userType = 'adults';
+//       profileStatus = adultUser.profileStatus;
+//       return res.json({ status: true, msg: 'Profile status retrieved successfully', type: userType, profileStatus: profileStatus });
+//     }
+
+//     // If not found in adultmodel, check in kidsmodel
+//     const kidUser = await kidsmodel.find({ 
+//       _id: new mongoose.Types.ObjectId(userId), 
+//       isActive: true, 
+//       inActive: true 
+//     }).select('profileStatus _id');
+
+//     if (kidUser) {
+//       userType = 'kids';
+//       profileStatus = kidUser.profileStatus;
+//       return res.json({ status: true, msg: 'Profile status retrieved successfully', type: userType, profileStatus: profileStatus });
+//     }
+
+//     // If user type is still empty, user was not found in either model
+//     return res.status(404).json({ status: false, msg: 'User not found' });
+
+//   } catch (error) {
+//     console.error('Error checking profile status:', error);
+//     return res.status(500).json({ status: false, msg: 'Error occurred during profile status check', error: error.message });
+//   }
+// };
+
+// const checkProfileStatus = async (req, res) => {
+//   try {
+//     const userId = req.body.user_id || req.params.user_id;
+
+//     let userType = '';
+//     let profileStatus = null;
+
+//     // Check in adultmodel
+//     const adultUser = await adultmodel.findOne({ _id: new mongoose.Types.ObjectId(userId),isActive:true,inActive:true }).select('profileStatus _id');
+//     if (adultUser) {
+//       userType = 'adults';
+//       profileStatus = adultUser.profileStatus;
+//       return res.json({ status: true, msg: 'Profile status retrieved successfully', type: userType, profileStatus: profileStatus });
+//     }
+
+//     // If not found in adultmodel, check in kidsmodel without updating
+//     const kidUser = await kidsmodel.findOne({ _id: new mongoose.Types.ObjectId(userId),isActive:true,inActive:true }).select('profileStatus _id');
+//     if (kidUser) {
+//       userType = 'kids';
+//       profileStatus = kidUser.profileStatus;
+//       return res.json({ status: true, msg: 'Profile status retrieved successfully', type: userType, profileStatus: profileStatus });
+//     }
+
+//     // If user type is still empty, user was not found in either model
+//     if (!userType) {
+//       return res.json({ status: false, msg: 'User not found' });
+//     }
+
+//   } catch (error) {
+//     console.error('Error checking profile status:', error);
+//     return res.json({ status: false, msg: 'Error occurred during profile status check', error: error.message });
+//   }
+// };
+
 const checkProfileStatus = async (req, res) => {
   try {
     const userId = req.body.user_id || req.params.user_id;
@@ -1587,10 +1762,15 @@ const checkProfileStatus = async (req, res) => {
     let profileStatus = null;
 
     // Check in adultmodel
-    const adultUser = await adultmodel.findOne({ _id: new mongoose.Types.ObjectId(userId),isActive:true,inActive:true }).select('profileStatus _id');
-    if (adultUser) {
+    const adultUser = await adultmodel.findOne({ _id: new mongoose.Types.ObjectId(userId),isActive:true})
+    if (adultUser.inActive==false) {
       userType = 'adults';
-      profileStatus = adultUser.profileStatus;
+      profileStatus = false;
+      return res.json({ status: true, msg: 'Profile status retrieved successfully', type: userType, profileStatus: profileStatus });
+    }
+    else {
+      userType = 'adults';
+      profileStatus = true;
       return res.json({ status: true, msg: 'Profile status retrieved successfully', type: userType, profileStatus: profileStatus });
     }
 
@@ -1612,6 +1792,7 @@ const checkProfileStatus = async (req, res) => {
     return res.json({ status: false, msg: 'Error occurred during profile status check', error: error.message });
   }
 };
+
 
 
 /**
@@ -1674,6 +1855,10 @@ const updateProfileStatus = async (req, res) => {
         { _id: new mongoose.Types.ObjectId(userId) },
         { $set: { profileStatus: true } }
       );
+       // Fetch updated user data
+       if (updateResult.modifiedCount > 0) {
+        updatedUserData = await adultmodel.findOne({ _id: new mongoose.Types.ObjectId(userId) });
+      }
     } else {
       // If not found in adultmodel, check in kidsmodel
       const kidUser = await kidsmodel.findOne({ _id: new mongoose.Types.ObjectId(userId) });
@@ -1683,6 +1868,10 @@ const updateProfileStatus = async (req, res) => {
           { _id: new mongoose.Types.ObjectId(userId) },
           { $set: { profileStatus: true } }
         );
+         // Fetch updated user data
+         if (updateResult.modifiedCount > 0) {
+          updatedUserData = await kidsmodel.findOne({ _id: new mongoose.Types.ObjectId(userId) });
+        }
       }
     }
 
@@ -1691,10 +1880,18 @@ const updateProfileStatus = async (req, res) => {
       return res.json({ status: false, msg: 'User not found' });
     }
 
-    // If we have an update result, we successfully updated the profile status
-    if (updateResult) {
-      return res.json({ status: true, msg: 'Set profile status successfully', type: userType });
-    } else {
+    // // If we have an update result, we successfully updated the profile status
+    // if (updateResult) {
+    //   return res.json({ status: true, msg: 'Set profile status successfully', type: userType,data:updateResult });
+    // } 
+    if (updateResult && updatedUserData) {
+      return res.json({
+        status: true,
+        msg: 'Set profile status successfully',
+        type: userType,
+        data: updatedUserData
+      });
+    }else {
       return res.json({ status: false, msg: 'Failed to update profile status' });
     }
   } catch (error) {
@@ -1995,7 +2192,8 @@ const socialSignup = async (req, res, next) => {
       isFavorite: false,
       profileStatus: false,
       facebookId:req.body.facebookId,
-      inActive:true
+      inActive:true,
+      image:req.body.image
 
     });
 
@@ -2112,7 +2310,7 @@ const updateAdultPassword = async (req, res) => {
     user.resetPasswordExpires = moment(Date.now()) + 3600000;
 
     await user.save();
-    const resetLink = `https://hybrid.sicsglobal.com/project/brandsandtalent/reset-password?${token}`;
+    const resetLink = `https://hybrid.sicsglobal.com/project/brandsandtalent/reset-password/adult/${token}`;
     const transporter = nodemailer.createTransport({
       service: 'Gmail',
       auth: {
@@ -2502,59 +2700,6 @@ async function determineUserModel(userId) {
 };
 
 
-
-
-
-// const deleteService = async (req, res) => {
-//   const { talentId, serviceId } = req.body;
-
-//   try {
-//       let updatedTalent = null;
-
-//       // Define the update operation
-//       const updateOperation = {
-//           $pull: { services: { _id: serviceId } }
-//       };
-
-//       // Try to find the talent in the kids model first
-//       updatedTalent = await kidsmodel.findOneAndUpdate(
-//           { _id: talentId, 'services._id': serviceId },
-//           updateOperation,
-//           { new: true }
-//       );
-
-//       // If not found in kids model, try the adults model
-//       if (!updatedTalent) {
-//           updatedTalent = await adultmodel.findOneAndUpdate(
-//               { _id: talentId, 'services._id': serviceId },
-//               updateOperation,
-//               { new: true }
-//           );
-//       }
-
-//       if (!updatedTalent) {
-//           return res.status(404).json({
-//               status: false,
-//               message: 'Talent or service not found'
-//           });
-//       }
-
-//       // Return the updated talent document
-//       res.json({
-//           status: true,
-//           message: 'Service deleted successfully',
-//           data: updatedTalent
-//       });
-//   } catch (error) {
-//       console.error('Error deleting service:', error);
-//       res.status(500).json({
-//           status: false,
-//           message: 'An error occurred while deleting the service',
-//           error: error.message
-//       });
-//   }
-// };
-
 /**
  *********applyJobUsersList ******
  * @param {*} req from user
@@ -2583,13 +2728,155 @@ async function determineUserModel(userId) {
   }
 };
 
+/**
+ *********deleteIndividualService ******
+ * @param {*} req from user
+ * @param {*} res return data
+ * @param {*} next undefined
+ */
+ const deleteIndividualService = async (req, res) => {
+  const { talentId, serviceId } = req.body;
+
+  try {
+    // Check if the talentId exists in KidsModel
+    let talent = await kidsmodel.findById(talentId);
+    let modelType = "kids";
+
+    // If not found in KidsModel, check in AdultModel
+    if (!talent) {
+      talent = await adultmodel.findById(talentId);
+      modelType = "adult";
+    }
+
+    // If talentId is not found in either model
+    if (!talent) {
+      return res.status(404).json({ message: "Talent not found" });
+    }
+
+    // Update the respective model
+    const updatedTalent = await (modelType === "kids" ? kidsmodel : adultmodel).findByIdAndUpdate(
+      talentId,
+      { $pull: { services: { uniqueId: serviceId } } },
+      { new: true }
+    );
+
+    res.status(200).json({status:true, message: "Service deleted successfully", talent: updatedTalent });
+  } catch (error) {
+    console.error("Error deleting service:", error);
+    res.status(500).json({status:false, message: "Internal server error" });
+  }
+};
+
+
+/**
+ *********type checking ******
+ * @param {*} req from user
+ * @param {*} res return data
+ * @param {*} next undefined
+ */
+ const typeChecking = async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    // Check if the email exists in the brand model
+    let talent = await brandsmodel.findOne({ brandEmail: email });
+    let modelType = "brand";
+
+    // If not found in the brand model, check in the kids model
+    if (!talent) {
+      talent = await kidsmodel.findOne({ parentEmail: email });
+      modelType = "kids";
+    }
+
+    // If not found in the kids model, check in the adult model
+    if (!talent) {
+      talent = await adultmodel.findOne({ adultEmail: email });
+      modelType = "adult";
+    }
+
+    // If the email is not found in any model
+    if (!talent) {
+      return res.status(404).json({ status: false, message: "Email not found" });
+    }
+
+    res.status(200).json({
+      status: true,
+      message: "Email found",
+      modelType: modelType
+    });
+  } catch (error) {
+    console.error("Error checking email:", error);
+    res.status(500).json({ status: false, message: "Internal server error" });
+  }
+};
+/*
+*********adminApproval*****
+* @param {*} req from user
+* @param {*} res return data
+* @param {*} next undefined
+*/
+const adminApproval = async (req, res) => {
+  try {
+    const userId = req.body.user_id || req.params.user_id;
+
+    let userType = '';
+    let updateResult = null;
+
+    // Check in adultmodel
+    const adultUser = await adultmodel.findOne({ _id: new mongoose.Types.ObjectId(userId) });
+    if (adultUser) {
+      userType = 'adults';
+      updateResult = await adultmodel.updateOne(
+        { _id: new mongoose.Types.ObjectId(userId) },
+        { $set: { adminApproval: true } }
+      );
+    } else {
+      // If not found in adultmodel, check in kidsmodel
+      const kidUser = await kidsmodel.findOne({ _id: new mongoose.Types.ObjectId(userId) });
+      if (kidUser) {
+        userType = 'kids';
+        updateResult = await kidsmodel.updateOne(
+          { _id: new mongoose.Types.ObjectId(userId) },
+          { $set: { adminApproval: true } }
+        );
+      } else {
+        // If not found in kidsmodel, check in brandsmodel
+        const brandsUser = await brandsmodel.findOne({ _id: new mongoose.Types.ObjectId(userId) });
+        if (brandsUser) {
+          userType = 'brands';
+          updateResult = await brandsmodel.updateOne(
+            { _id: new mongoose.Types.ObjectId(userId) },
+            { $set: { adminApproval: true } }
+          );
+        }
+      }
+    }
+
+    // If user type is still empty, user was not found in any model
+    if (!userType) {
+      return res.json({ status: false, msg: 'User not found' });
+    }
+
+    // If we have an update result, we successfully updated the profile status
+    if (updateResult) {
+      return res.json({ status: true, msg: 'Approved successfully', type: userType });
+    } else {
+      return res.json({ status: false, msg: 'Failed to Approval' });
+    }
+  } catch (error) {
+    console.error('Error in admin approval:', error);
+    return res.status(500).json({ status: false, msg: 'Internal server error' });
+  }
+};
+
 module.exports = {
   kidsSignUp, adultSignUp, adultFetch, forgotPassword, resetPassword, updateAdults, deleteUser, kidsFetch, otpVerification, subscriptionPlan,
   otpVerificationAdult, editKids, unifiedDataFetch, otpResend, otpResendAdult,
   deleteFile, talentList, talentFilterData, setUserFavorite, talentLogin, searchTalent, checkProfileStatus,
   getTalentById, updateProfileStatus, subscriptionStatus, getByProfession, loginTemplate, getPlanByType,
   removeFavorite, checkUserStatus,socialSignup,updateAdultPassword,adultForgotPassword,adultResetPassword,
-  fetchUserData,countUsers,activateUser,addServices,deleteService,applyJobUsersList
+  fetchUserData,countUsers,activateUser,addServices,deleteService,applyJobUsersList,deleteIndividualService,
+  typeChecking,adminApproval
 
 
 

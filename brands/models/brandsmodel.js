@@ -97,6 +97,10 @@ var authenticationSchema = new schema({
       default:true
       
    },
+   admin_Approved:{
+    type:Boolean,
+    default:false
+ },
  
    
 

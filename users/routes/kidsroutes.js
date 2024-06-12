@@ -43,6 +43,10 @@ router.post('/activateUser/:user_id',users.activateUser)//for activateUser
 router.post('/deleteService',users.deleteService)//for deleteService
 router.post('/addServices',users.addServices)//for addServices
 router.post('/applyJobUsersList',users.applyJobUsersList)//for applyJobUsersList
+router.post('/deleteIndividualService',users.deleteIndividualService)//for deleteIndividualService
+router.post('/typeChecking',users.typeChecking)//for typeChecking
+router.post('/adminApproval',users.adminApproval)//for adminApproval
+
 
 module.exports = router
 

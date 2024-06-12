@@ -6,6 +6,7 @@ var path = require('path');
 const cors = require('cors');
 const crypto = require('crypto');//otp
 const bodyParser = require('body-parser');
+
 //26/3
 const passport=require("passport"); //google
 const auth=require("./auth"); //google
@@ -18,10 +19,13 @@ const adultmodel = require('./users/models/adultmodel.js');
 const kidsmodel = require('./users/models/kidsmodel.js');
 const brandsmodel = require("./brands/models/brandsmodel.js");
 
+
+
 const httpServer = createServer(app); // Create the HTTP server from the Express app
 const io = new Server(httpServer, {
   cors: "http://13.234.177.61:3000"
 });
+
 
 let onlineUsers =[];
 
