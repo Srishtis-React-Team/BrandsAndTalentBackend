@@ -6,23 +6,27 @@ var path = require('path');
 const cors = require('cors');
 const crypto = require('crypto');//otp
 const bodyParser = require('body-parser');
+
+//26/3
 const passport=require("passport"); //google
 const auth=require("./auth"); //google
 const session=require('express-session');
 const { createServer } = require('http');
 const { Server } = require('socket.io');
-
-const FacebookStrategy = require('passport-facebook').Strategy;//21/3
-const router = express.Router();  //21/3
-
-const kidsmodel = require('./users/models/kidsmodel.js');
 const chatmodel = require("./brands/models/chatmodel.js");
+
+const adultmodel = require('./users/models/adultmodel.js');
+const kidsmodel = require('./users/models/kidsmodel.js');
 const brandsmodel = require("./brands/models/brandsmodel.js");
+
+
 
 const httpServer = createServer(app); // Create the HTTP server from the Express app
 const io = new Server(httpServer, {
   cors: "http://13.234.177.61:3000"
 });
+
+
 
 let onlineUsers =[];
 
@@ -32,106 +36,172 @@ let onlineUsers =[];
   //listen to connection
  
 
-
   socket.on("addNewUser", async (userId) => {
     console.log("addNewUser", userId);
   
     // Check if the user is not already in the onlineUsers array
-    if (!onlineUsers.some(user => user.userId === userId)) {
+    if (!onlineUsers.some(user => user.userId === userId)) {  //!onlineUsers                        
       onlineUsers.push({
         userId,
         socketId: socket.id,
       });
-
+ 
   
-      // Emit the updated list of online users
-      io.emit("getOnlineUsers", onlineUsers);
-      console.log("onlineUsers get", onlineUsers);
-        
       // Update isOnline status in the database
-      try {
-        // Update the user in each of the models
-        await Promise.all([
-          adultmodel.updateMa({ _id: userId }, { $set: { isOnline: true } }),
-          brandsmodel.updateOne({ _id: userId }, { $set: { isOnline: true } }),
-          kidsmodel.updateOne({ _id: userId }, { $set: { isOnline: true } })
-        ]);
-  
-        console.log(`User ${userId} set to online in all models.`);
-      } catch (error) {
-        console.error("Error setting user to online:", error);
-      }
-    }
-  });
-  socket.on("createChat", async (firstId,secondId) => {
-  
-    const chat = await chatmodel.findOne({
-      members: { $all: [firstId, secondId]} // Ensure consistent order
-  });
 
+    // Update isOnline status in the database
+   // Update isOnline status in the database for all users in onlineUsers array
+   try {
+    // Prepare promises to update the isOnline status for each user in the onlineUsers array
+    const updatePromises = onlineUsers.map(async (user) => {
+      const userId = user.userId;
+      return Promise.all([
+        adultmodel.findOneAndUpdate({ _id: userId }, { $set: { isOnline: true } }, { new: true }).exec(),
+        brandsmodel.findOneAndUpdate({ _id: userId }, { $set: { isOnline: true } }, { new: true }).exec(),
+        kidsmodel.findOneAndUpdate({ _id: userId }, { $set: { isOnline: true } }, { new: true }).exec()
+      ]);
+    });
+
+    // Await all the updates
+    await Promise.all(updatePromises);
+    console.log("updatePromises",updatePromises)
+
+    console.log(`All users in the onlineUsers array are set to online in the relevant models.`);
+  } catch (error) {
+    console.error("Error setting users to online:", error);
+  }
+}
+  
+    //   try {
+    //     // Update the user in each of the models
+    //     await Promise.all([
+    //       adultmodel.updateOne({ _id: userId }, { $set: { isOnline: true } }),
+    //       brandsmodel.updateOne({ _id: userId }, { $set: { isOnline: true } }),
+    //       kidsmodel.updateOne({ _id: userId }, { $set: { isOnline: true } })
+    //     ]);
+  
+    //     console.log(`User ${userId} set to online in all models.`);
+    //   } catch (error) {
+    //     console.error("Error setting user to online:", error);
+    //   }
+    // }
+
+     // Emit the updated list of online users
+     io.emit("getOnlineUsers", onlineUsers);
+     console.log("onlineUsers get", onlineUsers);
+ 
+  });
+  
+
+
+
+  socket.on("createChat", async (firstId,secondId,socketId) => {
+    console.log("chat one",firstId)
+    console.log("chat second",secondId)
+    console.log("socketId",socketId)
+    const chat = await chatmodel.findOne({
+      members: { $all: [firstId, secondId]},// Ensure consistent order
+  });
+  console.log("chta",chat)
+  
   if (chat) {
     console.log("message testtttt",firstId)
     console.log("message testtttt",secondId)
-      io.to(chat.socketId).emit("chatCreated",firstId,secondId );
-      console.log("message getttt",firstId)
+      io.to(chat.socketId).emit("chatCreated",firstId,secondId,socketId );
+      console.log("chat.socketId",chat.socketId)
+      
   } 
+  
 });
-socket.on("sendMessage", (message) => {
     
-  console.log("onlineUsers testttt",onlineUsers)
-  //console.log("message testststt",message)
-  const user = onlineUsers.find(user => user.userId === message.recipientId);
 
- //console.log("uesr test",user)
-  console.log("message",message)
-  if (user) {
-    console.log("message testtttt",message)
-      io.to(user.socketId).emit("getMessage", message);
-      console.log("message getttt",message)
+  socket.on("sendMessage", (message) => {
+    
+    console.log("onlineUsers testttt",onlineUsers)
+    
+    console.log("message.recipientId",message)
+    const user = onlineUsers.find(user => user.userId === message.recipientId);
+   // console.log("user.userId ",user.userId )
+  
+  
+   console.log("uesr test",user)
+    console.log("message",message)
+    
+    // if (user) {
+    //   console.log("emit message",message)
+    //     io.to(user.socketId).emit("getMessage", message);
+    //     //console.log("message getttt",message)
 
-      io.to(user.socketId).emit("getNotification", {
-          senderId: message.senderId,
-          isRead: false,
-          date: new Date(),
-      });
-  }
+    //     io.to(user.socketId).emit("getNotification", {
+    //         senderId: message.senderId,
+    //         isRead: false,
+    //         date: new Date(),
+    //     });
+    // }
+    io.to(user.socketId).emit("getMessage", message);
+        //console.log("message getttt",message)
+
+        io.to(user.socketId).emit("getNotification", {
+            senderId: message.senderId,
+            isRead: false,
+            date: new Date(),
+        });
 });
 
-
-// socket.on("disconnect",()=>{
-//   onlineUsers=onlineUsers.filter((user)=>user.socketId!==socket.id);
-//   io.emit("getOnlineUsers",onlineUsers)
-
-
-// })
-socket.on("disconnect", async () => {
-  // Remove the user from the online users list
-  onlineUsers = onlineUsers.filter((user) => user.socketId !== socket.id);
-  io.emit("getOnlineUsers", onlineUsers);
-
-  try {
-    // Assume userId is available in the socket context, e.g., socket.userId
-    const userId = socket.userId;
-
-    // Update the user in each of the models
-    await Promise.all([
-      adultmodel.updateOne({ _id: userId }, { $set: { isOnline: false } }),
-      brandsmodel.updateOne({ _id: userId }, { $set: { isOnline: false } }),
-      kidsmodel.updateOne({ _id: userId }, { $set: { isOnline: false } })
-    ]);
-
-    console.log(`User ${userId} set to offline in all models.`);
-  } catch (error) {
-    console.error("Error setting user to offline:", error);
-  }
-});
-
-});
  
+  // socket.on("disconnect",()=>{
+  //   onlineUsers=onlineUsers.filter((user)=>user.socketId!==socket.id);
+  //   io.emit("getOnlineUsers",onlineUsers)
 
-     
-// Enable CORS for all routes
+  
+  // })
+  socket.on("disconnect", async () => {
+    // Remove the user from the online users list
+    onlineUsers = onlineUsers.filter((user) => user.socketId !== socket.id);
+    io.emit("getOnlineUsers", onlineUsers);
+
+    try {
+      // Assume userId is available in the socket context, e.g., socket.userId
+      const userId = socket.userId;
+  
+      // Check if the user is still in the online users list
+      const userStillOnline = onlineUsers.some(user => user.userId === userId);
+  
+      if (!userStillOnline) {
+        // Update the user in each of the models
+        await Promise.all([
+          adultmodel.updateOne({ _id: userId }, { $set: { isOnline: false } }),
+          brandsmodel.updateOne({ _id: userId }, { $set: { isOnline: false } }),
+          kidsmodel.updateOne({ _id: userId }, { $set: { isOnline: false } })
+        ]);
+  
+        console.log(`User ${userId} set to offline in all models.`);
+      }
+    } catch (error) {
+      console.error("Error setting user to offline:", error);
+    }
+    // try {
+    //   // Assume userId is available in the socket context, e.g., socket.userId
+    //   const userId = socket.userId;
+
+    //   // Update the user in each of the models
+    //   await Promise.all([
+    //     adultmodel.updateOne({ _id: userId }, { $set: { isOnline: false } }),
+    //     brandsmodel.updateOne({ _id: userId }, { $set: { isOnline: false } }),
+    //     kidsmodel.updateOne({ _id: userId }, { $set: { isOnline: false } })
+    //   ]);
+  
+    //   console.log(`User ${userId} set to offline in all models.`);
+    // } catch (error) {
+    //   console.error("Error setting user to offline:", error);
+    // }
+  });
+  
+ });
+       
+
 app.use(cors());
+
 
 
 function isLoggedIn(req,res,next){
@@ -139,7 +209,6 @@ function isLoggedIn(req,res,next){
 }
 
 app.use(express.json());
-
 
 
 
@@ -159,7 +228,7 @@ app.get('/auth/google/callback',
   passport.authenticate('google', { 
     successRedirect:'/auth/google/success',
     failureRedirect: '/auth/google/failure' ,// /login
-  
+ 
   }));
   app.get('/auth/google/failure', (req,res)=>{
     res.send("Something went wrong");
@@ -184,7 +253,6 @@ app.use((err, req, res, next) => {
   next();
 });
 
-//
 
 //new
 // Increase the payload limit if dealing with large JSON bodies
@@ -200,129 +268,7 @@ app.use((err, req, res, next) => {
 });
 
 
-//facebook
-passport.use(
-  new FacebookStrategy(
-    {
-      clientID: process.env.FACEBOOK_APP_ID,
-      clientSecret: process.env.FACEBOOK_APP_SECRET,
-      callbackURL: process.env.FACEBOOK_CALLBACK_URL,
-      profileFields: ['id', 'displayName', 'emails', 'birthday'], // Note: 'emails' is plural
-    },
-    async function (accessToken, refreshToken, profile, cb) {
-      try {
-        // Extract email and birthday from the profile
-        const email = profile.emails && profile.emails[0].value; // Email is an array
-        const birthday = profile._json.birthday; // Access birthday directly from the JSON
 
-        // Find user in database
-     let user = await kidsmodel.findOne({ facebookId: profile.id });
-       // let user = await kidsmodel.findOne({ accountId: profile.id, provider: 'facebook' });
-
-        if (!user) {
-          console.log('No existing user found. Adding new facebook user to DB..');
-          // Create new user
-          const newUser = new kidsmodel({
-            facebookId: profile.id,
-            name: profile.displayName,
-            provider: profile.provider,
-            parentEmail: email, // Save the email
-            birthday: birthday, // Save the birthday
-          });
-
-          await newUser.save();
-          console.log('New user saved:', newUser);
-        } else {
-          console.log('Facebook User already exists in DB. Updating details if necessary..');
-          // This block assumes you want to update the user's email and birthday if it changes.
-          let shouldUpdate = false;
-          if (user.parentEmail !== email) {
-            user.parentEmail = email;
-            shouldUpdate = true;
-          }
-          if (user.birthday !== birthday) {
-            user.birthday = birthday;
-            shouldUpdate = true;
-          }
-          if (shouldUpdate) {
-            await user.save();
-            console.log('User updated:', user);
-          } else {
-            console.log('No updates necessary for the user.');
-          }
-        }
-
-        // Pass user profile to callback function
-        cb(null, profile);
-      } catch (err) {
-        console.error('Error processing Facebook authentication:', err);
-        cb(err, null);
-      }
-    }
-  )
-);
-
-router.get('/', passport.authenticate('facebook', { scope: ['email', 'user_birthday'] }));
-
-router.get(
-  '/callback',
-  passport.authenticate('facebook', {
-    failureRedirect: '/auth/facebook/error',
-    successRedirect: '/auth/facebook/success',
-  })
-);
-
-router.get('/success', async (req, res) => {
-  const userInfo = {
-    id: req.session.passport.user.id,
-    displayName: req.session.passport.user.displayName,
-    provider: req.session.passport.user.provider,
-  };
-  res.render('fb-github-success', { user: userInfo });
-});
-
-router.get('/error', (req, res) => res.send('Error logging in via Facebook..'));
-
-router.get('/signout', (req, res) => {
-  try {
-    req.session.destroy(function (err) {
-      console.log('session destroyed.');
-    });
-    res.render('auth');
-  } catch (err) {
-    res.status(400).send({ message: 'Failed to sign out fb user' });
-  }
-});
-
-
-
-passport.serializeUser((user, done) => done(null, user.id));
-
-passport.deserializeUser((id, done) => {
-kidsmodel.findById(id, (err, user) => done(err, user));
-});
-
-// Middleware
-app.use(session({ secret: 'secret', resave: true, saveUninitialized: true }));
-app.use(passport.initialize());
-app.use(passport.session());
-
-// Routes
-app.get('/auth/facebook', passport.authenticate('facebook'));
-
-app.get('/auth/facebook/callback',
-passport.authenticate('facebook', { failureRedirect: '/login' }),
-(req, res) => {
-  // Successful authentication, redirect home.
-  res.redirect('/');
-}
-);
-
-app.get('/', (req, res) => res.send('Home Page - Authentication Successful'));
-app.get('/login', (req, res) => res.send('Login Page'));
-
-
-//facebook
 
 
 //user panel
@@ -342,7 +288,8 @@ const reviews = require('./brands/routes/reviewroutes');
 const notification = require('./brands/routes/notification.js');
 const conversation = require('./brands/routes/conversationroutes.js');
 const message = require('./brands/routes/messageroutes.js');
-const socialmedia = require('./brands/routes/socialmediaroutes.js');
+const chat = require('./brands/routes/chatroutes.js');
+
 
 // Define routes
 app.use('/brandsntalent_api/users',users);
@@ -357,8 +304,7 @@ app.use('/brandsntalent_api/keyword',keyword);
 app.use('/brandsntalent_api/notification',notification);
 app.use('/brandsntalent_api/conversation',conversation);
 app.use('/brandsntalent_api/message',message);
-app.use('/brandsntalent_api/socialmedia',socialmedia);
-
+app.use('/brandsntalent_api/chat',chat);
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/upload1', express.static(path.join(__dirname, 'upload1')));
@@ -366,10 +312,12 @@ app.use('/upload1', express.static(path.join(__dirname, 'upload1')));
 
 app.use(express.json()); // Middleware to parse JSON bodies
 
+    
 
-
+// Start HTTP server on port 4014
 httpServer.listen(4014, () => {
   console.log("Server is listening on port 4014");
 });
 
-  
+
+

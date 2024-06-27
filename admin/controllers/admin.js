@@ -15,10 +15,14 @@ const { uuid } = require("uuidv4");
 const { chatAdultTemplate } = require('../../template.js');
 const { chatKidsTemplate } = require('../../template.js');
 const { chatBrandsTemplate } = require('../../template.js');
+const cron = require('node-cron');
 
+const brandsmodel = require('../../brands/models/brandsmodel.js');
+const kidsmodel = require("../../users/models/kidsmodel.js");
+const adultmodel = require("../../users/models/adultmodel.js");
+const { Country, State, City } = require('country-state-city');
 
-
-
+const draftmodel = require("../../brands/models/draftmodel.js");
 
 
 
@@ -565,8 +569,7 @@ const listLocation = async (req, res, next) => {
 */
 
 
-const { Country, State, City } = require('country-state-city');
-const kidsmodel = require("../../users/models/kidsmodel.js");
+
 
 const listCity = async (req, res, next) => {
   try {
@@ -623,14 +626,6 @@ const adminFetch = async (req, res, next) => {
 * @param {*} res return data
 * @param {*} next undefined
 */
-
-
-
-
-
-
-// 26/3 correct full code
-
 
 
 function getCurrentTimeInCambodia() {
@@ -872,9 +867,279 @@ const getAllCitiesList = async (req, res, next) => {
   }
 };
 
+/*
+*********adminApproval*****
+* @param {*} req from user
+* @param {*} res return data
+* @param {*} next undefined
+*/
+
+const sendApprovalEmail = (userEmail) => {
+  const mailOptions = {
+    from: host,
+    to: userEmail,
+    subject: 'Admin Approval Notification',
+    html: `
+    <h1>Congratulations!</h1>
+    <p>Your profile has been approved by the admin and also your id proof has removed</p>
+    <p>Thank you for being a part of our community.</p>
+    <p>Best Regards,<br>Admin Team</p>`
+  };
+
+  transporter.sendMail(mailOptions, (error, info) => {
+    if (error) {
+      return console.error('Error sending email:', error);
+    }
+    console.log('Email sent:', info.response);
+  });
+};
+const adminApproval = async (req, res) => {
+  try {
+    const userId = req.body.user_id || req.params.user_id;
+
+    let userType = '';
+    let updateResult = null;
+    let userEmail = '';
+
+     // Function to remove verificationId
+     const removeVerificationId = async (model, id) => {
+      return await model.updateOne(
+        { _id: new mongoose.Types.ObjectId(id) },
+        { $unset: { verificationId: "" } }
+      );
+    };
+
+    // Check in adultmodel
+    const adultUser = await adultmodel.findOne({ _id: new mongoose.Types.ObjectId(userId),isActive:true,inActive:true});
+    if (adultUser) {
+      userType = 'adults';
+      userEmail = adultUser.email; // Assuming email field exists in adultmodel
+      updateResult = await adultmodel.updateOne(
+        { _id: new mongoose.Types.ObjectId(userId) },
+        { $set: { adminApproved: true } }
+      );
+      await removeVerificationId(adultmodel, userId);
+    } else {
+      // If not found in adultmodel, check in kidsmodel
+      const kidUser = await kidsmodel.findOne({ _id: new mongoose.Types.ObjectId(userId),isActive:true,inActive:true });
+      if (kidUser) {
+        userType = 'kids';
+        userEmail = kidUser.parentEmail; // Assuming parentEmail field exists in kidsmodel
+        updateResult = await kidsmodel.updateOne(
+          { _id: new mongoose.Types.ObjectId(userId) },
+          { $set: { adminApproved: true } }
+        );
+        await removeVerificationId(kidsmodel, userId);
+      } 
+     
+    }
+
+    // If user type is still empty, user was not found in any model
+    if (!userType) {
+      return res.json({ status: false, msg: 'User not found' });
+    }
+
+    // If we have an update result, we successfully updated the profile status
+    if (updateResult) {
+      // Send approval email
+      if (userEmail) {
+        sendApprovalEmail(userEmail);
+      }
+      return res.json({ status: true, msg: 'Approved successfully', type: userType });
+    } else {
+      return res.json({ status: false, msg: 'Failed to Approval' });
+    }
+  } catch (error) {
+    console.error('Error in admin approval:', error);
+    return res.status(500).json({ status: false, msg: 'Internal server error' });
+  }
+};
+/*
+*********jobApproval*****
+* @param {*} req from user
+* @param {*} res return data
+* @param {*} next undefined
+*/
+
+const sendJobApprovalEmail = (userEmail) => {
+
+  console.log("vdskjfvjkdsv")
+  const mailOptions = {
+    from: host,
+    to: userEmail,
+    subject: 'Admin Approval Notification',
+    html: `
+    <h1>Congratulations!</h1>
+    <p>Your profile has been approved by the admin.</p>
+    <p>Thank you for being a part of our community.</p>
+    <p>Best Regards,<br>Admin Team</p>`
+  };
+
+  transporter.sendMail(mailOptions, (error, info) => {
+    if (error) {
+      return console.error('Error sending email:', error);
+    }
+    console.log('Email sent:', info.response);
+  });
+};
+// Define the function to get user email
+const getUserEmail = async (userId) => {
+  try {
+    // Assuming you have a UserModel and an email field
+    const user = await brandsmodel.findById(userId);
+    if (user) {
+      return user.email;
+    } else {
+      console.log("User not found with ID:", userId);
+      return null;
+    }
+  } catch (error) {
+    console.error("Error retrieving user email:", error);
+    return null;
+  }
+};
+
+const jobApproval = async (req, res) => {
+  try {
+    const userId = req.body.user_id || req.params.user_id;
+    const gigId = req.body.gigId;
+
+    let userType = '';
+    let updateResult = null;
+    let userEmail = '';
+
+    // Check in brandsmodel
+    const brandsUser = await brandsmodel.findOne({ _id: userId, isActive: true });
+    if (brandsUser) {
+      userType = 'brands';
+      userEmail = brandsUser.brandEmail;
+
+      const draftJob = await draftmodel.findOne({ _id: gigId });
+
+      if (brandsUser.planName === 'Basic') {
+        console.log("updateResulttest1");
+        console.log("draftJob",!draftJob.adminApproved)
+
+        if (draftJob && !draftJob.adminApproved) {
+        
+          const createdAt = draftJob.createdAt;
+          const now = new Date();
+        
+  
+          // Check if the job was created within the last 48 hours
+          if ((now - createdAt) <= 48 * 60 * 60 * 1000) {
+            // If job created within 48 hours, directly update adminApproved to true
+            updateResult = await draftmodel.updateOne({ _id: gigId }, { $set: { adminApproved: true } });
+            console.log("updateResultnormla", updateResult);
+          } else {
+           console.log("cron")
+            // If job not created within 48 hours, schedule cron job to update adminApproved
+            cron.schedule('0 * * * *', async () => {
+              try {
+                const fortyEightHoursAgo = new Date(now - 48 * 60 * 60 * 1000);
+                const draftJobs = await draftmodel.find({ createdAt: { $lt: fortyEightHoursAgo }, adminApproved: false });
+                for (const job of draftJobs) {
+                  await draftmodel.updateOne({ _id: job._id }, { $set: { adminApproved: true } });
+                  const userEmail = getUserEmail(job.userId);
+                  if (userEmail) {
+                    sendJobApprovalEmail(userEmail);
+                  }
+                }
+              } catch (error) {
+                console.error('Error processing cron job:', error);
+              }
+            });
+          }
+        }
+      } else {
+        
+        // If the plan is not 'Basic', directly update adminApproved to true
+        updateResult = await draftmodel.updateOne({ _id: gigId }, { $set: { adminApproved: true } });
+        console.log("updateResultnot basic", updateResult);
+      }
+    }
+
+    if (!userType) {
+      return res.json({ status: false, msg: 'User not found' });
+    }
+    
+    if (updateResult || updateResult.nModified  > 0) {
+      console.log("updateResultfinal",updateResult)
+      if (userEmail) {
+        sendJobApprovalEmail(userEmail);
+      }
+      return res.json({ status: true, msg: 'Approved successfully', type: userType });
+    } else {
+      return res.json({ status: false, msg: 'Failed to approve' });
+    }
+  } catch (error) {
+    console.error('Error in admin approval:', error);
+    return res.status(500).json({ status: false, msg: 'Error Occured' });
+  }
+};
+
+
+
+
+
+// Schedule a cron job to run every hour
+
+/*
+*********Notapprovedmembers*****
+* @param {*} req from user
+* @param {*} res return data
+* @param {*} next undefined
+*/
+
+const notApprovedMembers = async (req, res) => {
+  try {
+    const adultUsers = await adultmodel.find({ adminApproved: false,isActive:true });
+    const kidUsers = await kidsmodel.find({ adminApproved: false,isActive:true });
+    //const brandsUsers = await brandsmodel.find({ adminApproved: false,isActive:true });
+
+       // Combine all not approved users into a single array
+       const notApprovedUsers = [];
+       notApprovedUsers.push(...adultUsers);
+       notApprovedUsers.push(...kidUsers);
+      // notApprovedUsers.push(...brandsUsers);
+
+    return res.json({ status: true, notApprovedUsers });
+  } catch (error) {
+    console.error('Error fetching not approved members:', error);
+    return res.status(500).json({ status: false, msg: 'Internal server error' });
+  }
+};
+
+/*
+*********ListBrandForJobPost*****
+* @param {*} req from user
+* @param {*} res return data
+* @param {*} next undefined
+*/
+const ListBrandForJobPost = async (req, res) => {
+  try {
+    // Fetch active brands from draftmodel
+    const draftBrands = await draftmodel.find({ isActive: true,brandId :req.body.brandId,adminApproved:false})//.select({ brandId: 1 });
+
+    // Extract brandIds from draftBrands
+    const brandIds = draftBrands.map(draft => draft.brandId);
+
+    // Fetch brand details from brandsmodel using the brandIds
+    const brandDetails = await brandsmodel.find({
+      _id: { $in: brandIds }
+    }).select({ _id: 1, planName: 1 }); // Assuming 'otherDetails' is a placeholder for other required fields
+
+    return res.json({ status: true, brandDetails });
+  } catch (error) {
+    console.error('Error fetching brand details for job post:', error);
+    return res.status(500).json({ status: false, msg: 'Internal server error' });
+  }
+};
+
+
 module.exports = {
   addAdmin, adminLogin, adminProfile, forgotPassword, resetPassword, fileUpload, uploads, addCountry, listState, adminFetch, listLocation, listCountries,
-  listCity,getAllStatesList,getAllCitiesList,chatbot
+  listCity,getAllStatesList,getAllCitiesList,chatbot,adminApproval,jobApproval,notApprovedMembers,ListBrandForJobPost
 
 
 };

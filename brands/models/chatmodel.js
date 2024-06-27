@@ -40,7 +40,10 @@ var ChatSchema = new Schema(
       isActive:{
         type:Boolean,
         default:true
-      }
+      },
+      socketId:{
+        type:String
+      },
     
   },
   {

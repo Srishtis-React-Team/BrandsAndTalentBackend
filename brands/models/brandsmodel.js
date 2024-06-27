@@ -59,7 +59,7 @@ var authenticationSchema = new schema({
 
     },
     googleId:
-    
+
     {
         type: String,
 
@@ -69,44 +69,54 @@ var authenticationSchema = new schema({
         type: String,
 
     },
-    postJobCount:{
+    postJobCount: {
         type: String,
     },
-    draftCount:{
+    draftCount: {
         type: String,
     },
-    campaignCount:{
+    campaignCount: {
         type: String,
     },
-    planName:{
+    planName: {
         type: String,
     },
-    fcmToken :{
+    fcmToken: {
         type: String,
     },
-    brandImage:{
+    brandImage: {
         type: Array,
     },
-    isOnline:{
-        type:Boolean,
-        default:false
-     },
-     inActive:
-   {
-      type: Boolean,
-      default:true
-      
-   },
-   admin_Approved:{
-    type:Boolean,
-    default:false
- },
+    isOnline: {
+        type: Boolean,
+        default: false
+    },
+    inActive:
+    {
+        type: Boolean,
+        default: true
+
+    },
+    adminApproved: {
+        type: Boolean,
+        default: false
+    },
+    userName: {
+        type:String
+    },
+    profileImage: {
+        type:Array
+    },
+    websiteLink: {
+        type:String
+    },
+ 
  
    
 
     resetPasswordExpires: Date,
     created: { type: Date, default: Date.now },
-    
+
 
 },
     {

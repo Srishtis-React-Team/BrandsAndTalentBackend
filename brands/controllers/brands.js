@@ -51,6 +51,7 @@ const brandsmodel = require('../models/brandsmodel.js');
 const kidsmodel = require("../../users/models/kidsmodel.js");
 const adultmodel = require("../../users/models/adultmodel.js");
 const notificationmodel = require("../models/notificationmodel.js");
+const contactmodel = require("../models/contactmodel.js");
 
 /**
  *********brandsRegister******
@@ -88,15 +89,6 @@ const brandsRegister = async (req, res, next) => {
       });
     }
 
-    // const userExist = await brandsmodel.findOne({ brandEmail: req.body.brandEmail });
-
-    // if (userExist) {
-    //   console.log("Email already exists");
-    //   return res.status(400).json({
-    //     message: "Email ID already exists",
-    //     status: false
-    //   });
-    // }
 
     const newBrandData = {
       position:req.body.position,
@@ -115,7 +107,12 @@ const brandsRegister = async (req, res, next) => {
       address:req.body.address,
       logo:req.body.logo,
       brandImage:req.body.brandImage,
-      fcmToken:req.body.fcmToken
+      fcmToken:req.body.fcmToken,
+      userName:req.body.userName,
+      profileImage:req.body.profileImage,
+      userName:req.body.userName,
+      profileImage:req.body.profileImage,
+      websiteLink:req.body.websiteLink
 
     };
  
@@ -211,59 +208,7 @@ const otpVerificationBrands = async (req, res, next) => {
   }
 };
 
-// const otpVerificationBrands = async (req, res, next) => {
-//   try {
-//     const { otp: inputOTP, brandEmail: email } = req.body;
 
-//     // Fetch the user from the database for the given email
-//     const user = await brandsmodel.findOne({ brandEmail: email, isActive: true });
-//     console.log("user", user);
-//     if (!user) {
-//       console.log("Error: User not found");
-//       return res.status(404).json({
-//         message: "User not found",
-//         status: false
-//       });
-//     }
-
-//     // Retrieve the hashed OTP from the user document
-//     const hashedOTP = user.otp;
-
-//     // Compare the input OTP with the hashed OTP
-//     const isMatch = await bcrypt.compare(inputOTP.toString(), hashedOTP);
-
-//     if (isMatch) {
-//       // Update isVerified value to true for the user with the given email
-//       // And update the brand details if provided
-//       const updateData = { isVerified: true };
-
-//       // Optional: Add brand details to updateData if they are provided in the request
-   
-
-//       await brandsmodel.findOneAndUpdate({ brandEmail: email }, updateData, { new: true });
-
-//       console.log("Success: User verified");
-//       res.json({
-//         message: "User verified",
-//         status: true,
-//         data: req.body.brandEmail
-//       });
-//     } else {
-//       console.log("Error: OTP does not match");
-//       res.status(400).json({
-//         message: "OTP does not match",
-//         status: false
-//       });
-//     }
-//   } catch (error) {
-//     console.error("Error:", error);
-//     res.status(500).json({
-//       message: "An error occurred",
-//       status: false,
-//       error: error.toString()
-//     });
-//   }
-// };
 
 /**
 *********Brands Login******
@@ -317,45 +262,6 @@ const brandsLogin = async (req, res, next) => {
 };
 
 
-// const brandsLogin = async (req, res, next) => {
-//   const username = req.body.brandEmail;
-//   const password = req.body.brandPassword;
-
-
-//   try {
-//     const brands = await brandsmodel.findOne({ $or: [{ brandEmail: username }, { brandEmail: username }], isActive: true });
-//     console.log("brands", brands)
-//     if (brands) {
-//       const passwordMatch = await bcrypt.compare(password, brands.brandPassword);
-
-//       if (passwordMatch) {
-//         const token = auth.gettoken(brands._id, brands.brandEmail);
-
-//         return res.json({
-//           status: true,
-//           message: 'Login Successfully',
-//           data: brands,
-//           token
-//         });
-//       } else {
-//         return res.json({
-//           status: false,
-//           message: 'Password does not match'
-//         });
-//       }
-//     } else {
-//       return res.json({
-//         status: false,
-//         message: 'No User Found'
-//       });
-//     }
-//   } catch (error) {
-//     return res.json({
-//       status: false,
-//       message: 'Error during login'
-//     });
-//   }
-// };
 /**
 *********Brands Login******
 * @param {*} req from user
@@ -394,7 +300,11 @@ const brandsLogin = async (req, res, next) => {
       address: req.body.address,
       brandImage:req.body.brandImage,
       position:req.body.position,
-      inActive:true
+      inActive:true,
+      userName:req.body.userName,
+      profileImage:req.body.profileImage,
+      websiteLink:req.body.websiteLink
+
      
     };
 
@@ -912,7 +822,7 @@ const updatePasswordInSettings = async (req, res, next) => {
   }
 };
 /**
- *********Deactivate users*****
+ *********postSupportMail users*****
  * @param {*} req from user
  * @param {*} res return data
  * @param {*} next undefined
@@ -922,6 +832,25 @@ const updatePasswordInSettings = async (req, res, next) => {
   try {
     const { name, enquiry, phoneNo, email } = req.body;
 
+
+        // Search for the talentId in both kids and adult models
+        let talent = await kidsmodel.findOne({ parentEmail: email });
+        if (!talent) {
+          talent = await adultmodel.findOne({ adultEmail: email });
+        }
+    
+        const talentId = talent ? talent._id : null;
+    
+        // Save the support request details in the contact model
+        const newContact = new contactmodel({
+          name: name,
+          enquiry: enquiry,
+          phoneNo: phoneNo,
+          email: email,
+          talentId: talentId
+        });
+    
+        await newContact.save();
     // Create a transporter object using the default SMTP transport
     const transporter = nodemailer.createTransport({
       service: 'Gmail',
@@ -964,12 +893,138 @@ const updatePasswordInSettings = async (req, res, next) => {
     });
   }
 };
- 
- 
 
+/**
+ *********reply users*****
+ * @param {*} req from user
+ * @param {*} res return data
+ * @param {*} next undefined
+ */
+
+ const contactUsReply = async (req, res, next) => {
+  try {
+    const { email, answer, subject, text } = req.body;
+
+    // Find the contact request by email and get relevant fields
+    const contact = await contactmodel.findOne({ email: email }).select('name enquiry phoneNo talentId');
+
+    if (!contact) {
+      return res.json({
+        status: false,
+        message: 'Contact request not found'
+      });
+    }
+
+    // Update the contact document with the provided answer
+    contact.answer = answer;
+    contact.isRespond = true;
+    contact.updatedAt = new Date();
+
+    await contact.save();
+
+    // Create a transporter object using the default SMTP transport
+    const transporter = nodemailer.createTransport({
+      service: 'Gmail',
+      auth: {
+        user: host, // Use environment variables for sensitive information
+        pass: pass
+      }
+    });
+
+    // Define the email options
+    const mailOptions = {
+      from: host,
+      to: email,
+      subject: subject,
+      text: text
+    };
+
+    // Send the email
+    await transporter.sendMail(mailOptions);
+
+    res.json({
+      status: true,
+      message: 'An e-mail has been sent to the user with the provided details.'
+    });
+  } catch (error) {
+    console.error(error);
+    res.json({
+      status: false,
+      message: 'Error during the support request process.'
+    });
+  }
+};
+
+ /********** contactUsList******
+* @param {*} req from user
+* @param {*} res return data
+* @param {*} next undefined
+*/
+
+
+const contactUsList = async (req, res) => {
+  try {
+   
+    const contact = await contactmodel.find({isActive: true });
+    if (contact) {
+      return res.json({ status: true, data: contact });
+    } else {
+      return res.json({ status: false, msg: 'No user found' });
+    }
+  } catch (error) {
+    return res.json({ status: false, msg: 'Error fetching user profile' });
+  }
+};
+ 
+ /********** deleteContact******
+* @param {*} req from user
+* @param {*} res return data
+* @param {*} next undefined
+*/
+
+
+const deleteContact = async (req, res) => {
+  const { contactId } = req.body; // Correctly extract contactId from req.body
+  try {
+    const contact = await contactmodel.findById(contactId);
+    
+    if (!contact) {
+      return res.json({ status: false, msg: 'Contact not found' });
+    }
+
+    contact.isActive = false;
+    await contact.save();
+
+    return res.json({ status: true, msg: 'Contact deactivated successfully' });
+  } catch (error) {
+    return res.json({ status: false, msg: 'Error deactivating contact', error: error.message });
+  }
+};
+
+ /********** contactUsList per talent******
+* @param {*} req from user
+* @param {*} res return data
+* @param {*} next undefined
+*/
+
+
+const contactUsById = async (req, res) => {
+  try {
+   
+    const contact = await contactmodel.find({isActive: true,_id:req.params.contactId });
+    if (contact) {
+      return res.json({ status: true, data: contact });
+    } else {
+      return res.json({ status: false, msg: 'No user found' });
+    }
+  } catch (error) {
+    return res.json({ status: false, msg: 'Error fetching user profile' });
+  }
+};
 module.exports = {
   brandsRegister, otpVerificationBrands, brandsLogin, editBrands, deleteBrands, getBrandById, topBrands,
   favouritesList,searchDatas,socailSignUpBrands,updateBrandPassword,brandsForgotPassword,brandsResetPassword,
-  getBrands,deleteNotification,updatePasswordInSettings,activateBrandUser,postSupportMail
+  getBrands,deleteNotification,updatePasswordInSettings,activateBrandUser,postSupportMail,contactUsReply,
+  contactUsList,deleteContact,contactUsById
 
 };

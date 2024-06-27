@@ -136,13 +136,6 @@ const getUserSearchKeyword = async (req, res, next) => {
 };
 
 
-
-
-
-  
-
-
-
 module.exports = {
     postUserSearchKeyword, getUserSearchKeyword,deleteUserSearchKeyword
 

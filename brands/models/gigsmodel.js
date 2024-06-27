@@ -32,10 +32,10 @@ var authenticationSchema = new schema({
         type: String
     },
     gender: {
-        type: String
+        type: Array
     },
     nationality: {
-        type: String
+        type: Array
     },
     languages: {
         type: Array
@@ -178,6 +178,16 @@ var authenticationSchema = new schema({
     twitterMax:{
         type:String
     },
+    youTubeMin:{
+        type:String
+    },
+    youTubeMax:{
+        type:String
+    },
+    adminApproved:{
+        type:Boolean,
+        
+    }
 
 
    

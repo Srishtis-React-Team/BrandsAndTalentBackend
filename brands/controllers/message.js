@@ -213,31 +213,6 @@ const getMessages = async (req, res, next) => {
 };
 
 
-//  const getMessageByUser = async (req, res) => {
-//   const { senderId, receiverId } = req.body;
-
-//   try {
-//     // Log the correct variable names
-//     console.log("Fetching messages involving", senderId, "or", receiverId);
-
-//     // Retrieve messages where either the senderId or receiverId is one of the provided IDs
-//     const chats = await messagemodel.find({
-//       $and: [
-//         { senderId: { $in: [senderId, receiverId] } },
-//         { receiverId: { $in: [senderId, receiverId] } }
-//       ]
-//     });
-
-//     // Send the retrieved chats as a JSON response
-//     res.status(200).json(chats);
-//   } catch (error) {
-//     console.error("Error fetching messages:", error);
-//     res.status(500).json({ error: "Internal server error" });
-//   }
-// };
-
-
-
 /***********deleteMessage*****
 * @param {*} req from user
 * @param {*} res return data

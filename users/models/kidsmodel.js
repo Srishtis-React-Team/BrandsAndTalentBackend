@@ -55,7 +55,7 @@ var authenticationSchema = new schema({
       type:String
    },
    childNationality:{
-      type:String
+      type:Array
    },
    childEthnicity:{
       type:String
@@ -274,10 +274,21 @@ facebookId: {
       type:String,
       default:'Basic'
    },
-   admin_Approved:{
+   adminApproved:{
       type:Boolean,
       default:false
-   }
+   },
+   averageStarRatings:{
+      type:String,
+      default:'0'
+   },
+   totalReviews:{
+      type:String
+   },
+   noOfJobsCompleted:{
+      type:String
+   },
+   videoAudioUrls: [String],
 
 
 },

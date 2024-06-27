@@ -43,6 +43,8 @@ const notificationSchema = new Schema({
         fbMax:String,
         twitterMin:String,
         twitterMax:String,
+        youTubeMin:String,
+        youTubeMax:String,
     },
     appliedOn: Date,
 },

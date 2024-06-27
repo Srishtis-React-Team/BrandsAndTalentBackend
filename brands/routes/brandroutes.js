@@ -20,6 +20,9 @@ router.post('/deleteNotification',brands.deleteNotification)//for deleteNotifica
 router.post('/updatePasswordInSettings',brands.updatePasswordInSettings)//for updatePasswordInSettings
 router.post('/activateBrandUser',brands.activateBrandUser)//for activateBrandUser
 router.post('/postSupportMail',brands.postSupportMail)//for postSupportMail
-
+router.post('/contactUsReply',brands.contactUsReply)//for contactUsReply
+router.post('/deleteContact',brands.deleteContact)//for deleteContact
+router.get('/contactUsList',brands.contactUsList)//for contactUsList
+router.post('/contactUsById/:contactId',brands.contactUsById)//for contactUsById
 
 module.exports = router

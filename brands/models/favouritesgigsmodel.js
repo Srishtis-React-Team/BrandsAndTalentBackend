@@ -26,7 +26,7 @@ const favouritejobSchema = new Schema({
         image: Array,
         childGender:String,
         maritalStatus:String,
-        childNationality:String,
+        childNationality:Array,
         languages:Array,
         childDob:String,
         childPhone:String,
@@ -39,6 +39,7 @@ const favouritejobSchema = new Schema({
 
     },
     gigDetails:{
+      
         jobTitle:String,
         jobLocation:String,
         streetAddress:String,
@@ -47,8 +48,8 @@ const favouritejobSchema = new Schema({
         jobDescription:Array,
         skills:Array,
         age:String, 
-        gender:String,
-        nationality:String,
+        gender:Array,
+        nationality:Array,
         questions:Array,
         benefits:Array,
         compensation: {
@@ -97,6 +98,8 @@ const favouritejobSchema = new Schema({
         fbMax:String,
         twitterMin:String,
         twitterMax:String,
+        youTubeMin:String,
+        youTubeMax:String,
     },
     appliedOn: Date,
 },

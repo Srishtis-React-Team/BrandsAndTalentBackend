@@ -43,6 +43,7 @@ const createJob = async (req, res, next) => {
             whyWorkWithUs, product, valueOfProduct, productDescription, hiringCompanyDescription, howLikeToApply,
             workSamples, jobImage, country, state, city, jobPostedDate, category, lastDateForApply,
             minAge,maxAge,instaMin,instaMax,tikTokMin,tikTokMax,linkedInMin,linkedInMax,fbMin,fbMax,twitterMin,twitterMax,
+            youTubeMin,youTubeMax
 // isActive: true
         } = req.body);
 
@@ -74,7 +75,7 @@ const getPostedJobs = async (req, res, next) => {
 
     try {
         // Fetching all active gigs and sorting them by creation date in descending order
-        const gigs = await gigsmodel.find({ isActive: true }).sort({ created: -1 }).exec();
+        const gigs = await gigsmodel.find({ isActive: true}).sort({ created: -1 }).exec();//adminApproved:true 
         const favoriteGigs = await favouritesgigsmodel.find({ isActive: true, talentId: talentId, isFavourite: true }).sort({ created: -1 }).exec();
 
         // Matching gigId details fetch from favoriteGigs
@@ -107,38 +108,6 @@ const getPostedJobs = async (req, res, next) => {
         });
     }
 };
-// const getPostedJobs = async (req, res, next) => {
-//     const talentId = req.body.talentId;
-
-//     try {
-//         // Fetching all active gigs and sorting them by creation date in descending order
-//         const gigs = await gigsmodel.find({ isActive: true }).sort({ created: -1 }).exec();
-
-//         // Create modified data with an "isApplied" status
-//         let modifiedData = await Promise.all(gigs.map(async (gig) => {
-//             const application = await notificationmodel.findOne({ gigId: gig._id, talentId: talentId });
-//             return {
-//                 ...gig._doc,
-//                 isApplied: application ? "Applied" : "Apply Now"
-//             };
-//         }));
-
-//         // Reverse the array to make it oldest to newest
-//         modifiedData.reverse();
-
-//         // Sending the reversed array as response
-//         res.json({
-//             status: true,
-//             data: modifiedData
-//         });
-//     } catch (error) {
-//         res.status(500).json({
-//             status: false,
-//             message: 'Error fetching posted jobs',
-//             error: error
-//         });
-//     }
-// };
 
 
 /**
@@ -153,7 +122,7 @@ const getJobsByID = async (req, res, next) => {
 
 
         // Since we're using async/await, there's no need to use .then() and .catch() here.
-        const gig = await gigsmodel.findOne({ _id: gigId, isActive: true }).sort({ created: -1 });
+        const gig = await gigsmodel.findOne({ _id: gigId, isActive: true }).sort({ created: -1 });//adminApproved:true
 
         if (!gig) {
             // If no gig is found, send a 404 not found response
@@ -200,10 +169,10 @@ const draftJob = async (req, res, next) => {
         let jobLimitPerMonth;
         switch (brand.planName) {
             case 'Basic':
-                jobLimitPerMonth = 13;
+                jobLimitPerMonth = 3;
                 break;
             case 'Pro':
-                jobLimitPerMonth = 15;
+                jobLimitPerMonth = 5;
                 break;
             case 'Premium':
                 jobLimitPerMonth = 15;
@@ -216,41 +185,94 @@ const draftJob = async (req, res, next) => {
         const currentDate = new Date();
         const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
 
+
+
         // Count the jobs posted by the brand this month
         const jobCount = await draftmodel.countDocuments({
             brandId: brandId,
             createdAt: { $gte: firstDayOfMonth, $lte: currentDate }
         });
+         // Check if plan is Pro or Premium to set isApproved and adminApproved
+         const isProOrPremium = brand.planName === 'Pro' || brand.planName === 'Premium';
+         const isAdminApproved = isProOrPremium ? true : false;
+ 
+        
 
         if (brand.planName === 'Pro' || brand.planName === 'Premium') {
             // If the plan is Pro or Premium, set isApproved field to true
             req.body.isApproved = true;
+            //adminApproved=true;
+           
         }
         console.log("jobCount", jobCount)
 
         if (jobCount >= jobLimitPerMonth) {
             return res.status(403).json({ message: `Job posting limit for this month (${jobLimitPerMonth}) reached` });
         }
-
-        // If job count is within limit, create new draft job
+        // Create a new draft job
         const add_gigs = new draftmodel({
-            jobTitle, jobLocation, streetAddress, employmentType, jobType,
-            jobDescription, skills, additionalRequirements, age, gender,
-            nationality, languages, questions, benefits, compensation,
-            jobCurrency, paymentType, minPay, maxPay, hiringCompany,
-            whyWorkWithUs, product, valueOfProduct, productDescription,
-            hiringCompanyDescription, howLikeToApply, workSamples, jobImage,
-            brandImage, country, state, city, jobPostedDate, lastDateForApply,
-            category,minAge,maxAge,instaMin,instaMax,tikTokMin,tikTokMax,linkedInMin,linkedInMax,fbMin,fbMax,twitterMin,twitterMax,
-            isApproved
-        } = req.body);
+            brandId:req.body.brandId,
+            jobTitle: req.body.jobTitle,
+            jobLocation: req.body.jobLocation,
+            streetAddress: req.body.streetAddress,
+            employmentType: req.body.employmentType,
+            jobType: req.body.jobType,
+            jobDescription: req.body.jobDescription,
+            skills: req.body.skills,
+            additionalRequirements: req.body.additionalRequirements,
+            age: req.body.age,
+            gender: req.body.gender,
+            nationality: req.body.nationality,
+            languages: req.body.languages,
+            questions: req.body.questions,
+            benefits: req.body.benefits,
+            compensation: req.body.compensation,
+            jobCurrency: req.body.jobCurrency,
+            paymentType: req.body.paymentType,
+            minPay: req.body.minPay,
+            maxPay: req.body.maxPay,
+            hiringCompany: req.body.hiringCompany,
+            whyWorkWithUs: req.body.whyWorkWithUs,
+            product: req.body.product,
+            valueOfProduct: req.body.valueOfProduct,
+            productDescription: req.body.productDescription,
+            hiringCompanyDescription: req.body.hiringCompanyDescription,
+            howLikeToApply: req.body.howLikeToApply,
+            workSamples: req.body.workSamples,
+            jobImage: req.body.jobImage,
+            brandImage: req.body.brandImage,
+            country: req.body.country,
+            state: req.body.state,
+            city: req.body.city,
+            jobPostedDate: req.body.jobPostedDate,
+            lastDateForApply: req.body.lastDateForApply,
+            category: req.body.category,
+            minAge: req.body.minAge,
+            maxAge: req.body.maxAge,
+            instaMin: req.body.instaMin,
+            instaMax: req.body.instaMax,
+            tikTokMin: req.body.tikTokMin,
+            tikTokMax: req.body.tikTokMax,
+            linkedInMin: req.body.linkedInMin,
+            linkedInMax: req.body.linkedInMax,
+            fbMin: req.body.fbMin,
+            fbMax: req.body.fbMax,
+            twitterMin: req.body.twitterMin,
+            twitterMax: req.body.twitterMax,
+            youTubeMin: req.body.youTubeMin,
+            youTubeMax: req.body.youTubeMax,
+            isApproved: req.body.isApproved,
+            adminApproved: isAdminApproved
+        });
 
         const response = await add_gigs.save();
 
+   
         return res.json({
             message: "Draft Added Successfully",
             status: true,
             data: response,
+          //  planName:brand.planName
         });
     } catch (error) {
         console.error("Error in draftJob:", error);
@@ -259,31 +281,7 @@ const draftJob = async (req, res, next) => {
 };
 
 
-// const draftJob = async (req, res, next) => {
-//     try {
-//         const add_gigs = new draftmodel({
-//             jobTitle, jobLocation, streetAddress, workplaceType, jobType,
-//             jobDescription, skills, additionalRequirements, age, gender,
-//             nationality, languages, questions, benefits, compensation,
-//             jobCurrency, paymentType, minPay, maxPay, hiringCompany,
-//             whyWorkWithUs, product, valueOfProduct, productDescription, hiringCompanyDescription, howLikeToApply,
-//             workSamples, jobImage, brandImage, country, state, city, jobPostedDate, lastDateForApply,category// isActive: true
-//         } = req.body);
 
-//         const response = await add_gigs.save();
-
-//         return res.json({
-//             message: "Draft Added Successfully",
-//             status: true,
-//             data: add_gigs,
-//         });
-//     } catch (error) {
-//         console.error("Error in createJob:", error);
-//         return res.json({
-//             message: "An Error Occurred"
-//         });
-//     }
-// };
 
 /**
 *********get darft job by id******
@@ -422,6 +420,8 @@ const saveNotification = async (brandId, talentId, gigId, brandNotificationMessa
                 fbMax: gig.fbMax,
                 twitterMin: gig.twitterMin,
                 twitterMax: gig.twitterMax,
+                youTubeMin:gig.youTubeMin,
+                youTubeMax:gig.youTubeMax
             }
         });
 
@@ -468,13 +468,14 @@ const postJobByDraft = async (req, res, next) => {
         }
 
         // Find the draft gig with the provided gigId
-        const draftGig = await draftmodel.findOne({ _id: gigId, isActive: true });
+        const draftGig = await draftmodel.findOne({ _id: gigId, isActive: true,adminApproved:true });
+
 
         // Check if draft gig exists
         if (!draftGig) {
             return res.status(404).json({
                 status: false,
-                message: 'Draft gig not found'
+                message: 'Admin approval is needed for post the job'
             });
         }
 
@@ -530,7 +531,10 @@ const postJobByDraft = async (req, res, next) => {
             fbMax: draftGig.fbMax,
             twitterMin: draftGig.twitterMin,
             twitterMax: draftGig.twitterMax,
+            youTubeMin:draftGig.youTubeMin,
+            youTubeMax:draftGig.youTubeMax,
             isActive: true,
+            adminApproved:true,
             type: "Posted"
         });
 
@@ -543,6 +547,7 @@ const postJobByDraft = async (req, res, next) => {
         //thursday
         // Find active jobs by brandId
         const jobs = await gigsmodel.find({ brandId: draftGig.brandId, isActive: true });
+
 
         // Generate job listings HTML
         const jobListings = jobs.map(job => `
@@ -623,196 +628,6 @@ const postJobByDraft = async (req, res, next) => {
         });
     }
 };
-//////////////////////////////////////////////////////////////////////////////////
-// Function to check and send notifications for jobs nearing application deadlines
-
-// const checkAndSendNotifications = async () => {
-//     const today = new Date();
-//     const jobs = await gigsmodel.find({
-//       isActive: true,
-//       lastDateForApply: { $gte: today }
-//     });
-
-//     console.log("jobs", jobs);
-
-//     // Send notifications for kids
-//     const kids = await kidsmodel.find({
-//       inActive:true,
-//       isActive: true,
-//       isSubscribed: true
-//     });
-
-//     for (const kid of kids) {
-//       const relevantJobs = jobs.filter(job => kid.relevantCategories.includes(job.category));
-
-//       if (relevantJobs.length > 0) {
-//         const jobListings = relevantJobs.map(job => `
-//           <div>
-//             <h3><a href="https://hybrid.sicsglobal.com/project/brandsandtalent/link?jobId=${job._id}">${job.jobTitle}</a></h3>
-//             <p><strong>Active Job:</strong> ${job.jobTitle}</p>
-//             <p><strong>Location:</strong> ${job.jobLocation}</p>
-//             <p>${job.jobDescription.slice(0, 100)}...</p>
-//           </div>
-//           <hr>
-//         `).join('');
-
-//         const emailContent = `
-//           <html>
-//             <body>
-//               <h1>Active Job Alerts</h1>
-//               ${jobListings}
-//             </body>
-//           </html>
-//         `;
-
-//         await sendNotifications(kid.fcmToken, 'Job Application Reminder', emailContent);
-//         await saveNotification(kid._id, emailContent);
-//         await sendEmail(kid.parentEmail, 'Job Application Reminder', emailContent);
-//       }
-//     }
-
-//     // Send notifications for adults
-//     const adults = await adultmodel.find({
-//         inActive:true,
-//       isActive: true,
-//       isSubscribed: true
-//     });
-
-//     for (const adult of adults) {
-//       const relevantJobs = jobs.filter(job => adult.relevantCategories.includes(job.category));
-
-//       if (relevantJobs.length > 0) {
-//         const jobListings = relevantJobs.map(job => `
-//           <div>
-//             <h3><a href="https://hybrid.sicsglobal.com/project/brandsandtalent/link?jobId=${job._id}">${job.jobTitle}</a></h3>
-//             <p><strong>Active Job:</strong> ${job.jobTitle}</p>
-//             <p><strong>Location:</strong> ${job.jobLocation}</p>
-//             <p>${job.jobDescription.slice(0, 100)}...</p>
-//           </div>
-//           <hr>
-//         `).join('');
-
-//         const emailContent = `
-//           <html>
-//             <body>
-//               <h1>Active Job Alerts</h1>
-//               ${jobListings}
-//             </body>
-//           </html>
-//         `;
-
-//         await sendNotifications(adult.fcmToken, 'Job Application Reminder', emailContent);
-//         await saveNotification(adult._id, emailContent);
-//         await sendEmail(adult.adultEmail, 'Job Application Reminder', emailContent);
-//       }
-//     }
-//   };
-
-
-// Schedule the task to run weekly on Sundays at 00:00
-// cron.schedule('0 0 * * 0', () => {
-//     console.log('Running a weekly check for job application deadlines...');
-//     checkAndSendNotifications();
-//   });
-
-//   // Schedule the task to run on the 1st and 15th of every month at 00:00
-//   cron.schedule('0 0 1,15 * *', () => {
-//     console.log('Running a bi-monthly check for job application deadlines...');
-//     checkAndSendNotifications();
-//   });
-
-//////////////////////////////////////////////////////////////////////////////////
-
-// const postJobByDraft = async (req, res, next) => {
-//     try {
-//         // Extract gigId from request body or parameters
-//         const gigId = req.body.gigId || req.params.gigId;
-
-//         // Check if gigId is provided
-//         if (!gigId) {
-//             return res.status(400).json({
-//                 status: false,
-//                 message: 'Gig ID is required'
-//             });
-//         }
-
-//         // Find the draft gig with the provided gigId
-//         const draftGig = await draftmodel.findOne({ _id: gigId, isActive: true });
-
-//         // Check if draft gig exists
-//         if (!draftGig) {
-//             return res.status(404).json({
-//                 status: false,
-//                 message: 'Draft gig not found'
-//             });
-//         }
-
-//         // Create a new gig using the details from draftGig
-//         const newGig = new gigsmodel({
-//             jobPostedDate:draftGig.jobPostedDate,
-//             lastDateForApply:draftGig.lastDateForApply,
-//             country:draftGig.country,
-//             state:draftGig.state,
-//             city:draftGig.city,
-//             brandImage:draftGig.brandImage,
-//             brandId: draftGig.brandId,
-//             jobTitle: draftGig.jobTitle,
-//             jobType:draftGig.jobType,
-//             jobLocation: draftGig.jobLocation,
-//             streetAddress: draftGig.streetAddress,
-//             workplaceType: draftGig.workplaceType,
-//             jobDescription: draftGig.jobDescription,
-//             skills: draftGig.skills,
-//             additionalRequirements: draftGig.additionalRequirements,
-//             age: draftGig.age,
-//             gender: draftGig.gender,
-//             nationality: draftGig.nationality,
-//             languages: draftGig.languages,
-//             questions: draftGig.questions,
-//             benefits: draftGig.benefits,
-//             compensation: draftGig.compensation,
-//             jobCurrency: draftGig.jobCurrency,
-//             paymentType: draftGig.paymentType,
-//             minPay: draftGig.minPay,
-//             maxPay: draftGig.maxPay,
-//             hiringCompany: draftGig.hiringCompany,
-//             whyWorkWithUs: draftGig.whyWorkWithUs,
-//             product: draftGig.product,
-//             valueOfProduct: draftGig.valueOfProduct,
-//             productDescription: draftGig.productDescription,
-//             hiringCompanyDescription: draftGig.hiringCompanyDescription,
-//             howLikeToApply: draftGig.howLikeToApply,
-//             workSamples: draftGig.workSamples,
-//             jobImage: draftGig.jobImage,
-//             isActive: true,
-//             type: "Posted"
-//         });
-
-//         // Save the new gig to the database
-//         const savedGig = await newGig.save();
-
-//         // Update the draft gig's isActive field to false
-//         await draftmodel.findOneAndUpdate({ _id: gigId }, { isActive: false });
-
-//         // Send success response with saved gig data
-//         return res.status(201).json({
-//             status: true,
-//             message: "Draft Added Successfully",
-//             data: savedGig,
-//         });
-
-//     } catch (error) {
-//         // Log the error and send a 500 internal server error response
-//         console.error("Error in postJobByDraft:", error);
-//         return res.status(500).json({
-//             status: false,
-//             message: 'Server error'
-//         });
-//     }
-// };
-
-
-
 
 /**
  *********editDraft*****
@@ -834,6 +649,7 @@ const editDraft = async (req, res) => {
             whyWorkWithUs, product, valueOfProduct, productDescription, hiringCompanyDescription, howLikeToApply,
             workSamples, jobImage, brandImage, country, state, city, jobPostedDate, lastDateForApply, category,
             minAge,maxAge,instaMin,instaMax,tikTokMin,tikTokMax,linkedInMin,linkedInMax,fbMin,fbMax,twitterMin,twitterMax,
+            youTubeMin,youTubeMax
 
         } = req.body;
 
@@ -846,6 +662,7 @@ const editDraft = async (req, res) => {
             whyWorkWithUs, product, valueOfProduct, productDescription, hiringCompanyDescription, howLikeToApply,
             workSamples, jobImage, brandImage, country, state, city, jobPostedDate, lastDateForApply, category,
             minAge,maxAge,instaMin,instaMax,tikTokMin,tikTokMax,linkedInMin,linkedInMax,fbMin,fbMax,twitterMin,twitterMax,
+            youTubeMin,youTubeMax
 
         };
 
@@ -899,6 +716,7 @@ const editJob = async (req, res) => {
             whyWorkWithUs, product, valueOfProduct, productDescription, hiringCompanyDescription, howLikeToApply,
             workSamples, jobImage, brandImage, country, state, city, jobPostedDate, lastDateForApply, category,
             minAge,maxAge,instaMin,instaMax,tikTokMin,tikTokMax,linkedInMin,linkedInMax,fbMin,fbMax,twitterMin,twitterMax,
+            youTubeMin,youTubeMax
 // isActive: true if needed
         } = req.body;
 
@@ -911,6 +729,7 @@ const editJob = async (req, res) => {
             whyWorkWithUs, product, valueOfProduct, productDescription, hiringCompanyDescription, howLikeToApply,
             workSamples, jobImage, brandImage, country, state, city, jobPostedDate, lastDateForApply, category,
             minAge,maxAge,instaMin,instaMax,tikTokMin,tikTokMax,linkedInMin,linkedInMax,fbMin,fbMax,twitterMin,twitterMax,
+            youTubeMin,youTubeMax
  // Include isActive: true if updating this field as well
         };
 
@@ -1012,7 +831,7 @@ const getBrandPostedJobsByID = async (req, res, next) => {
                 data: [] // Return an empty array for data
             });
         }
-
+        gigs.reverse();
         // If gigs are found, send them back in the response as an array of objects
         res.json({
             status: true,
@@ -1044,12 +863,7 @@ const getAllJobs = async (req, res, next) => {
 
         const today = new Date();
 
-        // // Define 'today' to represent the current date
-        // const today = new Date();
-        // today.setHours(0, 0, 0, 0); // Set time to 00:00:00 to ensure comparison works correctly
-
-        // Fetch all active gigs and drafts for the user's brandId
-
+       
 
         const gigs = await gigsmodel.find({
             brandId: new mongoose.Types.ObjectId(userId),
@@ -1079,31 +893,6 @@ const getAllJobs = async (req, res, next) => {
         });
     }
 };
-// const getAllJobs = async (req, res, next) => {
-//     try {
-//         const userId = req.body.userId || req.params.userId;
-//         console.log("userId",userId)
-
-
-//         // Fetch all active gigs and drafts for the user's brandId
-//         const gigs = await gigsmodel.find({ brandId: new mongoose.Types.ObjectId(userId), isActive: true }).sort({ createdAt: -1 });
-//         const drafts = await draftmodel.find({ brandId: new mongoose.Types.ObjectId(userId), isActive: true}).sort({ createdAt: -1 });
-
-//         // Combine gigs and drafts into a single array and sort them by creation date, newest first
-//         const jobs = [...gigs, ...drafts].sort((a, b) => b.createdAt - a.createdAt);
-
-//         res.json({
-//             status: true,
-//             data: jobs
-//         });
-//     } catch (error) {
-//         console.error("Error fetching all jobs:", error);
-//         res.status(500).json({
-//             status: false,
-//             error: error
-//         });
-//     }
-// };
 
 
 
@@ -1217,39 +1006,6 @@ const getAnyJobById = async (req, res, next) => {
 };
 
 
-// const getAnyJobById = async (req, res, next) => {
-//     try {
-//         // Assuming gigId comes from the request (either from body or params)
-//         const gigId = req.body.gigId || req.params.gigId;
-//         if (!mongoose.Types.ObjectId.isValid(gigId)) {
-//             return res.status(400).json({ status: false, msg: 'Invalid ID format' });
-//         }
-
-//         // First, try to find the job in gigsmodel
-//         let job = await gigsmodel.findById({ _id: gigId, isActive: true }).sort({ createdAt: -1 });
-
-//         // If not found in gigsmodel, try to find it in draftmodel
-//         if (!job) {
-//             job = await draftmodel.findById({ _id: gigId, isActive: true }).sort({ createdAt: -1 });
-//         }
-
-//         // If the job is not found in both models
-//         if (!job) {
-//             return res.status(404).json({ status: false, msg: 'Job not found' });
-//         }
-
-//         // Job found, return it
-//         res.json({
-//             status: true,
-//             data: job
-//         });
-//     } catch (error) {
-//         res.json({
-//             status: false,
-//             error: error.message
-//         });
-//     }
-// };
 
 /********** job count******
 * @param {*} req from user
@@ -1324,7 +1080,7 @@ const jobCount = async (req, res, next) => {
 const searchJobs = async (req, res, next) => {
     try {
         // Extract search parameters from request body
-        const { jobTitle, jobLocation, age, skills, keyword, jobType, employmentType, talentId, category } = req.body;
+        const { jobTitle, jobLocation, age, skills, keyword, jobType, employmentType, talentId, category,state,city } = req.body;
         // Define the fields to search in
         const searchableFields = [
             'jobTitle',
@@ -1349,7 +1105,8 @@ const searchJobs = async (req, res, next) => {
             'productDescription',
             'hiringCompanyDescription',
             'howLikeToApply',
-            'category'
+            'category',
+            
         ];
 
         // Build query criteria using the $or operator
@@ -1359,8 +1116,14 @@ const searchJobs = async (req, res, next) => {
                 [field]: { $regex: new RegExp(keyword, 'i') }
             }));
         }
+        if (state) {
+            queryConditions.push({ state: { $regex: new RegExp(state, 'i') } });
+        }
+        if (city) {
+            queryConditions.push({ city: { $regex: new RegExp(city, 'i') } });
+        }
         if (category) {
-            queryConditions.push({ category: { $regex: new RegExp(category, 'i') } }); // Case-insensitive search for jobTitle
+            queryConditions.push({ category: { $regex: new RegExp(category, 'i') } });
         }
         if (jobTitle) {
             queryConditions.push({ jobTitle: { $regex: new RegExp(jobTitle, 'i') } }); // Case-insensitive search for jobTitle
@@ -1422,157 +1185,6 @@ const searchJobs = async (req, res, next) => {
     }
 };
 
-// const searchJobs = async (req, res, next) => {
-//     try {
-//         // Extract search parameters from request body
-//         const { jobTitle, jobLocation, age, skills, keyword, jobType, workplaceType } = req.body;
-//         // Define the fields to search in
-//         const searchableFields = [
-//             'jobTitle',
-//             'jobLocation',
-//             'streetAddress',
-//             'workplaceType',
-//             'jobDescription',
-//             'skills',
-//             'additionalRequirements',
-//             'age',
-//             'gender',
-//             'nationality',
-//             'languages',
-//             'benefits',
-//             'compensation',
-//             'jobType',
-//             'jobCurrency',
-//             'minPay',
-//             'maxPay',
-//             'hiringCompany',
-//             'product',
-//             'productDescription',
-//             'hiringCompanyDescription',
-//             'howLikeToApply',
-
-//         ];
-
-//         // Build query criteria using the $or operator
-//         let queryConditions = [];
-//         if (keyword) {
-//             queryConditions = searchableFields.map(field => ({
-//                 [field]: { $regex: new RegExp(keyword, 'i') }
-//             }));
-//         }
-//         if (jobTitle) {
-//             queryConditions.push({ jobTitle: { $regex: new RegExp(jobTitle, 'i') } }); // Case-insensitive search for jobTitle
-//         }
-//         if (jobType) {
-//             queryConditions.push({ jobType: { $regex: new RegExp(jobType, 'i') } }); // Case-insensitive search for jobTitle
-//         }
-//         if (workplaceType) {
-//             queryConditions.push({ workplaceType: { $regex: new RegExp(workplaceType, 'i') } }); // Case-insensitive search for jobTitle
-//         }
-//         if (jobLocation) {
-//             queryConditions.push({ jobLocation: { $regex: new RegExp(jobLocation, 'i') } }); // Case-insensitive search for jobLocation
-//         }
-//         if (age) {
-//             const ageStr = String(age);  // Convert age to string to handle non-string inputs safely
-//             if (ageStr.includes('-')) {
-//                 const ageRange = ageStr.split('-');
-//                 queryConditions.push({ age: { $gte: parseInt(ageRange[0], 10), $lte: parseInt(ageRange[1], 10) } });
-//             } else if (ageStr.endsWith('+')) {
-//                 const minAge = parseInt(ageStr.slice(0, -1), 10);
-//                 queryConditions.push({ age: { $gte: minAge } });
-//             }
-//         }
-//         if (skills && skills.length > 0) {
-//             // Convert each skill to a case-insensitive regex pattern
-//             const skillRegexPatterns = skills.map(skill => new RegExp(skill, 'i'));
-//             queryConditions.push({ skills: { $in: skillRegexPatterns } });
-//         }
-//         // if (skills && skills.length > 0) {
-//         //     queryConditions.push({ skills: { $in: skills } });
-//         // }
-
-//         let queryCriteria = { isActive: true };
-//         if (queryConditions.length > 0) {
-//             queryCriteria.$or = queryConditions;
-//         }
-
-
-
-
-//         // Find matching gigs
-//         const gigs = await gigsmodel.find(queryCriteria).sort({ created: -1 });
-
-//          // Create modified data with an "isApplied" status
-//          const modifiedData = await Promise.all(gigs.map(async (gig) => {
-//             const application = await notificationmodel.findOne({ gigId: gig._id, talentId: req.body.talentId });
-//             return {
-//                 ...gig._doc,
-//                 isApplied: application ? "Applied" : "Apply Now"
-//             };
-//         }));
-
-//         // Send response
-//         res.json({
-//             status: true,
-//             data: gigs
-//         });
-//     } catch (error) {
-//         // Handle errors
-//         console.error("Error in searching jobs:", error);
-//         res.status(500).json({
-//             status: false,
-//             msg: 'Failed to search jobs'
-//         });
-//     }
-// };
-
-// const searchJobs = async (req, res, next) => {
-//     try {
-//         // Extract search parameters from request body
-//         const { jobTitle, jobLocation,age,skills} = req.body;
-
-//         // Build query criteria
-//         const queryCriteria = { isActive: true };
-//         if (jobTitle) {
-//             queryCriteria.jobTitle = { $regex: new RegExp(jobTitle, 'i') }; // Case-insensitive search for jobTitle
-//         }
-//         if (jobLocation) {
-//             queryCriteria.jobLocation = { $regex: new RegExp(jobLocation, 'i') }; // Case-insensitive search for jobLocation
-//         }
-//         if (age) {
-//            // Ensure age is a string before attempting to split
-//         const ageStr = String(age);  // Convert age to string to handle non-string inputs safely
-//         if (ageStr.includes('-')) {
-//             const ageRange = ageStr.split('-');
-//             // Assuming ageRange would have two elements, "min" and "max"
-//             queryCriteria.age = { $gte: parseInt(ageRange[0], 10), $lte: parseInt(ageRange[1], 10) };
-//         } else if (ageStr.endsWith('+')) {
-//             const minAge = parseInt(ageStr.slice(0, -1), 10);
-//             queryCriteria.age = { $gte: minAge };
-//         }
-//         }
-//         if (skills && skills.length > 0) {
-//             // Match any job that contains at least one of the skills in the provided array
-//             queryCriteria.skills = { $in: skills };
-//         }
-
-//         // Find matching gigs
-//         const gigs = await gigsmodel.find(queryCriteria).sort({ created: -1 });
-
-//         // Send response
-//         res.json({
-//             status: true,
-//             data: gigs
-//         });
-//     } catch (error) {
-//         // Handle errors
-//         console.error("Error in searching jobs:", error);
-//         res.status(500).json({
-//             status: false,
-//             msg: 'Failed to search jobs'
-//         });
-//     }
-// };
 
 
 /**
@@ -1581,85 +1193,6 @@ const searchJobs = async (req, res, next) => {
 * @param {*} res return data
 * @param {*} next undefined
 */
-// const applyJobs = async (req, res, next) => {
-//     const { talentId, brandId, gigId } = req.body;
-
-//     try {
-//         // Find talent and brand
-//         const talent = await findUserById(talentId);
-//         const brand = await findUserById(brandId);
-
-//         if (!talent || !brand) {
-//             return res.status(404).json({ status: false, msg: 'Talent or Brand not found' });
-//         }
-
-//         // Determine the correct model based on the talent type
-//         const talentType = await determineUserType(talentId);
-//         if (!talentType) {
-//             return res.status(404).json({ status: false, msg: 'User type not found for talent' });
-//         }
-
-//         const TalentModel = talentType === 'kids' ? kidsmodel : adultmodel;
-
-//         // Check planName and apply logic accordingly
-//         const planName = await TalentModel.findOne({ _id: talentId }).select('planName');
-//         if (!planName) {
-//             return res.status(404).json({ status: false, msg: 'Plan name not found for talent' });
-//         }
-
-//         let maxApplications;
-//         switch (planName) {
-//             case 'Basic':
-//                 maxApplications = 5;
-//                 break;
-//             case 'Pro':
-//             case 'Premium':
-//                 maxApplications = Infinity; // Unlimited applications for Pro and Premium plans
-//                 break;
-//             default:
-//                 maxApplications = 0;
-//         }
-
-//         // Count the number of applications made by the talent
-//         const applicationCount = await applymodel.countDocuments({ talentId });
-
-//         if (applicationCount >= maxApplications) {
-//             return res.status(403).json({
-//                 status: false,
-//                 msg: maxApplications === Infinity ? 'Unlimited applications reached for this plan' : `Maximum number of applications (${maxApplications}) reached for this plan`
-//             });
-//         }
-
-//         // Update the talent document with the application details
-//         await TalentModel.findByIdAndUpdate(talentId, {
-//             $set: { isApplied: true },
-//             $push: {
-//                 applications: {
-//                     gigId: gigId,
-//                     isApplied: true,
-//                     brandId: brandId
-//                 }
-//             }
-//         });
-
-//         // Notification content
-//         const brandNotificationMessage = `A talent has applied for a job`;
-//         const talentNotificationMessage = 'You have successfully applied for the job';
-
-//         // Save a single notification in the database for both brand and talent
-//         await saveNotifications(brandId, talentId, gigId, brandNotificationMessage, talentNotificationMessage);
-//         await saveApplyJobs(brandId, talentId, gigId);
-
-//         // Send notifications
-//         await sendNotification(brand.fcmToken, 'New Job Application', brandNotificationMessage);
-//         await sendNotification(talent.fcmToken, 'Application Successful', talentNotificationMessage);
-
-//         res.json({ status: true, msg: 'Application processed' });
-//     } catch (error) {
-//         console.error("Error applying for job", error);
-//         res.status(500).json({ status: false, msg: error.message });
-//     }
-// };
 
 const applyJobs = async (req, res, next) => {
     const { talentId, brandId, gigId } = req.body;
@@ -1855,6 +1388,8 @@ async function saveNotifications(brandId, talentId, gigId, brandNotificationMess
                 fbMax: gig.fbMax,
                 twitterMin: gig.twitterMin,
                 twitterMax: gig.twitterMax,
+                youTubeMin:gig.youTubeMin,
+                youTubeMax:gig.youTubeMax
                 
                 // matched:gig.matched // Assuming gig has a field named jobTitle
                 // Add other gig details as needed
@@ -2170,65 +1705,6 @@ const getAppliedjobs = async (req, res, next) => {
     }
 };
 
-
-// const getAppliedjobs = async (req, res, next) => {
-//     try {
-//         const userId = req.body.userId;
-
-//         // First, attempt to find the user and their applications in kidsmodel
-//         let user = await kidsmodel.findOne({ _id: userId, isActive: true, inActive: true });
-
-//         if (!user) {
-//             // If no entry in kidsmodel, try adultmodel
-//             user = await adultmodel.findOne({ _id: userId, isActive: true, inActive: true });
-//         }
-
-//         if (!user || !user.applications || user.applications.length === 0) {
-//             return res.status(404).json({
-//                 status: false,
-//                 message: 'No applications found'
-//             });
-//         }
-
-//         // Map the gigIds from the applications array
-//         const gigIds = user.applications.map(application => application.gigId);
-//         console.log("gigIds", gigIds)
-//         // Fetch all gig details using gigIds
-//         const gigDetails = await Promise.all(
-//             gigIds.map(gigId => gigsmodel.findById(gigId))
-//         );
-//         console.log("gigDetails", gigDetails)
-//         // Filter out any null responses (in case some gigs were not found)
-//         const validGigDetails = gigDetails.filter(detail => detail !== null);
-
-//         console.log("validGigDetails", validGigDetails)
-//         if (validGigDetails.length === 0) {
-//             return res.status(404).json({
-//                 status: false,
-//                 message: 'Gig details not found'
-//             });
-//         }
-
-//         res.json({
-//             status: true,
-//             data: validGigDetails
-//         });
-
-//     } catch (error) {
-//         console.error("Error fetching gigs:", error);
-//         res.status(500).json({
-//             status: false,
-//             message: 'Server error'
-//         });
-//     }
-// };
-/**
- * removeJobsAfterLastDate
- * @param {*} req from user
- * @param {*} res return data
- * @param {*} next undefined
- */
-
 /**
  * selectedLevelRange
  * @param {*} req from user
@@ -2292,57 +1768,6 @@ const selectedLevelRange = async (req, res, next) => {
         });
     }
 };
-
-// const selectedLevelRange = async (req, res, next) => {
-//     try {
-//         const { talentId, selectedLevel } = req.body;
-
-//         // Validation for required parameters
-//         if (!talentId || !selectedLevel) {
-//             return res.status(400).json({
-//                 status: false,
-//                 message: 'talentId and selectedLevel are required'
-//             });
-//         }
-
-//         // Attempt to find and update the talent in kidsmodel or adultmodel
-//         let updated = false;
-//         const kids = await kidsmodel.findOne({ _id: talentId, isActive: true, inActive: true });
-//         if (kids) {
-//             await kidsmodel.findByIdAndUpdate(talentId, { selectedLevel });
-//             updated = true;
-//         }
-
-//         const adult = await adultmodel.findOne({ _id: talentId, isActive: true, inActive: true });
-//         if (adult) {
-//             await adultmodel.findByIdAndUpdate(talentId, { selectedLevel });
-//             updated = true;
-//         }
-
-//         // Always update the applymodel regardless of kids/adult record existence
-//         await applymodel.updateMany({ talentId }, { selectedLevel });
-
-//         if (updated) {
-//             return res.json({
-//                 status: true,
-//                 message: 'Selected level updated successfully'
-//             });
-//         } else {
-//             // If no kids or adults were found and updated, still return success for applymodel update
-//             return res.json({
-//                 status: true,
-//                 message: 'Selected level updated in applications, but no corresponding kids or adults record found'
-//             });
-//         }
-
-//     } catch (error) {
-//         console.error("Error updating selected level:", error);
-//         return res.status(500).json({
-//             status: false,
-//             message: 'Internal server error'
-//         });
-//     }
-// };
 
 
 
@@ -2422,7 +1847,7 @@ const informSelectedLevel = async (req, res) => {
 
         // Modify email content and subject based on selectedLevel
         switch (selectedLevel) {
-            case 'Booked':
+            case 'bookedCandidates':
                 mailOptions.subject = 'Congratulations, You Have Been Selected!';
                 mailOptions.text += ' You have been selected.';
                 notificationTitle = 'Congratulations!';
@@ -2515,118 +1940,6 @@ const informSelectedLevel = async (req, res) => {
     }
 };
 
-// const informSelectedLevel = async (req, res) => {
-//     try {
-//         const { talentId, selectedLevel } = req.body;
-
-//         if (!talentId || !selectedLevel) {
-//             return res.status(400).json({
-//                 status: false,
-//                 message: 'talentId, selectedLevel, and text are required'
-//             });
-//         }
-
-//         // Find the talent and decide the recipient email based on whether they are a kid or an adult
-//         const kid = await kidsmodel.findOne({ _id: talentId, isActive: true, inActive: true }).select('childEmail parentEmail');
-//         const adult = await adultmodel.findOne({ _id: talentId, isActive: true, inActive: true }).select('adultEmail contactEmail');
-
-//         let emails = [];
-//         if (kid) {
-//             emails.push(kid.childEmail, kid.parentEmail);
-//         } else if (adult) {
-//             emails.push(adult.adultEmail, adult.contactEmail);
-//         } else {
-//             return res.status(404).json({
-//                 status: false,
-//                 message: 'No active talent found with the provided talentId'
-//             });
-//         }
-
-//         // Setup the nodemailer transporter
-//         const transporter = nodemailer.createTransport({
-//             service: 'Gmail',
-//             auth: {
-//                 user: host,
-//                 pass: pass
-//             }
-//         });
-
-//         const mailOptions = {
-//             from: host,
-//             to: emails.join(', '), // Sends to all collected emails
-//             subject: 'Talent Notification',
-//             text: 'Hai,'
-
-//         };
-
-//         // Modify email content and subject based on selectedLevel
-//         switch (selectedLevel) {
-
-//             case 'shortlistedCandidates':
-//                 mailOptions.subject = 'Congratulations, You Have Been Shortlisted!';
-//                 mailOptions.text += ' You have been shortlisted for the next stage.';
-//                 break;
-//             case 'rejectedCandidates':
-//                 mailOptions.subject = 'Regret, You Have Been Rejected';
-//                 mailOptions.text += ' We regret to inform you that you were not selected.';
-//                 break;
-//             case 'interviewInvitations':
-//                 const interviewType = req.body.interviewType;
-//                 const meetingLink = req.body.meetingLink; // For online interviews
-//                 const officeAddress = req.body.officeAddress; // For offline interviews
-//                 if (!interviewType) {
-//                     return res.status(400).json({
-//                         status: false,
-//                         message: 'interviewType is required for interview invitations'
-//                     });
-//                 }
-//                 mailOptions.subject = 'Interview Invitation';
-//                 mailOptions.text += ` This will be a ${interviewType} interview. `;
-//                 // Append additional information based on interview type
-//                 if (interviewType === 'online') {
-//                     if (meetingLink) {
-//                         mailOptions.text += `Here is your meeting link: ${meetingLink}.`;
-//                     } else {
-//                         mailOptions.text += 'A meeting link will be provided soon.';
-//                     }
-//                 } else if (interviewType === 'offline') {
-//                     if (officeAddress) {
-//                         mailOptions.text += `Please attend in person at the following address: ${officeAddress}.`;
-//                     } else {
-//                         mailOptions.text += 'Please attend in person at our office. The exact address will be provided soon.';
-//                     }
-//                 }
-//                 // if (interviewType === 'online') {
-//                 //     mailOptions.text += 'A meeting link will be provided.';
-//                 // } else {
-//                 //     mailOptions.text += 'Please attend in person at our office.';
-//                 // }
-//                 break;
-//             default:
-//                 return res.status(400).json({
-//                     status: false,
-//                     message: 'Invalid selectedLevel value'
-//                 });
-//         }
-
-//         // Send the email
-//         await transporter.sendMail(mailOptions);
-
-//         // Respond with success if the email was sent successfully
-//         res.json({
-//             status: true,
-//             message: 'Email sent successfully to all relevant contacts'
-//         });
-
-//     } catch (error) {
-//         console.error("Error sending email:", error);
-//         res.status(500).json({
-//             status: false,
-//             message: 'Internal server error'
-//         });
-//     }
-// };
-
 
 /**
  * NewCandidates
@@ -2669,244 +1982,7 @@ const newCandidates = async (req, res) => {
     }
 };
 
-//correct
-// const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
-// const newCandidates = async (req, res) => {
-//   try {
-//     const { brandId } = req.body;
-
-//     if (!brandId || !isValidObjectId(brandId)) {
-//       return res.status(400).json({
-//         status: false,
-//         message: 'Invalid or missing Brand ID',
-//       });
-//     }
-
-//     //Fetch all kids and adults with the specified Brand ID and populate gig details
-//     const kids = await kidsmodel.find({ 'applications.brandId': brandId, isActive: true })//brandId
-//     .populate({
-//       path: 'applications.gigId',
-//       model: 'Gigs', // Ensure 'Gigs' is the correct model name
-//     });
-//     const adults = await adultmodel.find({ 'applications.brandId': brandId, isActive: true })//brandId
-//     .populate({
-//       path: 'applications.gigId',
-//       model: 'Gigs',
-//     });
-
-//     const allTalents = [...kids, ...adults];
-
-//     if (allTalents.length === 0) {
-//       return res.status(404).json({
-//         status: false,
-//         message: 'No talents found for the provided Brand ID',
-//       });
-//     }
-
-//     // Create an array to store gig details with talent information
-//     const gigs = [];
-
-//     allTalents.forEach((talent) => {
-//       talent.applications.forEach((application) => {
-//         const gig = application.gigId;
-
-//         if (gig) {
-//           const gigIdStr = gig._id.toString();
-//           let gigEntry = gigs.find(g => g.gigId === gigIdStr);
-
-//           if (!gigEntry) {
-//             // If it's the first time we're encountering this gigId, create new entry
-//             gigEntry = {
-//               gigId: gigIdStr,
-//               gigDetails: gig,
-//               talents: []
-//             };
-//             gigs.push(gigEntry);
-//           }
-
-//           // Add talent to the gig's list of talents
-//           gigEntry.talents.push({
-//             talentId: talent._id,
-//             talentDetails: talent,
-//           });
-//         }
-//       });
-//     });
-
-//     return res.status(200).json({
-//       status: true,
-//       message: 'Success',
-//       gigs: gigs, // An array of gigs each containing their details and associated talents
-//     });
-//   } catch (error) {
-//     console.error("Error in newCandidates:", error);
-//     return res.status(500).json({
-//       status: false,
-//       message: 'Internal server error',
-//     });
-//   }
-// };
-//correct
-
-// const isValidObjectID = (id) => mongoose.Types.ObjectId.isValid(id);
-
-// const getSelectionList = async (req, res) => {
-//   try {
-//     const { brandId } = req.body;
-
-//     if (!brandId || !isValidObjectID(brandId)) {
-//       return res.status(400).json({
-//         status: false,
-//         message: 'Invalid or missing Brand ID',
-//       });
-//     }
-
-//     //Fetch all kids and adults with the specified Brand ID and populate gig details
-//     const kids = await kidsmodel.find({ brandId, isActive: true,selectedLevel:req.body.selectedLevel })
-//     .populate({
-//       path: 'applications.gigId',
-//       model: 'Gigs', // Ensure 'Gigs' is the correct model name
-//     });
-//     const adults = await adultmodel.find({ brandId, isActive: true,selectedLevel:req.body.selectedLevel })
-//     .populate({
-//       path: 'applications.gigId',
-//       model: 'Gigs',
-//     });
-
-//     const allTalents = [...kids, ...adults];
-
-//     if (allTalents.length === 0) {
-//       return res.status(404).json({
-//         status: false,
-//         message: 'No talents found for the provided Brand ID',
-//       });
-//     }
-
-//     // Create an array to store gig details with talent information
-//     const gigs = [];
-
-//     allTalents.forEach((talent) => {
-//       talent.applications.forEach((application) => {
-//         const gig = application.gigId;
-
-//         if (gig) {
-//           const gigIdStr = gig._id.toString();
-//           let gigEntry = gigs.find(g => g.gigId === gigIdStr);
-
-//           if (!gigEntry) {
-//             // If it's the first time we're encountering this gigId, create new entry
-//             gigEntry = {
-//               gigId: gigIdStr,
-//               gigDetails: gig,
-//               talents: []
-//             };
-//             gigs.push(gigEntry);
-//           }
-
-//           // Add talent to the gig's list of talents
-//           gigEntry.talents.push({
-//             talentId: talent._id,
-//             talentDetails: talent,
-//           });
-//         }
-//       });
-//     });
-
-//     return res.status(200).json({
-//       status: true,
-//       message: 'Success',
-//       gigs: gigs, // An array of gigs each containing their details and associated talents
-//     });
-//   } catch (error) {
-//     console.error("Error in newCandidates:", error);
-//     return res.status(500).json({
-//       status: false,
-//       message: 'Internal server error',
-//     });
-//   }
-// };
-
-//correct
-// const isValidObjectID = (id) => mongoose.Types.ObjectId.isValid(id);
-
-// const getSelectionList = async (req, res) => {
-//   try {
-//     const { brandId, selectedLevel } = req.body;
-
-//     // Validate input: brandId must be provided and be a valid MongoDB ObjectId
-//     if (!brandId || !isValidObjectID(brandId)) {
-//       return res.status(400).json({
-//         status: false,
-//         message: 'Invalid or missing Brand ID',
-//       });
-//     }
-
-//     // Query both kidsmodel and adultmodel databases for entries matching the brandId and active status
-//     const kids = await kidsmodel.find({  'applications.brandId': brandId, isActive: true, selectedLevel })
-//       .populate({
-//         path: 'applications.gigId',
-//         model: 'Gigs', // Ensure this is the correct name of the gig model
-//       });
-//     const adults = await adultmodel.find({  'applications.brandId':brandId, isActive: true, selectedLevel })
-//       .populate({
-//         path: 'applications.gigId',
-//         model: 'Gigs',
-//       });
-
-//     const allTalents = [...kids, ...adults];
-
-//     // Check if any talents were retrieved
-//     if (allTalents.length === 0) {
-//       return res.status(404).json({
-//         status: false,
-//         message: 'No talents found for the provided Brand ID',
-//       });
-//     }
-
-//     // Organize the data: mapping gigs to the talents associated with them
-//     const gigs = [];
-//     allTalents.forEach(talent => {
-//       talent.applications.forEach(application => {
-//         const gig = application.gigId;
-//         if (gig) {
-//           const gigIdStr = gig._id.toString();
-//           let gigEntry = gigs.find(g => g.gigId === gigIdStr);
-//           if (!gigEntry) {
-//             gigEntry = {
-//               gigId: gigIdStr,
-//               gigDetails: gig,
-//               talents: []
-//             };
-//             console.log("gigEntry",gigEntry)
-//             gigs.push(gigEntry);
-//           }
-//           gigEntry.talents.push({
-//             talentId: talent._id.toString(),
-//             talentDetails: talent,
-//           });
-//         }
-//       });
-//     });
-
-//     // Return the list of gigs, each with its associated talents
-//     return res.status(200).json({
-//       status: true,
-//       message: 'Success',
-//       gigs: gigs,
-//     });
-//   } catch (error) {
-//     console.error("Error in getSelectionList:", error);
-//     return res.status(500).json({
-//       status: false,
-//       message: 'Internal server error',
-//       error: error.toString()
-//     });
-//   }
-// };
-
-
-//correct
 /**
  * getSelectionList
  * @param {*} req from user
@@ -2927,9 +2003,12 @@ const getSelectionList = async (req, res) => {
 
         // Find all talents that have applied to jobs with the given brandId and selectedLevel
         const talents = await applymodel.find({
-            "brandId": brandId,
-            "selectedLevel": selectedLevel
-        });
+            brandId: new mongoose.Types.ObjectId(brandId),
+            selectedLevel: selectedLevel.trim(),
+          });
+
+        console.log("brandId",brandId)
+        console.log("selectedLevel", selectedLevel)
         console.log("talents", talents);
 
         if (!talents || talents.length === 0) {
@@ -2956,215 +2035,7 @@ const getSelectionList = async (req, res) => {
         });
     }
 };
-
-
-
-
-//corrected one 6/6/24
-// const getSelectionList = async (req, res) => {
-//     try {
-//         const { brandId, selectedLevel } = req.body;
-
-//         // Validate input
-//         if (!brandId || !selectedLevel) {
-//             return res.status(400).json({
-//                 status: false,
-//                 message: 'Invalid or missing Brand ID or Selected Level',
-//             });
-//         }
-
-//         // Find all talents that have applied to jobs with the given brandId
-//         const talents = await applymodel.find({ brandId });
-//         console.log("talents", talents);
-
-//         if (!talents || talents.length === 0) {
-//             return res.status(404).json({
-//                 status: false,
-//                 message: 'No talents found for the provided brandId'
-//             });
-//         }
-
-//         // Prepare an array to store talent IDs
-//         const talentIds = talents.map(talent => talent.talentId);
-
-//         // Fetch details of talents from either kidsmodel or adultmodel based on their type and selectedLevel
-//         const applyJobs = [];
-//         for (const talentId of talentIds) {
-//             let talentDetails;
-
-//             // Check if the talent exists in the kids model
-//             talentDetails = await kidsmodel.findOne({
-//                 _id: talentId,
-//                 isActive: true,
-//                 inActive: true,
-//                 "applications.brandId": brandId,
-//                 "applications.selectedLevel": selectedLevel
-//             });
-
-//             // If talent is not found in the kids model, check in the adult model
-//             if (!talentDetails) {
-//                 talentDetails = await adultmodel.findOne({
-//                     _id: talentId,
-//                     isActive: true,
-//                     inActive: true,
-//                     "applications.brandId": brandId,
-//                     "applications.selectedLevel": selectedLevel
-//                 });
-//             }
-
-//             if (talentDetails) {
-//                 // Fetch brand details
-//                 const brandDetails = await brandsmodel.findOne({ _id: brandId });
-
-//                 // Find the application that matches the brandId and selectedLevel
-//                 const application = talentDetails.applications.find(app => 
-//                     app.brandId.toString() === brandId && 
-//                     app.selectedLevel === selectedLevel
-//                 );
-
-//                 if (application && application.gigId) {
-//                     // Fetch gig details using the gigId from the application
-//                     const gigDetails = await gigsmodel.findOne({ _id: application.gigId });
-
-//                     // Add brand and gig details to the talent details
-//                     talentDetails = {
-//                         ...talentDetails._doc,
-//                         brandDetails,
-//                         gigDetails
-//                     };
-
-//                     applyJobs.push(talentDetails);
-//                 }
-//             }
-//         }
-
-//         // Return the fetched data
-//         return res.json({
-//             status: true,
-//             message: 'Data retrieved successfully',
-//             data: applyJobs
-//         });
-
-//     } catch (error) {
-//         // Handle errors that occur during the fetch operation
-//         console.error('Error fetching talents:', error);
-//         return res.status(500).json({
-//             status: false,
-//             message: 'Failed to retrieve data',
-//         });
-//     }
-// };
-
-
-
-//corrected with applications.selected level
-// const getSelectionList = async (req, res) => {
-//     try {
-//         const { brandId, selectedLevel } = req.body;
-
-//         // Validate input
-//         if (!brandId || !selectedLevel) {
-//             return res.status(400).json({
-//                 status: false,
-//                 message: 'Invalid or missing Brand ID or Selected Level',
-//             });
-//         }
-
-//         // Find all talents that have applied to jobs with the given brandId
-//         const talents = await applymodel.find({ brandId: brandId });
-//              console.log("talents",talents)
-
-//         if (!talents || talents.length === 0) {
-//             return res.status(404).json({
-//                 status: false,
-//                 message: 'No talents found for the provided brandId'
-//             });
-//         }
-
-//         // Prepare an array to store talent IDs
-//         const talentIds = talents.map(talent => talent.talentId);
-
-//         // Fetch details of talents from either kidsmodel or adultmodel based on their type and selectedLevel
-//         const applyJobs = [];
-//         for (const talentId of talentIds) {
-//             let talentDetails;
-
-//             // Check if the talent exists in the kids model
-//             talentDetails = await kidsmodel.findOne({ _id: talentId, isActive: true, inActive: true, "applications.brandId": brandId, "applications.selectedLevel": selectedLevel });
-
-//             // If talent is not found in the kids model, check in the adult model
-//             if (!talentDetails) {
-//                 talentDetails = await adultmodel.findOne({ _id: talentId, isActive: true, inActive: true, "applications.brandId": brandId, "applications.selectedLevel": selectedLevel });
-//             }
-
-//             if (talentDetails) {
-//                 applyJobs.push(talentDetails);
-//             }
-//         }
-
-//         // Return the fetched data
-//         return res.json({
-//             status: true,
-//             message: 'Data retrieved successfully',
-//             data: applyJobs
-//         });
-
-//     } catch (error) {
-//         // Handle errors that occur during the fetch operation
-//         console.error('Error fetching talents:', error);
-//         return res.status(500).json({
-//             status: false,
-//             message: 'Failed to retrieve data',
-//         });
-//     }
-// };
-
-
-//old
-// const getSelectionList = async (req, res) => {
-//     try {
-//         const { brandId, selectedLevel } = req.body;
-
-//         // Validate input
-//         if (!brandId) {
-//             return res.status(400).json({
-//                 status: false,
-//                 message: 'Invalid or missing Brand ID',
-//             });
-//         }
-
-//         // Prepare the query object
-//         const query = {
-//             brandId: brandId,
-
-//             isActive: true
-//         };
-//         console.log("selectedLevel",selectedLevel)
-//         // If selectedLevel is provided, add it to the query
-//         if (selectedLevel) {
-//             query.selectedLevel = selectedLevel;
-//         }
-
-//         // Fetching jobs applications for a specific brand and possibly by selectedLevel
-//         const applyJobs = await applymodel.find(query).sort({ createdAt: -1 });
-
-//         // Return the fetched data
-//         return res.json({
-//             status: true,
-//             message: 'Data retrieved successfully',
-//             data: applyJobs
-//         });
-
-//     } catch (error) {
-//         // Handle errors that occur during the fetch operation
-//         console.error('Error fetching applications:', error);
-//         return res.status(500).json({
-//             status: false,
-//             message: 'Failed to retrieve data',
-//         });
-//     }
-// };
-/**
+/*
  * updateFavouriteJobs
  * @param {*} req from user
  * @param {*} res return data
@@ -3297,6 +2168,7 @@ async function saveFavouritesJobs(brandId, talentId, gigId) {
                 parentMobileNo: talent.parentMobileNo,
             },
             gigDetails: {
+                
                 jobTitle: gig.jobTitle,
                 jobLocation: gig.jobLocation,
                 streetAddress: gig.streetAddress,
@@ -3345,6 +2217,8 @@ async function saveFavouritesJobs(brandId, talentId, gigId) {
                 fbMax: gig.fbMax,
                 twitterMin: gig.twitterMin,
                 twitterMax: gig.twitterMax,
+                youTubeMin:gig.youTubeMin,
+                youTubeMax:gig.youTubeMax
 
 
             }
@@ -3428,40 +2302,6 @@ const getSkills = async (req, res) => {
     }
 };
 
-// const getSkills = async (req, res) => {
-//     try {
-//         // Use the aggregation pipeline to find all unique skills from active job listings
-//         const uniqueSkills = await gigsmodel.aggregate([
-//             { $match: { isActive: true } },  // Filter to include only active jobs
-//             { $unwind: '$skills' },         // Deconstruct the skills array
-//             { $group: { _id: null, skills: { $addToSet: '$skills' } } },  // Group to collect all unique skills
-//             { $project: { _id: 0, skills: 1 } }  // Project to format the output, removing '_id'
-//         ]);
-
-//         // Check if we found any skills
-//         if (uniqueSkills.length > 0) {
-//             // Send the unique skills array
-//             res.json({
-//                 status: true,
-//                 message: 'Skills retrieved successfully',
-//                 data: uniqueSkills[0].skills
-//             });
-//         } else {
-//             // No skills found, return an empty array
-//             res.json({
-//                 status: true,
-//                 message: 'No skills found',
-//                 data: []
-//             });
-//         }
-//     } catch (error) {
-//         console.error("Error retrieving skills from active jobs:", error);
-//         res.status(500).json({
-//             status: false,
-//             message: 'Failed to retrieve skills'
-//         });
-//     }
-// };
 
 
 /**
@@ -3975,6 +2815,8 @@ const saveNotificatio = async (talentId, brandId, gigId, talentNotificationMessa
                 fbMax: gig.fbMax,
                 twitterMin: gig.twitterMin,
                 twitterMax: gig.twitterMax,
+                youTubeMin:gig.youTubeMin,
+                youTubeMax:gig.youTubeMax
             }
 
 
@@ -4040,24 +2882,6 @@ const inviteTalentToApply = async (req, res, next) => {
             </html>
 `;
 
-
-        // const defaultEmailHtml = `
-        //     <html>
-        //     <body>
-        //         <p>Dear ${talent.parentFirstName || talent.firstName},</p>
-        //         <p>We hope this message finds you well. We're thrilled to extend an invitation for a unique opportunity that aligns perfectly with your skills and aspirations.</p>
-        //         <h2>Opportunity: ${jobTitle}</h2>
-        //         <p>${jobDescription}</p>
-        //         <p>This position not only aligns with your skills and professional goals but also offers the chance to work in a dynamic and supportive environment. We believe your unique talents would make a great addition to our team, and we are eager to see the contributions you could make.</p>
-        //         <p>To learn more about this exciting opportunity and to apply, please click <strong><a href="https://hybrid.sicsglobal.com/project/brandsandtalent/preview-job-talent?${gigId}" style="color: #0000FF; font-weight: bold; text-decoration: none;">here</a></strong>. We encourage you to apply at your earliest convenience as we are looking to fill this position soon.</p>
-        //         <p>Thank you for considering this opportunity. We look forward to the possibility of you joining our team and contributing to our continued success.</p>
-        //         <p>Warm regards,</p>
-        //         <p>Your Talent Acquisition Team</p>
-        //     </body>
-        //     </html>
-        // `;
-        // Use comments if provided, otherwise use the default email HTML content
-        //  const emailContent = comments ? comments : defaultEmailHtml;
         if (req.body.comments) {
             await sendEmails(email, 'Exciting Job Opportunity Awaits!', comments);
         }
@@ -4067,17 +2891,11 @@ const inviteTalentToApply = async (req, res, next) => {
         const jobalert = `You have been invited to apply for ${jobTitle}`;
         await saveNotificatio(talent._id, brandId, gigId, jobalert);
 
-        // // Use comments if provided, otherwise use the default email HTML content
-        // const emailContent = comments || defaultEmailHtml;
-        // Send email to talent's parent or adult email address
-        //  await sendEmails(email, 'Exciting Job Opportunity Awaits!', emailContent);
+       
         await sendNotificatio(talent.fcmToken, 'Exciting Job Opportunity Awaits!', jobalert);
 
         res.json({ status: true, msg: 'Invitation sent successfully' });
-        // } else {
-        //     // Return a message indicating that invitations are only for subscribed users of both brand and talent
-        //     return res.status(403).json({ status: false, msg: 'Invitations are only for subscribed users' });
-        // }
+       
     } catch (error) {
         console.error("Error sending invitation", error);
         res.status(500).json({ status: false, msg: error.message });
@@ -4116,6 +2934,52 @@ const isApprovedForjobByPlan = async (req, res, next) => {
     }
 };
 
+/**
+*********get brand jobs******
+* @param {*} req from user
+* @param {*} res return data
+* @param {*} next undefined
+*/
+const getBrandJobs = async (req, res, next) => {
+    try {
+        // Extracting brandId from request body or parameters
+        const brandId = req.body.brandId || req.params.brandId;
+
+        // Finding active gigs sorted by creation date in descending order
+        const gigs = await gigsmodel.find({ brandId: new mongoose.Types.ObjectId(brandId), isActive: true }).sort({ created: -1 });
+
+        // Finding active draft gigs sorted by creation date in descending order
+        const draft = await draftmodel.find({ brandId: new mongoose.Types.ObjectId(brandId), isActive: true }).sort({ created: -1 });
+
+        // Combine gigs and draft arrays
+        const combinedJobs = gigs.concat(draft);
+
+        // If no active gigs are found, send an empty array in the response
+        if (combinedJobs.length === 0) {
+            return res.json({
+                status: true,
+                data: [] // Return an empty array for data
+            });
+        }
+
+        // Reverse the order of jobs (if necessary)
+        combinedJobs.reverse();
+
+        // Sending the combined jobs back in the response as an array of objects
+        res.json({
+            status: true,
+            data: combinedJobs // No need to encapsulate jobs within an array
+        });
+
+    } catch (error) {
+        // Log the error and send a 500 internal server error response
+        console.error("Error fetching jobs:", error);
+        res.status(500).json({
+            status: false,
+            message: 'Server error'
+        });
+    }
+};
 
 
 module.exports = {
@@ -4125,6 +2989,6 @@ module.exports = {
     getTalentNotification, getCountNotification, getAppliedjobs, selectedLevelRange,
     informSelectedLevel, newCandidates, getSelectionList, updateFavouriteJobs,
     getSavedJobsByTalentId, getSkills, removeFavouritesJob, updatePassword, createJobAlert,
-    updateJobAlert, inviteTalentToApply, isApprovedForjobByPlan
+    updateJobAlert, inviteTalentToApply, isApprovedForjobByPlan,getBrandJobs
 
 };

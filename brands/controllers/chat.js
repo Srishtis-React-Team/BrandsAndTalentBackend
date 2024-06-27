@@ -22,16 +22,20 @@ const messagemodel = require("../models/messagemodel.js");
 
 
 const createChat = async (req, res) => {
-    const { firstId, secondId } = req.body
+    console.log("req.body",req.body)
+    const { firstId, secondId,socketId } = req.body
 
     try {
         const chat = await chatmodel.findOne({
-            members: { $all: [firstId, secondId] }
+            members: { $all: [firstId, secondId] },
         });
         if (chat) return res.status(200).json(chat);
         const newChat = new chatmodel({
-            members: [firstId, secondId]
+            members: [firstId, secondId],socketId
         })
+        console.log("socketId",socketId)
+        console.log("newChat",newChat)
+        console.log("chat22",chat)
 
         const response = await newChat.save();
         res.status(200).json(response);
@@ -87,7 +91,7 @@ const findChat =async(req,res)=>{
  * @param {*} res return data
  * @param {*} next undefined
  */
-const findPreviousChatUsers = async (req, res) => {
+ const findPreviousChatUsers = async (req, res) => {
     const userId = req.params.userId;
 
     try {
@@ -96,44 +100,57 @@ const findPreviousChatUsers = async (req, res) => {
             members: { $in: [userId] }
         });
 
-        // Collect IDs of other members, excluding the logged-in user's ID
-        const otherMemberIds = chats.flatMap(chat =>
-            chat.members.filter(member => member !== userId)
+        // Collect IDs of other members, excluding the logged-in user's ID, and include chat createdAt timestamps
+        const otherMembersWithTimestamps = chats.flatMap(chat =>
+            chat.members
+                .filter(member => member !== userId)
+                .map(member => ({ memberId: member, chatCreatedAt: chat.createdAt }))
         );
 
-        // Get unique IDs to avoid duplicate queries and ensure they're valid ObjectIds
-        const uniqueMemberIds = [...new Set(otherMemberIds)].filter(id =>
-            mongoose.Types.ObjectId.isValid(id)
-        );
+        // Get unique member IDs and their latest chatCreatedAt timestamps
+        const uniqueMembers = otherMembersWithTimestamps.reduce((acc, { memberId, chatCreatedAt }) => {
+            if (!acc[memberId] || new Date(acc[memberId]) < new Date(chatCreatedAt)) {
+                acc[memberId] = chatCreatedAt;
+            }
+            return acc;
+        }, {});
+
+        const uniqueMemberIds = Object.keys(uniqueMembers);
 
         // Ensure the list is not empty after filtering invalid IDs
         if (uniqueMemberIds.length === 0) {
-            return res.status(404).json({ error: 'No valid members found' });
+            return res.json({ status: false, data: [] });
         }
 
-        // Find related data for these other members in different models with isActive: true
+        // Find related data for these other members in different models with isActive: true and inActive: true
         const [adults, kids, brands] = await Promise.all([
-            adultmodel.find({ _id: { $in: uniqueMemberIds }, isActive: true,inActive:true }),
-            kidsmodel.find({ _id: { $in: uniqueMemberIds }, isActive: true,inActive:true }),
-            brandsmodel.find({ _id: { $in: uniqueMemberIds }, isActive: true,inActive:true })
+            adultmodel.find({ _id: { $in: uniqueMemberIds }, isActive: true, inActive: true }),
+            kidsmodel.find({ _id: { $in: uniqueMemberIds }, isActive: true, inActive: true }),
+            brandsmodel.find({ _id: { $in: uniqueMemberIds }, isActive: true, inActive: true })
         ]);
 
-        // Combine all the data into a single array
+        // Combine all the data into a single array with their chat createdAt timestamps
         const combinedData = [
-            ...adults,
-            ...kids,
-            ...brands
+            ...adults.map(item => ({ ...item.toObject(), chatCreatedAt: uniqueMembers[item._id.toString()] })),
+            ...kids.map(item => ({ ...item.toObject(), chatCreatedAt: uniqueMembers[item._id.toString()] })),
+            ...brands.map(item => ({ ...item.toObject(), chatCreatedAt: uniqueMembers[item._id.toString()] }))
         ];
 
-        // Send response with the combined data
+        // Sort the combined data by chatCreatedAt and then reverse it
+        combinedData.sort((a, b) => new Date(b.chatCreatedAt) - new Date(a.chatCreatedAt));
+
+        // Send response with the sorted combined data
         res.status(200).json({
-            data: combinedData // single array containing all adults, kids, and brands
+            status: true,
+            data: combinedData // single array containing all adults, kids, and brands, sorted by chatCreatedAt
         });
     } catch (error) {
         console.error(error); // log the error
         res.status(500).json({ error: 'Internal server error' });
     }
 };
+
+
 /**
  *******filterNames*****
  * @param {*} req from user

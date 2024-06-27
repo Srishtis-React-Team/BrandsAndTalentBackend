@@ -45,8 +45,8 @@ router.post('/addServices',users.addServices)//for addServices
 router.post('/applyJobUsersList',users.applyJobUsersList)//for applyJobUsersList
 router.post('/deleteIndividualService',users.deleteIndividualService)//for deleteIndividualService
 router.post('/typeChecking',users.typeChecking)//for typeChecking
-router.post('/adminApproval',users.adminApproval)//for adminApproval
-
+router.post('/reviewsPosting',users.reviewsPosting)//for reviewsPosting
+router.post('/deleteVideoUrls',users.deleteVideoUrls)//for deleteVideoUrls
 
 module.exports = router
 

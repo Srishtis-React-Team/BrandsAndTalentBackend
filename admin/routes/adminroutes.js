@@ -18,9 +18,11 @@ router.post('/listLocation',admin.listLocation)
 router.get('/listCountries',admin.listCountries)
 router.post('/chatbot',admin.chatbot)
 router.get('/getAllStatesList',admin.getAllStatesList)
-router.get('/getAllCitiesList',admin.getAllCitiesList)// Assuming admin.multiUploads is your multer configuration
-
-
+router.get('/getAllCitiesList',admin.getAllCitiesList)// Assuming admin.multiUploads is your multer configuration,
+router.post('/adminApproval',admin.adminApproval)//for adminApproval
+router.post('/jobApproval',admin.jobApproval)//for jobApproval
+router.get('/notApprovedMembers',admin.notApprovedMembers)//for notApprovedMembers
+router.get('/ListBrandForJobPost',admin.ListBrandForJobPost)//for ListBrandForJobPost
 
 module.exports = router
 

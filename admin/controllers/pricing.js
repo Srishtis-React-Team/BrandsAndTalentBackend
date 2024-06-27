@@ -27,6 +27,7 @@ const addPricing = async (req, res, next) => {
             data:req.body.data,
             plan_type_monthly:req.body.plan_type_monthly,
             plan_type_annual:req.body.plan_type_annual,
+            annualTotalAmount:req.body.annualTotalAmount,
             isActive: true
         });
 
@@ -85,6 +86,7 @@ const pricingList = async (req, res, next) => {
             data:req.body.data,
             plan_type_monthly:req.body.plan_type_monthly,
             plan_type_annual:req.body.plan_type_annual,
+            annualTotalAmount:req.body.annualTotalAmount,
             isActive: true
         });
 

@@ -78,46 +78,32 @@ const getUserIdByUsername = async (username) => {
     }
   };
 
-
-  //instagram followers
-
-    
-  // Combined endpoint to get user details by username
-
-  
-  // const getInstagramCount = async (req, res) => {
-  //   try {
-  //     const username = req.params.username;
-  
-  //     // Fetch the follower count
-  //     const count = await followers(username);
-
-  //     console.log("username",count)
-  
-  //     // Check if the account was found
-  //     if (!count) {
-  //       return res.status(404).json({ error: 'Account not found' });
-  //     }
-  
-  //     // Send a structured JSON response
-  //     res.json({
-  //       username: username,
-  //       followers_count: count,
-  //     });
-  //   } catch (error) {
-  //     console.error('Error fetching Instagram followers:', error.message);
-  //     res.status(500).json({ error: 'Internal server error' });
-  //   }
-  // };
-
-
-
-
   const getInstagramaccount = async (req, res) => {
     res.send(req.params.page);
   };
+
+
+  //facebook
+
+
+// Replace with your actual Page ID and Access Token
+const pageId = 'YOUR_PAGE_ID';
+const accessToken = 'YOUR_ACCESS_TOKEN';
+
+async function getFollowerCount() {
+  try {
+    const response = await axios.get(`https://graph.facebook.com/v11.0/${pageId}?fields=followers_count&access_token=${accessToken}`);
+    const data = response.data;
+    console.log(`Follower count for page ${pageId}:`, data.followers_count);
+  } catch (error) {
+    console.error('Error fetching follower count:', error.response ? error.response.data : error.message);
+  }
+}
+
+getFollowerCount();
     
 module.exports = {
-   getUserIdByUsername,getUserDetails,getUserDetailsById,getInstagramaccount//getInstagramCount
+   getUserIdByUsername,getUserDetails,getUserDetailsById,getInstagramaccount,
+   getFollowerCount//getInstagramCount
 
 };

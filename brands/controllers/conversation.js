@@ -9,15 +9,7 @@ const moment = require('moment');
 const express = require('express');
 const http = require('http');
 const socketIO = require('socket.io');
-//const io = require("../../socket").io;
-// const io = require('../../server'); // Import your socket.io instance
-// const userss = [];
 
-
- 
-// Import necessary Firestore query functions
-// const { query, where, getDocs, addDoc } = require('firebase/firestore');
-// const { conversations } = require('../../index'); // Correct path according to your project structure
 
 const conversationmodel = require("../models/conversationmodel");
 const messagemodel = require("../models/messagemodel");

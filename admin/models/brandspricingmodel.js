@@ -37,6 +37,9 @@ const authenticationSchema = new schema({
     plan_type_annual:{
         type: Array
     },
+    annualTotalAmount:{
+        type:String
+    },
     
    
 
