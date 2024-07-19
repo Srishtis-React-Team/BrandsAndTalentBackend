@@ -21,9 +21,10 @@ const brandsmodel = require('../../brands/models/brandsmodel.js');
 const kidsmodel = require("../../users/models/kidsmodel.js");
 const adultmodel = require("../../users/models/adultmodel.js");
 const { Country, State, City } = require('country-state-city');
+const axios = require('axios');
+const { v4: uuidv4 } = require('uuid');
 
 const draftmodel = require("../../brands/models/draftmodel.js");
-
 
 
 var transporter = nodemailer.createTransport({
@@ -38,6 +39,7 @@ var transporter = nodemailer.createTransport({
 const adminmodel = require('../models/adminmodel.js');
 const countrymodel = require('../models/countrymodel.js')
 const statemodel = require('../models/statemodel.js');
+const notificationmodel = require("../../brands/models/notificationmodel.js");
 
 
 /**
@@ -628,6 +630,14 @@ const adminFetch = async (req, res, next) => {
 */
 
 
+
+
+
+
+// 26/3 correct full code
+
+
+
 function getCurrentTimeInCambodia() {
   const now = new Date(); // Current date and time
   const cambodiaTimeOffset = 7 * 60; // Cambodia is UTC+7, in minutes
@@ -672,8 +682,8 @@ let sessions = {}; // Simulated session storage
 const chatbot = async (req, res) => {
   const { message, sessionId } = req.body; // Assuming the client sends a sessionId
   let botResponse;
-     let userMsg = req.body.message;
-     console.log("req.body",req.body)
+  let userMsg = req.body.message;
+  console.log("req.body", req.body)
 
   // Initialize or retrieve the session
   if (!sessions[sessionId]) {
@@ -686,41 +696,41 @@ const chatbot = async (req, res) => {
     //   botResponse = "How can I help you ?";
     //   interactionStep++;
     //   break;
-      case 0:
-        botResponse = "Could you please share your email address with me ? ";
-        interactionStep++;
-        break;
-        case 1:
-    if (isValidEmail(userMsg)) {
-      botResponse = "What is your fullname? ";
-      // Proceed with the next step or interaction
+    case 0:
+      botResponse = "Could you please share your email address with me ? ";
       interactionStep++;
-    } else {
-      botResponse = "It seems like the email address is not valid. Could you please check and enter it again?";
-      // Optionally, you might not increment 'interactionStep' to allow the user to try again
-    }
-    break;
-    
+      break;
+    case 1:
+      if (isValidEmail(userMsg)) {
+        botResponse = "What is your fullname? ";
+        // Proceed with the next step or interaction
+        interactionStep++;
+      } else {
+        botResponse = "It seems like the email address is not valid. Could you please check and enter it again?";
+        // Optionally, you might not increment 'interactionStep' to allow the user to try again
+      }
+      break;
+
     case 2:
       userName = message; // Store the user's name
-      
+
       botResponse = `Are you Brands/Client/Talent? Please enter 1 for Brand ,2 for Client ,3 for Talent `;
       interactionStep++;
-       break;
+      break;
     case 3:
       type = userMsg
-      console.log("type",type)
+      console.log("type", type)
       //type = response.toLowerCase();
-      if (type == 1 || type== 2) {
-     // if (type.toLowerCase() === '1' || type.toLowerCase() === '2') {
+      if (type == 1 || type == 2) {
+        // if (type.toLowerCase() === '1' || type.toLowerCase() === '2') {
         botResponse = chatBrandsTemplate();
         interactionStep = 4;
-      } else if (type ==3) {
-      //else if (type.toLowerCase() === '3') {
+      } else if (type == 3) {
+        //else if (type.toLowerCase() === '3') {
         botResponse = `${userName}, how old are you?`;
       }
-     
-       else {
+
+      else {
         botResponse = "For further assistance, contact brandstalent123@gmail.com.";
       }
       interactionStep++;
@@ -733,7 +743,7 @@ const chatbot = async (req, res) => {
         if (userAge < 18) {
           // Use the chatKidsTemplate function here to generate the response for kids
           botResponse = chatKidsTemplate();
-          
+
         } else {
           // Use the chatAdultTemplate function here to generate the response for adults
           botResponse = chatAdultTemplate();
@@ -780,7 +790,7 @@ const chatbot = async (req, res) => {
 const getAllStatesList = async (req, res, next) => {
   try {
     const { State, Country } = require('country-state-city');
-    
+
     const states = State.getAllStates();
 
     if (!states || states.length === 0) {
@@ -873,6 +883,26 @@ const getAllCitiesList = async (req, res, next) => {
 * @param {*} res return data
 * @param {*} next undefined
 */
+const RejectedVerificationEmail = (userEmail) => {
+  const mailOptions = {
+    from: host,
+    to: userEmail,
+    subject: 'Admin Rejected Notification',
+    html: `
+    <h1>Sorry!</h1>
+    <p>Your profile has been rejected by the admin</p>
+    <p>For further information contact us</p>
+    <p>Best Regards,<br>Admin Team</p>`
+  };
+
+  transporter.sendMail(mailOptions, (error, info) => {
+    if (error) {
+      return console.error('Error sending email:', error);
+    }
+    console.log('Email sent:', info.response);
+  });
+};
+
 
 const sendApprovalEmail = (userEmail) => {
   const mailOptions = {
@@ -897,12 +927,14 @@ const adminApproval = async (req, res) => {
   try {
     const userId = req.body.user_id || req.params.user_id;
 
+    const { adminApproved, status, id } = req.body;
+
     let userType = '';
     let updateResult = null;
     let userEmail = '';
 
-     // Function to remove verificationId
-     const removeVerificationId = async (model, id) => {
+    // Function to remove verificationId
+    const removeVerificationId = async (model, id) => {
       return await model.updateOne(
         { _id: new mongoose.Types.ObjectId(id) },
         { $unset: { verificationId: "" } }
@@ -910,28 +942,77 @@ const adminApproval = async (req, res) => {
     };
 
     // Check in adultmodel
-    const adultUser = await adultmodel.findOne({ _id: new mongoose.Types.ObjectId(userId),isActive:true,inActive:true});
-    if (adultUser) {
-      userType = 'adults';
-      userEmail = adultUser.email; // Assuming email field exists in adultmodel
-      updateResult = await adultmodel.updateOne(
-        { _id: new mongoose.Types.ObjectId(userId) },
-        { $set: { adminApproved: true } }
-      );
-      await removeVerificationId(adultmodel, userId);
-    } else {
-      // If not found in adultmodel, check in kidsmodel
-      const kidUser = await kidsmodel.findOne({ _id: new mongoose.Types.ObjectId(userId),isActive:true,inActive:true });
-      if (kidUser) {
-        userType = 'kids';
-        userEmail = kidUser.parentEmail; // Assuming parentEmail field exists in kidsmodel
-        updateResult = await kidsmodel.updateOne(
+    const adultUser = await adultmodel.findOne({ _id: new mongoose.Types.ObjectId(userId), isActive: true, inActive: true });
+    if (req.body.adminApproved == 'true') {
+
+
+      if (adultUser) {
+        userType = 'adults';
+        userEmail = adultUser.email; // Assuming email field exists in adultmodel
+        updateResult = await adultmodel.updateOne(
           { _id: new mongoose.Types.ObjectId(userId) },
-          { $set: { adminApproved: true } }
+          { $set: { adminApproved: adminApproved, status: status } }
         );
-        await removeVerificationId(kidsmodel, userId);
-      } 
-     
+        await notificationmodel.updateOne(
+          { _id: new mongoose.Types.ObjectId(id) },
+          { $set: { adminApproved: adminApproved, status: status } }
+        );
+        await removeVerificationId(adultmodel, userId);
+      } else {
+        // If not found in adultmodel, check in kidsmodel
+        const kidUser = await kidsmodel.findOne({ _id: new mongoose.Types.ObjectId(userId), isActive: true, inActive: true });
+        if (kidUser) {
+          userType = 'kids';
+          userEmail = kidUser.parentEmail; // Assuming parentEmail field exists in kidsmodel
+          updateResult = await kidsmodel.updateOne(
+            { _id: new mongoose.Types.ObjectId(userId) },
+            { $set: { adminApproved: req.body.adminApproved, status: req.body.status } }
+          );
+
+          await notificationmodel.updateOne(
+            { _id: new mongoose.Types.ObjectId(id) },
+            { $set: { adminApproved: adminApproved, status: status } }
+          );
+
+          await removeVerificationId(kidsmodel, userId);
+        }
+
+      }
+    } else {
+      if (adultUser) {
+        userType = 'adults';
+        userEmail = adultUser.email; // Assuming email field exists in adultmodel
+        updateResult = await adultmodel.updateOne(
+          { _id: new mongoose.Types.ObjectId(userId) },
+          { $set: { adminApproved: req.body.adminApproved, status: req.body.status } }
+        );
+
+        await notificationmodel.updateOne(
+          { _id: new mongoose.Types.ObjectId(id) },
+          { $set: { adminApproved: adminApproved, status: status } }
+        );
+
+      } else {
+        // If not found in adultmodel, check in kidsmodel
+        const kidUser = await kidsmodel.findOne({ _id: new mongoose.Types.ObjectId(userId), isActive: true, inActive: true });
+        if (kidUser) {
+          userType = 'kids';
+          userEmail = kidUser.parentEmail; // Assuming parentEmail field exists in kidsmodel
+          updateResult = await kidsmodel.updateOne(
+            { _id: new mongoose.Types.ObjectId(userId) },
+            { $set: { adminApproved: req.body.adminApproved, status: req.body.status } }
+          );
+
+          await notificationmodel.updateOne(
+            { _id: new mongoose.Types.ObjectId(id) },
+            { $set: { adminApproved: adminApproved, status: status } }
+          );
+
+
+        }
+
+      }
+
     }
 
     // If user type is still empty, user was not found in any model
@@ -941,9 +1022,15 @@ const adminApproval = async (req, res) => {
 
     // If we have an update result, we successfully updated the profile status
     if (updateResult) {
-      // Send approval email
+      console.log("updateResultfinal", updateResult)
       if (userEmail) {
-        sendApprovalEmail(userEmail);
+        if (req.body.status === "Approved") {
+          sendApprovalEmail(userEmail);
+        }
+        else {
+          RejectedVerificationEmail(userEmail);
+        }
+
       }
       return res.json({ status: true, msg: 'Approved successfully', type: userType });
     } else {
@@ -954,12 +1041,163 @@ const adminApproval = async (req, res) => {
     return res.status(500).json({ status: false, msg: 'Internal server error' });
   }
 };
+// const adminApproval = async (req, res) => {
+//   try {
+//     const userId = req.body.user_id || req.params.user_id;
+//     const id = req.body.id;
+//     const { adminApproved, status } = req.body;
+
+//     let userType = '';
+//     let updateResult = null;
+//     let userEmail = '';
+
+//     // Function to remove verificationId
+//     const removeVerificationId = async (model, id) => {
+//       return await model.updateOne(
+//         { _id: new mongoose.Types.ObjectId(id) },
+//         { $unset: { verificationId: "" } }
+//       );
+//     };
+
+//     // Check in adultmodel
+//     const adultUser = await adultmodel.findOne({ _id: new mongoose.Types.ObjectId(userId), isActive: true, inActive: true });
+//     if (status==='Approved') {
+
+
+//       if (adultUser) {
+//         userType = 'adults';
+//         userEmail = adultUser.email; // Assuming email field exists in adultmodel
+//         updateResult = await adultmodel.updateOne(
+//           { _id: new mongoose.Types.ObjectId(userId) },
+//           { $set: { adminApproved: adminApproved, status: status } }
+//         );
+//         await notificationmodel.updateOne(
+//           { _id: new mongoose.Types.ObjectId(id) },
+//           { $set: { adminApproved: adminApproved, status: status } }
+//         );
+//         await removeVerificationId(adultmodel, userId);
+//       } else {
+//         // If not found in adultmodel, check in kidsmodel
+//         const kidUser = await kidsmodel.findOne({ _id: new mongoose.Types.ObjectId(userId), isActive: true, inActive: true });
+//         if (kidUser) {
+//           userType = 'kids';
+//           userEmail = kidUser.parentEmail; // Assuming parentEmail field exists in kidsmodel
+//           updateResult = await kidsmodel.updateOne(
+//             { _id: new mongoose.Types.ObjectId(userId) },
+//             { $set: { adminApproved: req.body.adminApproved, status: req.body.status } }
+//           );
+
+//           await notificationmodel.updateOne(
+//             { _id: new mongoose.Types.ObjectId(id) },
+//             { $set: { adminApproved: adminApproved, status: status } }
+//           );
+
+//           await removeVerificationId(kidsmodel, userId);
+//         }
+//         // else {
+//         //   // If not found in kidsmodel, check in brandsmodel
+//         //   const brandsUser = await brandsmodel.findOne({ _id: new mongoose.Types.ObjectId(userId),isActive:true,inActive:true });
+//         //   if (brandsUser) {
+//         //     userType = 'brands';
+//         //     userEmail = brandsUser.email; // Assuming email field exists in brandsmodel
+//         //     updateResult = await brandsmodel.updateOne(
+//         //       { _id: new mongoose.Types.ObjectId(userId) },
+//         //       { $set: { adminApproved: true } }
+//         //     );
+//         //   }
+//         // }
+//       }
+//     } else {
+//       if (adultUser) {
+//         userType = 'adults';
+//         userEmail = adultUser.email; // Assuming email field exists in adultmodel
+//         updateResult = await adultmodel.updateOne(
+//           { _id: new mongoose.Types.ObjectId(userId) },
+//           { $set: { adminApproved: false, status: req.body.status } }
+//         );
+
+//         await notificationmodel.updateOne(
+//           { _id: new mongoose.Types.ObjectId(id) },
+//           { $set: { adminApproved: false, status: status } }
+//         );
+
+//       } else {
+//         // If not found in adultmodel, check in kidsmodel
+//         const kidUser = await kidsmodel.findOne({ _id: new mongoose.Types.ObjectId(userId), isActive: true, inActive: true });
+//         if (kidUser) {
+//           userType = 'kids';
+//           userEmail = kidUser.parentEmail; // Assuming parentEmail field exists in kidsmodel
+//           updateResult = await kidsmodel.updateOne(
+//             { _id: new mongoose.Types.ObjectId(userId) },
+//             { $set: { adminApproved: false, status: req.body.status } }
+//           );
+
+//           await notificationmodel.updateOne(
+//             { _id: new mongoose.Types.ObjectId(id) },
+//             { $set: { adminApproved: false, status: status } }
+//           );
+
+
+//         }
+
+//       }
+
+//     }
+
+//     // If user type is still empty, user was not found in any model
+//     if (!userType) {
+//       return res.json({ status: false, msg: 'User not found' });
+//     }
+
+//     // If we have an update result, we successfully updated the profile status
+//     if (updateResult) {
+//       if (status === 'Approved') {
+//       // Send approval email
+//       if (userEmail) {
+//         sendApprovalEmail(userEmail);
+//       }
+//       return res.json({ status: true, msg: 'Approved successfully', type: userType });
+//     } else if (status === 'Rejected') {
+//       if (userEmail) {
+//         RejectedVerificationEmail(userEmail);
+//       }
+//       return res.json({ status: true, msg: 'Rejected successfully', type: userType });
+//     }
+//   } else {
+//     return res.json({ status: false, msg: status === 'Approved' ? 'Failed to approve' : 'Failed to reject' });
+//   }
+//   } catch (error) {
+//     console.error('Error in admin approval:', error);
+//     return res.status(500).json({ status: false, msg: 'Internal server error' });
+//   }
+// };
 /*
 *********jobApproval*****
 * @param {*} req from user
 * @param {*} res return data
 * @param {*} next undefined
 */
+const RejectedApprovalEmail = (userEmail) => {
+
+
+  const mailOptions = {
+    from: host,
+    to: userEmail,
+    subject: 'Admin Reject Notification',
+    html: `
+    <h1>Sorry!</h1>
+    <p>Your job has been rejected by the admin.</p>
+    <p>For further information contact us.</p>
+    <p>Best Regards,<br>Admin Team</p>`
+  };
+
+  transporter.sendMail(mailOptions, (error, info) => {
+    if (error) {
+      return console.error('Error sending email:', error);
+    }
+    console.log('Email sent:', info.response);
+  });
+};
 
 const sendJobApprovalEmail = (userEmail) => {
 
@@ -998,11 +1236,95 @@ const getUserEmail = async (userId) => {
     return null;
   }
 };
+// Function to send notifications using FCM
+const sendNotificationsToAdmin = async (fcmToken, title, text) => {
+  if (!fcmToken) {
+    console.error("FCM Token is required");
+    return;
+  }
+
+  const notification = {
+    title,
+    text,
+  };
+
+  const notification_body = {
+    notification: notification,
+    to: fcmToken
+  };
+
+  try {
+    const response = await axios.post('https://fcm.googleapis.com/fcm/send', notification_body, {
+      headers: {
+        'Authorization': 'key=' + 'AAAARjamXEw:APA91bHBZ3tz5WuUrwCMI5IcuJQaufmHs2hUHUlE1su9-iPNpw3E2KTzqpVXXv2FDDa_qQV2yExoAgxgWNwF3CZAOu9IR1GO4gP04PPNK3Gv9x4UqwJUkrJFSIvEBaQZJOyjj4KujoEF', // Use environment variable for server key
+        'Content-Type': 'application/json'
+      }
+    });
+
+    console.log("Notification sent successfully", response.data);
+  } catch (error) {
+    console.error("Error sending notification", error.response ? error.response.data : error.message);
+  }
+};
+
+// Function to save notifications to the database
+const saveNotificationToAdmin = async (brandId, gigId, notificationMessage) => {
+  try {
+    // Fetch details of brand and gig
+    const brand = await findUserById(brandId);
+    const gig = await gigsmodel.findById(gigId);
+
+    // Create the notification document
+    const notification = new notificationmodel({
+      notificationType: 'Reminder For Approve Job',
+      brandId: brandId,
+      gigId: gigId,
+      notificationMessage: notificationMessage,
+      brandDetails: {
+        _id: brand._id,
+        brandName: brand.brandName,
+        brandEmail: brand.brandEmail,
+        logo: brand.logo,
+        brandImage: brand.brandImage
+      },
+      gigDetails: {
+        jobTitle: gig.jobTitle,
+        category: gig.category,
+        minAge: gig.minAge,
+        maxAge: gig.maxAge,
+        instaMin: gig.instaMin,
+        instaMax: gig.instaMax,
+        tikTokMin: gig.tikTokMin,
+        tikTokMax: gig.tikTokMax,
+        linkedInMin: gig.linkedInMin,
+        linkedInMax: gig.linkedInMax,
+        fbMin: gig.fbMin,
+        fbMax: gig.fbMax,
+        twitterMin: gig.twitterMin,
+        twitterMax: gig.twitterMax,
+        youTubeMin: gig.youTubeMin,
+        youTubeMax: gig.youTubeMax
+      }
+    });
+
+    // Save the notification document
+    const savedNotification = await notification.save();
+    console.log("Notification saved successfully", savedNotification);
+  } catch (error) {
+    console.error("Error saving notification:", error);
+  }
+};
+
 
 const jobApproval = async (req, res) => {
   try {
+    console.log('inside jobApproval---------------')
     const userId = req.body.user_id || req.params.user_id;
     const gigId = req.body.gigId;
+    const id = req.body.id;
+    const status = req.body.status;
+    const adminApproved = req.body.adminApproved;
+
 
     let userType = '';
     let updateResult = null;
@@ -1010,41 +1332,64 @@ const jobApproval = async (req, res) => {
 
     // Check in brandsmodel
     const brandsUser = await brandsmodel.findOne({ _id: userId, isActive: true });
+    console.log('brandsUser', brandsUser)
     if (brandsUser) {
+      console.log('inside if')
       userType = 'brands';
       userEmail = brandsUser.brandEmail;
-
+      console.log('gigId', gigId)
       const draftJob = await draftmodel.findOne({ _id: gigId });
-
+      console.log('draftJob', draftJob)
       if (brandsUser.planName === 'Basic') {
         console.log("updateResulttest1");
-        console.log("draftJob",!draftJob.adminApproved)
+        console.log("draftJob", !draftJob.adminApproved)
 
         if (draftJob && !draftJob.adminApproved) {
-        
+          console.log("cronnn")
+
           const createdAt = draftJob.createdAt;
           const now = new Date();
-        
-  
+
+
           // Check if the job was created within the last 48 hours
           if ((now - createdAt) <= 48 * 60 * 60 * 1000) {
+            console.log("created not cron")
             // If job created within 48 hours, directly update adminApproved to true
-            updateResult = await draftmodel.updateOne({ _id: gigId }, { $set: { adminApproved: true } });
+            updateResult = await draftmodel.updateOne({ _id: gigId }, { $set: { adminApproved: req.body.adminApproved, status: req.body.status } });
+            await notificationmodel.updateOne({ _id: id }, { $set: { adminApproved: req.body.adminApproved, status: req.body.status } });
             console.log("updateResultnormla", updateResult);
           } else {
-           console.log("cron")
+            console.log("cron")
             // If job not created within 48 hours, schedule cron job to update adminApproved
             cron.schedule('0 * * * *', async () => {
               try {
                 const fortyEightHoursAgo = new Date(now - 48 * 60 * 60 * 1000);
-                const draftJobs = await draftmodel.find({ createdAt: { $lt: fortyEightHoursAgo }, adminApproved: false });
+                const draftJobs = await draftmodel.find({ createdAt: { $lt: fortyEightHoursAgo }, adminApproved: false, status: 'Pending' });
                 for (const job of draftJobs) {
-                  await draftmodel.updateOne({ _id: job._id }, { $set: { adminApproved: true } });
-                  const userEmail = getUserEmail(job.userId);
-                  if (userEmail) {
-                    sendJobApprovalEmail(userEmail);
-                  }
+                  // Send notifications and save them to the notification table
+                  const jobalert = `
+        <html>
+          <body>
+            <p>Reminder: A Job  <strong>${job.jobTitle}</strong> pending for approval in <strong>${job.jobLocation}</strong> Please approve them.</p>
+          </body>
+        </html>
+      `;
+                  const admin = await adminmodel.find({
+
+                    email: 'admin@yopmail.com'
+                  });
+                  await sendNotificationsToAdmin(admin.fcmToken, 'Reminder For Approve Job', jobalert);
+                  await saveNotificationToAdmin(brandsUser._id, gigId._id, jobalert);
                 }
+                // for (const job of draftJobs) {
+                //   await draftmodel.updateOne({ _id: job._id }, { $set: { adminApproved: true ,status:'Approved'} });
+                //   await notificationmodel.updateOne({ _id: id }, { $set: { adminApproved: true ,status:'Approved'} });
+
+                //   const userEmail = getUserEmail(job.userId);
+                //   if (userEmail) {
+                //     sendJobApprovalEmail(userEmail);
+                //   }
+                // }
               } catch (error) {
                 console.error('Error processing cron job:', error);
               }
@@ -1052,9 +1397,11 @@ const jobApproval = async (req, res) => {
           }
         }
       } else {
-        
+
         // If the plan is not 'Basic', directly update adminApproved to true
-        updateResult = await draftmodel.updateOne({ _id: gigId }, { $set: { adminApproved: true } });
+        updateResult = await draftmodel.updateOne({ _id: gigId }, { $set: { adminApproved: req.body.adminApproved, status: req.body.status } });
+
+        await notificationmodel.updateOne({ _id: id }, { $set: { adminApproved: req.body.adminApproved, status: req.body.status } });
         console.log("updateResultnot basic", updateResult);
       }
     }
@@ -1062,13 +1409,19 @@ const jobApproval = async (req, res) => {
     if (!userType) {
       return res.json({ status: false, msg: 'User not found' });
     }
-    
-    if (updateResult || updateResult.nModified  > 0) {
-      console.log("updateResultfinal",updateResult)
+
+    if (updateResult) {
+      console.log("updateResultfinal", updateResult)
       if (userEmail) {
-        sendJobApprovalEmail(userEmail);
+        if (req.body.status === "Approved") {
+          sendJobApprovalEmail(userEmail);
+        }
+        else {
+          RejectedApprovalEmail(userEmail);
+        }
+
       }
-      return res.json({ status: true, msg: 'Approved successfully', type: userType });
+      return res.json({ status: true, msg: ' Updated successfully', type: userType });
     } else {
       return res.json({ status: false, msg: 'Failed to approve' });
     }
@@ -1084,6 +1437,9 @@ const jobApproval = async (req, res) => {
 
 // Schedule a cron job to run every hour
 
+
+
+
 /*
 *********Notapprovedmembers*****
 * @param {*} req from user
@@ -1093,15 +1449,15 @@ const jobApproval = async (req, res) => {
 
 const notApprovedMembers = async (req, res) => {
   try {
-    const adultUsers = await adultmodel.find({ adminApproved: false,isActive:true });
-    const kidUsers = await kidsmodel.find({ adminApproved: false,isActive:true });
+    const adultUsers = await adultmodel.find({ adminApproved: false, isActive: true });
+    const kidUsers = await kidsmodel.find({ adminApproved: false, isActive: true });
     //const brandsUsers = await brandsmodel.find({ adminApproved: false,isActive:true });
 
-       // Combine all not approved users into a single array
-       const notApprovedUsers = [];
-       notApprovedUsers.push(...adultUsers);
-       notApprovedUsers.push(...kidUsers);
-      // notApprovedUsers.push(...brandsUsers);
+    // Combine all not approved users into a single array
+    const notApprovedUsers = [];
+    notApprovedUsers.push(...adultUsers);
+    notApprovedUsers.push(...kidUsers);
+    // notApprovedUsers.push(...brandsUsers);
 
     return res.json({ status: true, notApprovedUsers });
   } catch (error) {
@@ -1119,7 +1475,7 @@ const notApprovedMembers = async (req, res) => {
 const ListBrandForJobPost = async (req, res) => {
   try {
     // Fetch active brands from draftmodel
-    const draftBrands = await draftmodel.find({ isActive: true,brandId :req.body.brandId,adminApproved:false})//.select({ brandId: 1 });
+    const draftBrands = await draftmodel.find({ isActive: true, brandId: req.body.brandId, adminApproved: false })//.select({ brandId: 1 });
 
     // Extract brandIds from draftBrands
     const brandIds = draftBrands.map(draft => draft.brandId);
@@ -1136,10 +1492,1025 @@ const ListBrandForJobPost = async (req, res) => {
   }
 };
 
+/*
+*********Notapprovedmembers*****
+* @param {*} req from user
+* @param {*} res return data
+* @param {*} next undefined
+*/
+// const filterByApprovalType = async (req, res) => {
+//   try {
+//     let users;
+
+//     if (req.body.notificationType) {
+//       if (req.body.notificationType === 'All') {
+//         users = await notificationmodel.find({
+//           notificationType: { $in: ['Job Approval', 'Talent Verification Approval', 'Talent Profile Approval'] },
+//           isActive: true
+//         });
+//       } else {
+//         users = await notificationmodel.find({
+//           notificationType: req.body.notificationType,
+//           isActive: true
+//         });
+//       }
+//     } else {
+//       return res.status(400).json({ status: false, msg: 'NotificationType is required' });
+//     }
+
+//     return res.json({ status: true, data: users });
+//   } catch (error) {
+//     console.error('Error fetching filtered members:', error);
+//     return res.status(500).json({ status: false, msg: 'Internal server error' });
+//   }
+// };
+
+
+
+/*
+*********filterByStatus*****
+* @param {*} req from user
+* @param {*} res return data
+* @param {*} next undefined
+*/
+const filterByStatus = async (req, res) => {
+  try {
+    let users = [];
+    const notificationTypes = ['Job Approval', 'Talent Verification Approval', 'Talent Profile Approval'];
+
+    if (req.body.notificationType === 'All' && req.body.status === 'All') {
+      // Fetch all notifications regardless of their status
+      users = await notificationmodel.find({
+        notificationType: { $in: notificationTypes },
+        isActive: true
+      });
+    } else if (req.body.notificationType === 'All') {
+      if (req.body.status === 'Approved') {
+        users = await notificationmodel.find({
+          notificationType: { $in: notificationTypes },
+          isActive: true,
+          adminApproved: true,
+          status: 'Approved'
+        });
+      } else if (req.body.status === 'Rejected') {
+        users = await notificationmodel.find({
+          notificationType: { $in: notificationTypes },
+          isActive: true,
+          adminApproved: false,
+          status: 'Rejected'
+        });
+      } else if (req.body.status === 'Pending') {
+        console.log("vjdvjvbfbfjkbgfn",)
+        users = await notificationmodel.find({
+          notificationType: { $in: notificationTypes },
+          isActive: true,
+          adminApproved: false,
+          status: 'Pending'
+        });
+      }
+    } else if (req.body.notificationType === 'Talent Profile Approval') {
+      if (req.body.status === 'Approved') {
+        users = await notificationmodel.find({
+          notificationType: { $in: notificationTypes },
+          isActive: true,
+          adminApproved: true,
+          profileApprove: true,
+          status: 'Approved'
+        });
+      } else if (req.body.status === 'Rejected') {
+        users = await notificationmodel.find({
+          notificationType: { $in: notificationTypes },
+          isActive: true,
+          adminApproved: false,
+          profileApprove: false,
+          status: 'Rejected'
+        });
+      } else if (req.body.status === 'Pending') {
+        console.log("vjdvjvbfbfjkbgfn",)
+        users = await notificationmodel.find({
+          notificationType: { $in: notificationTypes },
+          isActive: true,
+          adminApproved: false,
+          profileApprove: false,
+          status: 'Pending'
+        });
+      }
+    } else if (req.body.status === 'All') {
+      users = await notificationmodel.find({
+        notificationType: req.body.notificationType,
+        isActive: true
+      });
+    } else {
+      if (req.body.status === 'Approved') {
+        users = await notificationmodel.find({
+          notificationType: req.body.notificationType,
+          isActive: true,
+          adminApproved: true,
+          status: 'Approved'
+        });
+      } else if (req.body.status === 'Rejected') {
+        users = await notificationmodel.find({
+          notificationType: req.body.notificationType,
+          isActive: true,
+          adminApproved: false,
+          status: 'Rejected'
+        });
+      } else if (req.body.status === 'Pending') {
+        users = await notificationmodel.find({
+          notificationType: req.body.notificationType,
+          isActive: true,
+          adminApproved: false,
+          status: 'Pending'
+        });
+      }
+    }
+    // Reverse the users array
+    users.reverse();
+    return res.json({ status: true, data: users });
+  } catch (error) {
+    console.error('Error fetching filtered members:', error);
+    return res.status(500).json({ status: false, msg: 'Internal server error' });
+  }
+};
+
+
+// const filterByStatus = async (req, res) => {
+//   try {
+//     let users = [];
+
+
+//       if (req.body.notificationType === 'All') {
+//         users = await notificationmodel.find({
+//           notificationType: { $in: ['Job Approval', 'Talent Verification Approval', 'Talent Profile Approval'] },
+//           isActive: true,
+//           status: req.body.status
+//         });
+//       } if (req.body.notificationType === 'All'&& req.body.status==='All') {
+//         users = await notificationmodel.find({
+//           notificationType: { $in: ['Job Approval', 'Talent Verification Approval', 'Talent Profile Approval'] },
+//           isActive: true
+
+//         });
+//       } 
+//       else if (req.body.status === 'Pending') {
+//         users = await notificationmodel.find({
+//           adminApproved: false,
+//           notificationType: { $in: ['Job Approval', 'Talent Verification Approval', 'Talent Profile Approval'] },
+//           isActive: true
+//         });
+//       } else if (req.body.status === 'Rejected') {
+//         users = await notificationmodel.find({
+//           adminApproved: false,
+//           notificationType: { $in: ['Job Approval', 'Talent Verification Approval', 'Talent Profile Approval'] },
+//           isActive: true,
+//           status: 'Rejected'
+//         });
+//       } else if (req.body.status === 'Approval') {
+//         users = await notificationmodel.find({
+//           adminApproved: true,
+//           notificationType: { $in: ['Job Approval', 'Talent Verification Approval', 'Talent Profile Approval','All'] },
+//           isActive: true
+//         });
+//       } else if (req.body.status === 'All') {
+//         users = await notificationmodel.find({
+
+//           notificationType: { $in: ['Job Approval', 'Talent Verification Approval', 'Talent Profile Approval'] },
+//           isActive: true
+//         });
+//       }
+//       else {
+//         users = await notificationmodel.find({
+//           status: req.body.status,
+//           notificationType: { $in: ['Job Approval', 'Talent Verification Approval', 'Talent Profile Approval'] },
+//           isActive: true
+//         });
+//       }
+//       return res.json({ status: true, data: users });
+
+//   } catch (error) {
+//     console.error('Error fetching filtered members:', error);
+//     return res.status(500).json({ status: false, msg: 'Internal server error' });
+//   }
+// };
+
+
+
+
+
+/*
+*********approvethroughBrandslist*****
+* @param {*} req from user
+* @param {*} res return data
+* @param {*} next undefined
+*/
+const jobApprovalByBrandsList = async (req, res) => {
+  try {
+    console.log('inside jobApproval---------------')
+    const userId = req.body.user_id || req.params.user_id;
+    const gigId = req.body.gigId;
+
+    const status = req.body.status;
+    const adminApproved = req.body.adminApproved;
+
+
+    let userType = '';
+    let updateResult = null;
+    let userEmail = '';
+
+    // Check in brandsmodel
+    const brandsUser = await brandsmodel.findOne({ _id: userId, isActive: true });
+    console.log('brandsUser', brandsUser)
+    if (brandsUser) {
+      console.log('inside if')
+      userType = 'brands';
+      userEmail = brandsUser.brandEmail;
+      console.log('gigId', gigId)
+      const draftJob = await draftmodel.findOne({ _id: gigId });
+      console.log('draftJob', draftJob)
+      if (brandsUser.planName === 'Basic') {
+        console.log("updateResulttest1");
+        console.log("draftJob", !draftJob.adminApproved)
+
+        if (draftJob && !draftJob.adminApproved) {
+          console.log("cronnn")
+
+          const createdAt = draftJob.createdAt;
+          const now = new Date();
+
+
+          // Check if the job was created within the last 48 hours
+          if ((now - createdAt) <= 48 * 60 * 60 * 1000) {
+            console.log("created not cron")
+            // If job created within 48 hours, directly update adminApproved to true
+            updateResult = await draftmodel.updateOne({ _id: gigId }, { $set: { adminApproved: req.body.adminApproved, status: req.body.status } });
+            await notificationmodel.updateOne({ gigId: gigId }, { $set: { adminApproved: req.body.adminApproved, status: req.body.status } });
+            console.log("updateResultnormla", updateResult);
+          } else {
+            console.log("cron")
+            // If job not created within 48 hours, schedule cron job to update adminApproved
+            cron.schedule('0 * * * *', async () => {
+              try {
+                const fortyEightHoursAgo = new Date(now - 48 * 60 * 60 * 1000);
+                const draftJobs = await draftmodel.find({ createdAt: { $lt: fortyEightHoursAgo }, adminApproved: false, status: 'Pending' });
+                for (const job of draftJobs) {
+                  // Send notifications and save them to the notification table
+                  const jobalert = `
+        <html>
+          <body>
+            <p>Reminder: A Job  <strong>${job.jobTitle}</strong> pending for approval in <strong>${job.jobLocation}</strong> Please approve them.</p>
+          </body>
+        </html>
+      `;
+                  const admin = await adminmodel.find({
+
+                    email: 'admin@yopmail.com'
+                  });
+                  await sendNotificationsToAdmin(admin.fcmToken, 'Reminder For Approve Job', jobalert);
+                  await saveNotificationToAdmin(brandsUser._id, gigId._id, jobalert);
+                }
+                // for (const job of draftJobs) {
+                //   await draftmodel.updateOne({ _id: job._id }, { $set: { adminApproved: true ,status:'Approved'} });
+                //   await notificationmodel.updateOne({ _id: id }, { $set: { adminApproved: true ,status:'Approved'} });
+
+                //   const userEmail = getUserEmail(job.userId);
+                //   if (userEmail) {
+                //     sendJobApprovalEmail(userEmail);
+                //   }
+                // }
+              } catch (error) {
+                console.error('Error processing cron job:', error);
+              }
+            });
+          }
+        }
+      } else {
+
+        // If the plan is not 'Basic', directly update adminApproved to true
+        updateResult = await draftmodel.updateOne({ _id: gigId }, { $set: { adminApproved: req.body.adminApproved, status: req.body.status } });
+
+        await notificationmodel.updateOne({ gigId: gigId }, { $set: { adminApproved: req.body.adminApproved, status: req.body.status } });
+        console.log("updateResultnot basic", updateResult);
+      }
+    }
+
+    if (!userType) {
+      return res.json({ status: false, msg: 'User not found' });
+    }
+
+    if (updateResult) {
+      console.log("updateResultfinal", updateResult)
+      if (userEmail) {
+        if (req.body.status === "Approved") {
+          sendJobApprovalEmail(userEmail);
+        }
+        else {
+          RejectedApprovalEmail(userEmail);
+        }
+
+      }
+      return res.json({ status: true, msg: ' Updated successfully', type: userType });
+    } else {
+      return res.json({ status: false, msg: 'Failed to approve' });
+    }
+  } catch (error) {
+    console.error('Error in admin approval:', error);
+    return res.status(500).json({ status: false, msg: 'Error Occured' });
+  }
+};
+
+// const jobApprovalByBrandsList = async (req, res) => {
+//   try {
+//     console.log('inside jobApproval---------------')
+//     const userId = req.body.user_id || req.params.user_id;
+//     const gigId = req.body.gigId;
+//     const status = req.body.status;
+
+
+//     let userType = '';
+//     let updateResult = null;
+//     let userEmail = '';
+//   // Check if the status is 'Approved'
+//   if (status === 'Approved') {
+//     // Check in brandsmodel
+//     const brandsUser = await brandsmodel.findOne({ _id: userId, isActive: true });
+//     console.log('brandsUser', brandsUser)
+//     if (brandsUser) {
+//       console.log('inside if')
+//       userType = 'brands';
+//       userEmail = brandsUser.brandEmail;
+//       console.log('gigId', gigId)
+//       const draftJob = await draftmodel.findOne({ _id: gigId });
+//       console.log('draftJob', draftJob)
+//       if (brandsUser.planName === 'Basic') {
+//         console.log("updateResulttest1");
+//         console.log("draftJob", !draftJob.adminApproved)
+
+//         if (draftJob && !draftJob.adminApproved) {
+//           console.log("cronnn")
+
+//           const createdAt = draftJob.createdAt;
+//           const now = new Date();
+
+
+//           // Check if the job was created within the last 48 hours
+//           if ((now - createdAt) <= 48 * 60 * 60 * 1000) {
+//             console.log("created not cron")
+//             // If job created within 48 hours, directly update adminApproved to true
+//            // updateResult = await draftmodel.updateOne({ _id: gigId }, { $set: { adminApproved: req.body.adminApproved, status: req.body.status } });
+//            updateResult = await draftmodel.updateOne(
+//             { _id: gigId },
+//             { $set: { adminApproved: true, status: req.body.status } }
+//           );
+
+//           await notificationmodel.updateOne(
+//             { gigId: gigId },
+//             { $set: { adminApproved: true, status: req.body.status } }
+//           );
+
+
+//             console.log("updateResultnormla", updateResult);
+//           } else {
+//             console.log("cron")
+//             // If job not created within 48 hours, schedule cron job to update adminApproved
+//             cron.schedule('0 * * * *', async () => {
+//               try {
+//                 const fortyEightHoursAgo = new Date(now - 48 * 60 * 60 * 1000);
+//                 const draftJobs = await draftmodel.find({ createdAt: { $lt: fortyEightHoursAgo }, adminApproved: false, status: 'Pending' });
+//                 for (const job of draftJobs) {
+//                   // Send notifications and save them to the notification table
+//                   const jobalert = `
+//         <html>
+//           <body>
+//             <p>Reminder: A Job  <strong>${job.jobTitle}</strong> pending for approval in <strong>${job.jobLocation}</strong> Please approve them.</p>
+//           </body>
+//         </html>
+//       `;
+//                   const admin = await adminmodel.find({
+
+//                     email: 'admin@yopmail.com'
+//                   });
+//                   await sendNotificationsToAdmin(admin.fcmToken, 'Reminder For Approve Job', jobalert);
+//                   await saveNotificationToAdmin(brandsUser._id, gigId._id, jobalert);
+//                 }
+
+//               } catch (error) {
+//                 console.error('Error processing cron job:', error);
+//               }
+//             });
+//           }
+//         }
+//       } else {
+
+//         // If the plan is not 'Basic', directly update adminApproved to true
+//         updateResult = await draftmodel.updateOne({ _id: gigId }, { $set: { adminApproved:true, status: req.body.status } });
+//         await notificationmodel.updateOne(
+//           { gigId: gigId },
+//           { $set: { adminApproved: true, status: req.body.status } }
+//         );
+//         console.log("updateResultnot basic", updateResult);
+
+//       }
+//     }
+//   }else if (status === 'Rejected') {
+//     const brandsUser = await brandsmodel.findOne({ _id: userId, isActive: true });
+//     console.log('brandsUser', brandsUser);
+//     if (brandsUser) {
+//       userType = 'brands';
+//       userEmail = brandsUser.brandEmail;
+//       const draftJob = await draftmodel.findOne({ _id: gigId });
+//       console.log('draftJob', draftJob);
+
+//       if (brandsUser.planName === 'Basic') {
+//         if (draftJob && !draftJob.adminApproved) {
+//           const createdAt = draftJob.createdAt;
+//           const now = new Date();
+
+//           if ((now - createdAt) <= 48 * 60 * 60 * 1000) {
+//             // If job created within 48 hours, directly update adminApproved to false
+//             updateResult = await draftmodel.updateOne({ _id: gigId }, { $set: { adminApproved: false, status: 'Rejected' } });
+//             await notificationmodel.updateOne({ _id: id }, { $set: { adminApproved: false, status: 'Rejected' } });
+//             console.log("Job Rejected: updateResult", updateResult);
+//           }
+//         }
+//       } else {
+//         // If the plan is not 'Basic', directly update adminApproved to false
+//         updateResult = await draftmodel.updateOne({ _id: gigId }, { $set: { adminApproved: false, status: 'Rejected' } });
+//         await notificationmodel.updateOne({ _id: id }, { $set: { adminApproved: false, status: 'Rejected' } });
+//         console.log("Job Rejected: updateResult", updateResult);
+//       }
+//     }
+//   }
+
+//     if (!userType) {
+//       return res.json({ status: false, msg: 'User not found' });
+//     }
+
+//     if (updateResult && updateResult.nModified > 0) {
+//       if (status === 'Approved') {
+//         if (userEmail) {
+//           sendJobApprovalEmail(userEmail);
+//         }
+//         return res.json({ status: true, msg: 'Approved successfully', type: userType });
+//       } else if (status === 'Rejected') {
+//         if (userEmail) {
+//           RejectedApprovalEmail(userEmail);
+//         }
+//         return res.json({ status: true, msg: 'Rejected successfully', type: userType });
+//       }
+//     } else {
+//       return res.json({ status: false, msg: status === 'Approved' ? 'Failed to approve' : 'Failed to reject' });
+//     }
+//   } catch (error) {
+//     console.error('Error in admin approval:', error);
+//     return res.status(500).json({ status: false, msg: 'Error Occurred' });
+//   }
+// };
+/*
+*********adminApproval*****
+* @param {*} req from user
+* @param {*} res return data
+* @param {*} next undefined
+*/
+
+
+
+
+const adminApprovalByList = async (req, res) => {
+  try {
+    const userId = req.body.user_id || req.params.user_id;
+
+    const { adminApproved, status } = req.body;
+
+    let userType = '';
+    let updateResult = null;
+    let userEmail = '';
+
+    // Function to remove verificationId
+    const removeVerificationId = async (model, id) => {
+      return await model.updateOne(
+        { _id: new mongoose.Types.ObjectId(id) },
+        { $unset: { verificationId: "" } }
+      );
+    };
+
+    // Check in adultmodel
+    const adultUser = await adultmodel.findOne({ _id: new mongoose.Types.ObjectId(userId), isActive: true, inActive: true });
+    if (req.body.adminApproved == 'true') {
+
+
+      if (adultUser) {
+        userType = 'adults';
+        userEmail = adultUser.email; // Assuming email field exists in adultmodel
+        updateResult = await adultmodel.updateOne(
+          { _id: new mongoose.Types.ObjectId(userId) },
+          { $set: { adminApproved: adminApproved, status: status } }
+        );
+        await notificationmodel.updateOne(
+          { talentId: new mongoose.Types.ObjectId(userId) },
+          { $set: { adminApproved: adminApproved, status: status } }
+        );
+        await removeVerificationId(adultmodel, userId);
+      } else {
+        // If not found in adultmodel, check in kidsmodel
+        const kidUser = await kidsmodel.findOne({ _id: new mongoose.Types.ObjectId(userId), isActive: true, inActive: true });
+        if (kidUser) {
+          userType = 'kids';
+          userEmail = kidUser.parentEmail; // Assuming parentEmail field exists in kidsmodel
+          updateResult = await kidsmodel.updateOne(
+            { _id: new mongoose.Types.ObjectId(userId) },
+            { $set: { adminApproved: req.body.adminApproved, status: req.body.status } }
+          );
+
+          await notificationmodel.updateOne(
+            { talentId: new mongoose.Types.ObjectId(userId) },
+            { $set: { adminApproved: adminApproved, status: status } }
+          );
+
+          await removeVerificationId(kidsmodel, userId);
+        }
+
+      }
+    } else {
+      if (adultUser) {
+        userType = 'adults';
+        userEmail = adultUser.email; // Assuming email field exists in adultmodel
+        updateResult = await adultmodel.updateOne(
+          { _id: new mongoose.Types.ObjectId(userId) },
+          { $set: { adminApproved: req.body.adminApproved, status: req.body.status } }
+        );
+
+        await notificationmodel.updateOne(
+          { talentId: new mongoose.Types.ObjectId(userId) },
+          { $set: { adminApproved: adminApproved, status: status } }
+        );
+
+      } else {
+        // If not found in adultmodel, check in kidsmodel
+        const kidUser = await kidsmodel.findOne({ _id: new mongoose.Types.ObjectId(userId), isActive: true, inActive: true });
+        if (kidUser) {
+          userType = 'kids';
+          userEmail = kidUser.parentEmail; // Assuming parentEmail field exists in kidsmodel
+          updateResult = await kidsmodel.updateOne(
+            { _id: new mongoose.Types.ObjectId(userId) },
+            { $set: { adminApproved: req.body.adminApproved, status: req.body.status } }
+          );
+
+          await notificationmodel.updateOne(
+            { talentId: new mongoose.Types.ObjectId(userId) },
+            { $set: { adminApproved: adminApproved, status: status } }
+          );
+
+
+        }
+
+      }
+
+    }
+
+    // If user type is still empty, user was not found in any model
+    if (!userType) {
+      return res.json({ status: false, msg: 'User not found' });
+    }
+
+    // If we have an update result, we successfully updated the profile status
+    if (updateResult) {
+      console.log("updateResultfinal", updateResult)
+      if (userEmail) {
+        if (req.body.status === "Approved") {
+          sendApprovalEmail(userEmail);
+        }
+        else {
+          RejectedVerificationEmail(userEmail);
+        }
+
+      }
+      return res.json({ status: true, msg: 'Approved successfully', type: userType });
+    } else {
+      return res.json({ status: false, msg: 'Failed to Approval' });
+    }
+  } catch (error) {
+    console.error('Error in admin approval:', error);
+    return res.status(500).json({ status: false, msg: 'Internal server error' });
+  }
+};
+
+/*
+*********TalentProfileapproval*****
+* @param {*} req from user
+* @param {*} res return data
+* @param {*} next undefined
+*/
+const RejectedProfileEmail = (userEmail) => {
+  const mailOptions = {
+    from: host,
+    to: userEmail,
+    subject: 'Admin Rejected Notification',
+    html: `
+    <h1>Sorry!</h1>
+    <p>Your profile has been rejected by the admin</p>
+    <p>For further information contact us</p>
+    <p>Best Regards,<br>Admin Team</p>`
+  };
+
+  transporter.sendMail(mailOptions, (error, info) => {
+    if (error) {
+      return console.error('Error sending email:', error);
+    }
+    console.log('Email sent:', info.response);
+  });
+};
+
+
+const sendProfileEmail = (userEmail) => {
+  const mailOptions = {
+    from: host,
+    to: userEmail,
+    subject: 'Subscription Plan Approval Notification',
+    html: `
+    <h1>Congratulations!</h1>
+    <p>Your profile has been approved based on your subscription plan </p>
+    <p>Thank you for being a part of our community.</p>
+    <p>Best Regards,<br>Admin Team</p>`
+  };
+
+  transporter.sendMail(mailOptions, (error, info) => {
+    if (error) {
+      return console.error('Error sending email:', error);
+    }
+    console.log('Email sent:', info.response);
+  });
+};
+const profileApproval = async (req, res) => {
+  try {
+    const userId = req.body.user_id || req.params.user_id;
+    const { adminApproved, status, profileApprove } = req.body;
+
+    let userType = '';
+    let updateResult = null;
+    let userEmail = '';
+
+    // Check in adultmodel
+    const adultUser = await adultmodel.findOne({ _id: userId, isActive: true, inActive: true });
+    if (adultUser) {
+      userType = 'adults';
+      userEmail = adultUser.email;
+      updateResult = await adultmodel.updateOne(
+        { _id: userId },
+        { $set: { adminApproved, status, profileApprove } }
+      );
+
+      await notificationmodel.updateOne(
+        { $or: [{ brandId: userId }, { talentId: userId }], notificationType: 'Talent Profile Approval' },
+        { $set: { adminApproved, status, profileApprove } }
+      );
+    } else {
+      // Check in kidsmodel if not found in adultmodel
+      const kidUser = await kidsmodel.findOne({ _id: userId, isActive: true, inActive: true });
+      if (kidUser) {
+        userType = 'kids';
+        userEmail = kidUser.parentEmail;
+        updateResult = await kidsmodel.updateOne(
+          { _id: userId },
+          { $set: { adminApproved, status, profileApprove } }
+        );
+
+        await notificationmodel.updateOne(
+          { $or: [{ brandId: userId }, { talentId: userId }], notificationType: 'Talent Profile Approval' },
+          { $set: { adminApproved, status, profileApprove } }
+        );
+      } else {
+        // Check in brandsmodel if not found in adultmodel or kidsmodel
+        const brandUser = await brandsmodel.findOne({ _id: userId, isActive: true, inActive: true });
+        if (brandUser) {
+          userType = 'brands';
+          userEmail = brandUser.email;
+          updateResult = await brandsmodel.updateOne(
+            { _id: userId },
+            { $set: { adminApproved, status, profileApprove } }
+          );
+
+          await notificationmodel.updateOne(
+            { $or: [{ brandId: userId }, { talentId: userId }], notificationType: 'Talent Profile Approval' },
+            { $set: { adminApproved, status, profileApprove } }
+          );
+        }
+      }
+    }
+
+    // If user type is still empty, user was not found in any model
+    if (!userType) {
+      return res.json({ status: false, msg: 'User not found' });
+    }
+    console.log("updatdRsult", updateResult)
+    // If we have an update result, we successfully updated the profile status
+    if (updateResult) {
+      console.log("updateResultfinal", updateResult);
+
+      if (userEmail) {
+        if (status === "Approved") {
+          sendProfileEmail(userEmail);
+        } else {
+          RejectedProfileEmail(userEmail);
+        }
+      }
+
+      return res.json({ status: true, msg: 'Approved successfully', type: userType });
+    } else {
+      return res.json({ status: false, msg: 'Failed to approve profile' });
+    }
+  } catch (error) {
+    console.error('Error in admin approval:', error);
+    return res.status(500).json({ status: false, msg: 'Internal server error' });
+  }
+};
+/*
+*********bellCountForNotification*****
+* @param {*} req from user
+* @param {*} res return data
+* @param {*} next undefined
+*/
+const bellIconCount = async (req, res) => {
+  try {
+    // Define the types of notifications to look for
+    const notificationTypes = ['Job Approval', 'Talent Profile Approval', 'Talent Verification Approval'];
+
+    // Find unread notifications of the specified types
+    const unreadNotifications = await notificationmodel.find({
+      read: false,
+      notificationType: { $in: notificationTypes }
+    });
+
+    // Count the number of unread notifications
+    const unreadCount = unreadNotifications.length;
+
+    // Schedule the task to run every minute
+    cron.schedule('* * * * *', async () => {
+      console.log('Running the bellIconCount function...');
+      try {
+        await bellIconCount(req, res);
+      } catch (error) {
+        console.error('Error running scheduled bellIconCount:', error);
+      }
+    });
+
+    if (req.body.read === true) {
+      // Update all unread notifications to mark them as read
+      await notificationmodel.updateMany(
+        {
+          read: false,
+          notificationType: { $in: notificationTypes }
+        },
+        { $set: { read: true } }
+      );
+    }
+
+    // Send the unread count as a JSON response
+    res.json({
+      status: true,
+      data: unreadCount,
+      message: 'Success'
+    });
+
+    console.log(`Unread notifications counted: ${unreadCount}`);
+  } catch (error) {
+    console.error('Error fetching notifications:', error);
+    res.status(200).json({
+      status: false,
+      message: 'Error fetching notifications'
+    });
+  }
+};
+
+/*
+*********bellCountForNotification*****
+* @param {*} req from user
+* @param {*} res return data
+* @param {*} next undefined
+*/
+const readNotification = async (req, res) => {
+  try {
+    // Define the types of notifications to look for
+    const notificationTypes = ['Job Approval', 'Talent Profile Approval', 'Talent Verification Approval'];
+
+    // Update all unread notifications to mark them as read
+    await notificationmodel.updateMany(
+      {
+        read: false,
+        notificationType: { $in: notificationTypes }
+      },
+      { $set: { read: true } }
+    );
+    res.json({
+      status: true,
+      message: 'Success'
+    });
+    console.log('Unread notifications marked as read.');
+  } catch (error) {
+    console.error('Error updating notifications:', error);
+    res.status(200).json({
+      status: false,
+      message: 'Error Occured'
+    });
+  }
+};
+
+/*
+*********gift mail *****
+* @param {*} req from user
+* @param {*} res return data
+* @param {*} next undefined
+*/
+
+const giftMail = async (req, res) => {
+  try {
+    const { fullName, giftSenderEmail, giftReceiversName,comment, giftReceiversEmail } = req.body;
+
+
+
+    // Email to the giver
+    const mailOptionsToGiver = {
+      from: host,
+      to: giftSenderEmail,
+      subject: 'Gift Coupon Sent Successfully',
+
+      html: `<p>Dear ${fullName},</p>
+<p>You have successfully given a gift to ${giftReceiversName}.</p>
+<p>Best regards,</p>
+<p>Brands And Talent</p>`,
+    };
+
+    // Email to the receiver
+    const mailOptionsToReceiver = {
+      from: host,
+      to: giftReceiversEmail,
+      subject: 'Gift Coupon Received Successfully',
+      html: `<p>Dear ${giftReceiversName},</p>
+      <p>You have successfully received a gift coupon from ${fullName}.</p>
+      <p>Best regards,</p>
+      <p>Brands And Talent</p>
+      <p><u><a href="https://hybrid.sicsglobal.com/project/brandsandtalent/">Click Here  </a></u> to visit our website.</p>,
+      <p><i>${req.body.comment}</i></p>`
+    
+    };
+    // Send emails
+    await transporter.sendMail(mailOptionsToGiver);
+    await transporter.sendMail(mailOptionsToReceiver);
+
+    res.json({
+      status: true,
+      message: 'Emails sent successfully',
+    });
+    console.log('Gift emails sent successfully.');
+  } catch (error) {
+    console.error('Error sending gift emails:', error);
+    res.status(500).json({
+      status: false,
+      message: 'Error occurred while sending emails',
+    });
+  }
+};
+
+
+
+//create transcations
+
+const payment =async(req,res)=>{
+  try {
+    const response = await axios.post('https://checkout-sandbox.payway.com.kh/pay', {
+        amount: '100',
+        currency: 'USD',
+        customerEmail: 'victor@extrahourz.com',
+        merchantId: 'ec427730'
+    }, {
+        headers: {
+            'Authorization': `Bearer 3e2a9f6db6e01271d36f0de2a2e50ca2066bd17b`,
+            'Content-Type': 'application/json'
+        }
+    });
+
+    res.json(response.data);
+} catch (error) {
+    console.error(error);
+    res.status(500).send(error);
+}
+
+}
+
+// const payment = async (req, res) => {
+//   const { amount, currency, items, payment_option,firstname,lastname,email,phone } = req.body;
+
+//   // Generate a unique transaction ID (you may want to use a more robust method)
+//   const transactionId = Math.random();
+
+//   // Current timestamp for request time formatted as YYYYmmddHis
+//   const now = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14);
+
+//   // Replace with your actual merchant_id, tran_id, payment_option, and public_key
+//   const ABA_PAYWAY_API_URL = 'https://checkout-sandbox.payway.com.kh/api/payment-gateway/v1/payments/purchase';
+//   const MERCHANT_ID = 'ec427730';
+//   const API_KEY = '3e2a9f6db6e01271d36f0de2a2e50ca2066bd17b';
+
+//   // Define return and cancel URLs
+//   const returnUrl = 'https://yourapp.com/payment-success';
+//   const cancelUrl = 'https://yourapp.com/payment-failure';
+
+//   // Construct the message to be hashed
+//   const message = `${now}${MERCHANT_ID}${transactionId}${amount}${items}${currency}${payment_option}${returnUrl}${cancelUrl}${API_KEY}`;
+
+//   // Create a HMAC-SHA512 hash
+//   const hmac = crypto.createHmac('sha512', Buffer.from(API_KEY, 'utf-8'));
+//   hmac.update(message);
+//   const hash = hmac.digest('base64');
+
+//   try {
+//     // Prepare data for the POST request
+//     const requestData = {
+//       req_time: now,
+//       hash: hash,
+//       merchant_id: MERCHANT_ID,
+//       api_key: API_KEY,
+//       amount: amount,
+//       currency: currency,
+//       tran_id: transactionId,
+//       items: items,
+//       payment_option: payment_option,
+//       return_url: returnUrl,
+//       cancel_url: cancelUrl
+//     };
+
+//     // Make the POST request to initiate payment
+//     const response = await axios.post(ABA_PAYWAY_API_URL, requestData);
+
+//     // Log success message or handle response data accordingly
+//     //console.log('Payment initiation successful:', response.data);
+
+//     // Example of handling successful payment initiation
+//     // const formattedResponse = {
+//     //   status: {
+//     //     code: '00',
+//     //     message: 'Success!'
+//     //   },
+//     //   description: 'Payment initiation successful',
+//     //   transactionId: transactionId,
+//     //   qrString: response.data.qrString, // Assuming qrString is part of the response data
+//     //   req_time: response.data.req_time
+//     // };
+
+//     res.json({ data: response.data });
+
+//   } catch (error) {
+//     console.error('Payment initiation error:', error.response ? error.response.data : error.message);
+//     // Handle the error by sending an appropriate response
+//     res.status(error.response ? error.response.status : 500).json({ message: 'Payment initiation failed', error: error.message });
+//   }
+// };
+
+
+//check transaction
+const checkTransaction = async (req, res) => {
+  const { transactionId, req_time } = req.body;
+
+  const ABA_PAYWAY_API_URL = 'https://checkout-sandbox.payway.com.kh/api/payment-gateway/v1/payments/check-transaction-2';
+  const MERCHANT_ID = 'ec427730';
+  const API_KEY = '3e2a9f6db6e01271d36f0de2a2e50ca2066bd17b';
+
+  // Construct the message to be hashed
+  const message = `${req_time}+${MERCHANT_ID}+${transactionId}`;
+
+  // Create a HMAC-SHA512 hash
+  const hmac = crypto.createHmac('sha512', Buffer.from(API_KEY, 'utf-8'));
+  hmac.update(message);
+
+  // Get the hashed data and encode to base64
+  const hash = hmac.digest('base64');
+
+  try {
+    const response = await axios.post(ABA_PAYWAY_API_URL, {
+      req_time: req_time,
+      hash: hash,
+      merchant_id: MERCHANT_ID,
+      tran_id: transactionId
+    });
+
+    console.log("Payment check response:", response.data);
+    res.json(response.data);
+
+  } catch (error) {
+    console.error('Payment initiation error:', error.message);
+    res.status(500).json({ message: 'Payment initiation failed', error: error.message });
+  }
+};
+
+
+
+
+
 
 module.exports = {
   addAdmin, adminLogin, adminProfile, forgotPassword, resetPassword, fileUpload, uploads, addCountry, listState, adminFetch, listLocation, listCountries,
-  listCity,getAllStatesList,getAllCitiesList,chatbot,adminApproval,jobApproval,notApprovedMembers,ListBrandForJobPost
+  listCity, getAllStatesList, getAllCitiesList, chatbot, adminApproval, jobApproval, notApprovedMembers, ListBrandForJobPost,
+  filterByStatus, jobApprovalByBrandsList, adminApprovalByList, profileApproval, bellIconCount, readNotification, giftMail,
+  payment,checkTransaction
 
 
 };
