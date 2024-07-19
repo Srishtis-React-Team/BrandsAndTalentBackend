@@ -102,17 +102,61 @@ var authenticationSchema = new schema({
         default: false
     },
     userName: {
-        type:String
+        type: String
     },
     profileImage: {
-        type:Array
+        type: Array
     },
     websiteLink: {
-        type:String
+        type: String
     },
- 
- 
-   
+    publicUrl: {
+        type: String
+    },
+    yourFullName: {
+        type: String
+    },
+    brandType: {
+        type: String
+    },
+    brandCountry: {
+        type: String
+    },
+    brandState: {
+        type: String
+    },
+    brandCity: {
+        type: String
+    },
+    brandWebsite: {
+        type: String
+    },
+    linkedinUrl: {
+        type: String
+    },
+    facebookUrl: {
+        type: String
+    },
+    twitterUrl: {
+        type: String
+    },
+    aboutBrand: {
+        type: Array
+    },
+    whyWorkWithUs: {
+        type: Array
+    },
+    profileApprove: {
+        type: Boolean,
+        default: false
+    },
+    isSubscribed:{
+        type:Boolean,
+        default:false
+     },
+
+
+
 
     resetPasswordExpires: Date,
     created: { type: Date, default: Date.now },

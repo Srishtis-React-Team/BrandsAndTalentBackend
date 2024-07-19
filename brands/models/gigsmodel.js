@@ -187,7 +187,11 @@ var authenticationSchema = new schema({
     adminApproved:{
         type:Boolean,
         
-    }
+    },
+    status:{
+        type:String
+    },
+    
 
 
    

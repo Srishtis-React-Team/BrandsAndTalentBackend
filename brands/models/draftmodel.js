@@ -182,7 +182,12 @@ var authenticationSchema = new schema({
     adminApproved:{
         type:Boolean,
         default:false
-    }
+    },
+    status:{
+        type:String,
+        default:'Pending'
+    },
+   
 
    
   

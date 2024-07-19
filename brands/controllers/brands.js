@@ -25,8 +25,20 @@ const sendOTPByEmail = async (email, otp) => {
     from: host,
     to: email,
     subject: 'OTP Verification',
-    text: `Your OTP (One-Time Password) is ${otp}. Please use this code to complete your verification process. Do not share this code with anyone. Thank you for using our services.\n\nKind regards,\nTeam`
-  };
+    html: `<p>Welcome to the Brands & Talent Community!</p>
+    <p>Please enter the following OTP to start creating your profile:</p>
+    <p><strong>${otp}</strong></p>
+    <p>For more information and helpful tips, refer to our "How it Works" and FAQs sections. If you have any questions or need further assistance, please follow and contact us through our social media handles:</p>
+    <p>Facebook: <a href="https://fb.com/brandsandtalent">fb.com/brandsandtalent</a></p>
+    <p>Instagram: <a href="https://instagram.com/brandsandtalent">instagram.com/brandsandtalent</a></p>
+    <p>Telegram: <a href="https://t.me/brandsandtalent">https://t.me/brandsandtalent</a></p>
+    <p>Email: <a href="mailto:brandsntalent@gmail.com">brandsntalent@gmail.com</a></p>
+    <p>Thank you and best regards,</p>
+    <p>The Brands & Talent (BT) Team</p>`
+};
+
+    //text: `Your OTP (One-Time Password) is ${otp}. Please use this code to complete your verification process. Do not share this code with anyone. Thank you for using our services.\n\nKind regards,\nTeam`
+ 
 
   try {
     await transporter.sendMail(mailOptions);
@@ -112,7 +124,8 @@ const brandsRegister = async (req, res, next) => {
       profileImage:req.body.profileImage,
       userName:req.body.userName,
       profileImage:req.body.profileImage,
-      websiteLink:req.body.websiteLink
+      websiteLink:req.body.websiteLink,
+      publicUrl:req.body.publicUrl
 
     };
  
@@ -303,8 +316,19 @@ const brandsLogin = async (req, res, next) => {
       inActive:true,
       userName:req.body.userName,
       profileImage:req.body.profileImage,
-      websiteLink:req.body.websiteLink
-
+      websiteLink:req.body.websiteLink,
+      publicUrl:req.body.publicUrl,
+      yourFullName:req.body.yourFullName,
+      brandType:req.body.brandType,
+      brandCountry:req.body.brandCountry,
+      brandState:req.body.brandState,
+      brandCity:req.body.brandCity,
+      brandWebsite:req.body.brandWebsite,
+      linkedinUrl:req.body.linkedinUrl,
+      facebookUrl:req.body.facebookUrl,
+      twitterUrl:req.body.twitterUrl,
+      aboutBrand:req.body.aboutBrand,
+      whyWorkWithUs:req.body.whyWorkWithUs
      
     };
 
@@ -376,6 +400,59 @@ const getBrandById = async (req, res) => {
     return res.json({ status: false, msg: 'Invalid Token' });
   }
 };
+
+/********** checkPublicUrl******
+* @param {*} req from user
+* @param {*} res return data
+* @param {*} next undefined
+*/
+
+const checkPublicUrl = async (req, res) => {
+  try {
+    const name = req.body.name;
+    const type = req.body.type;
+    const category = req.body.category;
+    if(type == 'brand'){
+       // Find a brand with the specified publicUrl
+        const brand = await brandsmodel.findOne({ publicUrl: name });
+
+        if (brand) {
+          // If the brand exists, return a message indicating that the name already exists
+          return res.json({ status: false, msg: "Name already exists" });
+        } else {
+          // If the brand does not exist, return a message indicating that the name is available
+          return res.json({ status: true, msg: "Name is available" });
+        }
+    }else if(type == 'talent'){
+      if(category == 'kids'){
+        const kids = await kidsmodel.findOne({ publicUrl: name });
+        if (kids) {
+          // If the kids exists, return a message indicating that the name already exists
+          return res.json({ status: false, msg: "Name already exists" });
+        } else {
+          // If the kids does not exist, return a message indicating that the name is available
+          return res.json({ status: true, msg: "Name is available" });
+        }
+      }else if(category == 'adults'){
+        const adults = await adultmodel.findOne({ publicUrl: name });
+        if (adults) {
+          // If the adults exists, return a message indicating that the name already exists
+          return res.json({ status: false, msg: "Name already exists" });
+        } else {
+          // If the adults does not exist, return a message indicating that the name is available
+          return res.json({ status: true, msg: "Name is available" });
+        }
+      }
+    }
+
+   
+  } catch (err) {
+    // Handle any errors that occur during the operation
+    return res.json({ status: false, msg: err.message });
+  }
+};
+
+
 /********** recentGigs******
 * @param {*} req from user
 * @param {*} res return data
@@ -477,7 +554,8 @@ const socailSignUpBrands = async (req, res, next) => {
       isFavorite: false,
       profileStatus: false,
       facebookId:req.body.facebookId,
-      inActive:true
+      inActive:true,
+      publicUrl:req.body.publicUrl
 
 
  
@@ -610,13 +688,15 @@ const updateBrandPassword = async (req, res) => {
         <p>Hello,</p>
         <p>You are receiving this because you (or someone else) have requested the reset of the password for your account.</p>
         <p>Please click on the following link to complete the process:</p>
-        <p><a href="${resetLink}">${resetLink}</a></p>
+        <p><a href="${resetLink}"><b><u>${resetLink}</u></b></a></p>
+
         <p>If you did not request this, please ignore this email and your password will remain unchanged.</p>
         <p>Thanks and regards,</p>
         <p>Your HR Team</p>
        
       `
     };
+    //<p><a href="${resetLink}">${resetLink}</a></p>
 
 
     await transporter.sendMail(mailOptions);
@@ -827,6 +907,57 @@ const updatePasswordInSettings = async (req, res, next) => {
  * @param {*} res return data
  * @param {*} next undefined
  */
+// Function to save notifications to the database
+const saveNotification = async (talentId, notificationMessage) => {
+  try {
+      // Fetch details of brand and gig
+      const talent = await findUserById(talentId);
+      console.log('talent',talent)
+
+      // Create the notification document
+      const notification = new notificationmodel({
+          notificationType: 'Help And Support',
+          notificationMessage: notificationMessage,
+          talentDetails:{
+           parentFirstName: talent.parentFirstName,
+           parentLastName: talent.parentLastName,
+           parentEmail: talent.parentEmail,
+           talentId:talentId,
+           email:talent.adultEmail?talent.adultEmail:talent.parentEmail?talent.parentEmail:talent.brandEmail,
+           childFirstName: talent.childFirstName,
+           childLastName: talent.childLastName,
+           preferredChildFirstname: talent.preferredChildFirstname,
+           preferredChildLastName: talent.preferredChildLastName,
+           image: talent.image
+
+         } 
+      });
+
+      // Save the notification document
+      const savedNotification = await notification.save();
+      console.log("Notification saved successfully", savedNotification);
+  } catch (error) {
+      console.error("Error saving notification:", error);
+  }
+};
+  // Helper function to find a user by their ID
+  async function findUserById(userId) {
+    try {
+        const brand = await brandsmodel.findOne({ _id: userId, isActive: true, inActive: true });
+        if (brand) return brand;
+  
+        const kidTalent = await kidsmodel.findOne({ _id: userId, inActive: true, isActive: true });
+        if (kidTalent) return kidTalent;
+  
+        const adultTalent = await adultmodel.findOne({ _id: userId, inActive: true, isActive: true });
+        if (adultTalent) return adultTalent;
+  
+        return null;
+    } catch (error) {
+        console.error("Error finding user by ID:", error);
+        return null;
+    }
+  }
 
  const postSupportMail = async (req, res, next) => {
   try {
@@ -863,7 +994,7 @@ const updatePasswordInSettings = async (req, res, next) => {
     // Define the email options
     const mailOptions = {
       from: host,
-      to: 'arya1@yopmail.com',
+      to: 'admin@yopmail.com',
       subject: 'Help And Support',
       html: `
         <p>Hello,</p>
@@ -880,6 +1011,7 @@ const updatePasswordInSettings = async (req, res, next) => {
 
     // Send the email
     await transporter.sendMail(mailOptions);
+    await saveNotification(talentId, enquiry);
 
     res.json({
       status: true,
@@ -900,6 +1032,55 @@ const updatePasswordInSettings = async (req, res, next) => {
  * @param {*} res return data
  * @param {*} next undefined
  */
+// Function to save notifications to the database
+// const saveNotifications = async (talentId, notificationMessage) => {
+//   try {
+//       // Fetch details of brand and gig
+//       const talent = await findUserById(talentId);
+
+
+//       // Create the notification document
+//       const notification = new notificationmodel({
+//           notificationType: 'Help And Support',
+//           notificationMessage:notificationMessage ,
+//           talentDetails:{
+//            parentFirstName: talent.parentFirstName,
+//            parentLastName: talent.parentLastName,
+//            parentEmail: talent.parentEmail,
+//            childFirstName: talent.childFirstName,
+//            childLastName: talent.childLastName,
+//            preferredChildFirstname: talent.preferredChildFirstname,
+//            preferredChildLastName: talent.preferredChildLastName,
+//            image: talent.image
+
+//          }
+//       });
+
+//       // Save the notification document
+//       const savedNotification = await notification.save();
+//       console.log("Notification saved successfully", savedNotification);
+//   } catch (error) {
+//       console.error("Error saving notification:", error);
+//   }
+// };
+  // Helper function to find a user by their ID
+  async function findUserById(userId) {
+    try {
+        const brand = await brandsmodel.findOne({ _id: userId, isActive: true, inActive: true });
+        if (brand) return brand;
+  
+        const kidTalent = await kidsmodel.findOne({ _id: userId, inActive: true, isActive: true });
+        if (kidTalent) return kidTalent;
+  
+        const adultTalent = await adultmodel.findOne({ _id: userId, inActive: true, isActive: true });
+        if (adultTalent) return adultTalent;
+  
+        return null;
+    } catch (error) {
+        console.error("Error finding user by ID:", error);
+        return null;
+    }
+  }
 
  const contactUsReply = async (req, res, next) => {
   try {
@@ -907,14 +1088,14 @@ const updatePasswordInSettings = async (req, res, next) => {
 
     // Find the contact request by email and get relevant fields
     const contact = await contactmodel.findOne({ email: email }).select('name enquiry phoneNo talentId');
-
+    
     if (!contact) {
       return res.json({
         status: false,
         message: 'Contact request not found'
       });
     }
-
+    const talentId = contact.talentId;
     // Update the contact document with the provided answer
     contact.answer = answer;
     contact.isRespond = true;
@@ -941,6 +1122,7 @@ const updatePasswordInSettings = async (req, res, next) => {
 
     // Send the email
     await transporter.sendMail(mailOptions);
+    await saveNotification(talentId, answer);
 
     res.json({
       status: true,
@@ -1025,6 +1207,6 @@ module.exports = {
   brandsRegister, otpVerificationBrands, brandsLogin, editBrands, deleteBrands, getBrandById, topBrands,
   favouritesList,searchDatas,socailSignUpBrands,updateBrandPassword,brandsForgotPassword,brandsResetPassword,
   getBrands,deleteNotification,updatePasswordInSettings,activateBrandUser,postSupportMail,contactUsReply,
-  contactUsList,deleteContact,contactUsById
+  contactUsList,deleteContact,contactUsById,checkPublicUrl
 
 };

@@ -24,5 +24,6 @@ router.post('/contactUsReply',brands.contactUsReply)//for contactUsReply
 router.post('/deleteContact',brands.deleteContact)//for deleteContact
 router.get('/contactUsList',brands.contactUsList)//for contactUsList
 router.post('/contactUsById/:contactId',brands.contactUsById)//for contactUsById
+router.post('/checkPublicUrlName',brands.checkPublicUrl) // for check the name exist or not
 
 module.exports = router

@@ -39,7 +39,7 @@ const favouritejobSchema = new Schema({
 
     },
     gigDetails:{
-      
+        isActive:Boolean,
         jobTitle:String,
         jobLocation:String,
         streetAddress:String,

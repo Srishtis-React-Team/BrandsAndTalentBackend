@@ -74,8 +74,9 @@ const getPostedJobs = async (req, res, next) => {
     const talentId = req.body.talentId;
 
     try {
+        const today = new Date();
         // Fetching all active gigs and sorting them by creation date in descending order
-        const gigs = await gigsmodel.find({ isActive: true}).sort({ created: -1 }).exec();//adminApproved:true 
+        const gigs = await gigsmodel.find({ isActive: true, lastDateForApply: { $gte: today },adminApproved:true}).sort({ created: -1 }).exec();//adminApproved:true 
         const favoriteGigs = await favouritesgigsmodel.find({ isActive: true, talentId: talentId, isFavourite: true }).sort({ created: -1 }).exec();
 
         // Matching gigId details fetch from favoriteGigs
@@ -122,7 +123,7 @@ const getJobsByID = async (req, res, next) => {
 
 
         // Since we're using async/await, there's no need to use .then() and .catch() here.
-        const gig = await gigsmodel.findOne({ _id: gigId, isActive: true }).sort({ created: -1 });//adminApproved:true
+        const gig = await gigsmodel.findOne({ _id: gigId, isActive: true,adminApproved:true }).sort({ created: -1 });//adminApproved:true
 
         if (!gig) {
             // If no gig is found, send a 404 not found response
@@ -154,8 +155,91 @@ const getJobsByID = async (req, res, next) => {
  * @param {*} res return data
  * @param {*} next undefined
  */
+
+// Function to save notifications to the database
+// Function to save notifications to the database
+const notificationsave = async (brandId,gigId,adminApproved, notificationMessage,lastDateForApply) => {
+    try {
+  
+      const brand = await findUserById(brandId);
+     
+      const notification = new notificationmodel({
+        notificationType: 'Job Approval',
+        notificationMessage: notificationMessage,
+        brandId: brandId,
+        gigId:gigId,
+        adminApproved:adminApproved,
+        brandDetails: {
+            _id: brand._id,
+            brandName: brand.brandName,
+            brandEmail: brand.brandEmail,
+            logo: brand.logo,
+            brandImage: brand.brandImage
+        },
+        gigDetails:{
+            lastDateForApply: lastDateForApply
+
+        },
+        
+       
+      });
+  
+      const savedNotification = await notification.save();
+      console.log("Notification saved successfully", savedNotification);
+    } catch (error) {
+      console.error("Error saving notification:", error);
+    }
+  };
+  // Helper function to find a user by their ID
+  async function findUserById(userId) {
+    try {
+        const brand = await brandsmodel.findOne({ _id: userId, isActive: true, inActive: true });
+        if (brand) return brand;
+  
+        const kidTalent = await kidsmodel.findOne({ _id: userId, inActive: true, isActive: true });
+        if (kidTalent) return kidTalent;
+  
+        const adultTalent = await adultmodel.findOne({ _id: userId, inActive: true, isActive: true });
+        if (adultTalent) return adultTalent;
+  
+        return null;
+    } catch (error) {
+        console.error("Error finding user by ID:", error);
+        return null;
+    }
+  }
+  
+  // Helper function to determine the user type based on their ID
+  async function determineUserType(userId) {
+    const isBrand = await brandsmodel.exists({ _id: userId });
+    if (isBrand) return 'brand';
+  
+    const isKid = await kidsmodel.exists({ _id: userId });
+    if (isKid) return 'kids';
+  
+    const isAdult = await adultmodel.exists({ _id: userId });
+    if (isAdult) return 'adult';
+  
+    return null;
+  }
+  
+  // Configure Nodemailer
+  
+  
+  
+  const emailSend = async (to, subject, html) => {
+    const mailOptions = {
+        from: host,
+        to: to,
+        subject: subject,
+        html: html
+    };
+  
+    await transporter.sendMail(mailOptions);
+  };
 const draftJob = async (req, res, next) => {
     try {
+        console.log('inside draft job.............................................')
         const { brandId } = req.body;
 
         // Fetch brand details to check the plan
@@ -175,7 +259,7 @@ const draftJob = async (req, res, next) => {
                 jobLimitPerMonth = 5;
                 break;
             case 'Premium':
-                jobLimitPerMonth = 15;
+                jobLimitPerMonth = 25;
                 break;
             default:
                 return res.status(400).json({ message: "Invalid plan name" });
@@ -195,21 +279,18 @@ const draftJob = async (req, res, next) => {
          // Check if plan is Pro or Premium to set isApproved and adminApproved
          const isProOrPremium = brand.planName === 'Pro' || brand.planName === 'Premium';
          const isAdminApproved = isProOrPremium ? true : false;
+
+         console.log("gdfjsfjdh",isAdminApproved)
  
         
 
         if (brand.planName === 'Pro' || brand.planName === 'Premium') {
             // If the plan is Pro or Premium, set isApproved field to true
             req.body.isApproved = true;
+           
             //adminApproved=true;
            
         }
-        console.log("jobCount", jobCount)
-
-        if (jobCount >= jobLimitPerMonth) {
-            return res.status(403).json({ message: `Job posting limit for this month (${jobLimitPerMonth}) reached` });
-        }
-        // Create a new draft job
         const add_gigs = new draftmodel({
             brandId:req.body.brandId,
             jobTitle: req.body.jobTitle,
@@ -266,6 +347,48 @@ const draftJob = async (req, res, next) => {
         });
 
         const response = await add_gigs.save();
+
+        console.log('resposne---consoling--response---',response)
+        if(brand.planName=='Basic'){
+            console.log('inside basic...')
+            // Check in the notification model if a notification for this talent already exists
+                const notificationExists = await notificationmodel.findOne({
+                notificationType: "Job Approval",
+                brandId: brandId
+            });
+  
+      //if (!notificationExists) {
+        // Retrieve parentEmail and parentFirstName from the existing user document
+            const brandEmail = brand.brandEmail;
+            const brandName = brand.brandName;
+  
+            const emailContent = `
+            <p>Hello ${brandName},</p>
+            <p>Your job Approved by admin within 2 business days. You will receive a team approval confirmation.</p>
+            <p>Best regards</p>
+            <p>Brands and Talent Team</p>
+            `;
+  
+            const notificationMessage = `${brandName}, this brand is post a job. Please approve them.`;
+  
+            // Send notification and email
+            console.log("response.adminApproved"),response.adminApproved
+            await notificationsave(brandId,response._id,response.adminApproved,notificationMessage);
+            await emailSend(brandEmail, 'Approval', emailContent);
+        // }
+
+        }
+        console.log("jobCount", jobCount)
+
+        if (jobCount >= jobLimitPerMonth) {
+            return res.status(200).json({
+              status: false,
+              statusInfo: "limit-reached",
+              message: `Job posting limit for this month (${jobLimitPerMonth}) reached. Upgrade to Pro or Premium to post more.`
+            });
+          }
+        // Create a new draft job
+        
 
    
         return res.json({
@@ -473,7 +596,7 @@ const postJobByDraft = async (req, res, next) => {
 
         // Check if draft gig exists
         if (!draftGig) {
-            return res.status(404).json({
+            return res.status(200).json({
                 status: false,
                 message: 'Admin approval is needed for post the job'
             });
@@ -533,6 +656,7 @@ const postJobByDraft = async (req, res, next) => {
             twitterMax: draftGig.twitterMax,
             youTubeMin:draftGig.youTubeMin,
             youTubeMax:draftGig.youTubeMax,
+            status:draftGig.status,
             isActive: true,
             adminApproved:true,
             type: "Posted"
@@ -543,6 +667,25 @@ const postJobByDraft = async (req, res, next) => {
 
         // Update the draft gig's isActive field to false
         await draftmodel.findOneAndUpdate({ _id: gigId }, { isActive: false });
+
+        // // Step 3: Find draft count by brandId and decrease it
+        // const draftCountDoc = await draftmodel.find({ brandId: brandId, isActive: true }).countDocuments();
+        // const draftCountforAdmin = draftCountDoc - 1;
+
+        // // Step 4: Increase the count in gigsmodel by brandId
+        // const postCountDoc = await gigsmodel.find({ brandId: brandId }).countDocuments();
+        // const postCountforAdmin = postCountDoc + 1;
+
+        // // Step 5: Update the brandmodel with new counts
+        // await brandsmodel.findOneAndUpdate(
+        //     { _id: brandId },
+        //     {
+        //         $set: {
+        //             draftjobcountforAdmin: draftCountforAdmin,
+        //             postjobcountforAdmin: postCountforAdmin,
+        //         },
+        //     }
+        // );
 
         //thursday
         // Find active jobs by brandId
@@ -775,9 +918,9 @@ const getBrandDraftJobsByID = async (req, res, next) => {
           return res.status(401).json({ status: false, msg: 'Authentication failed' });
         }
         */
-
+        const today = new Date();
         // Since we're using async/await, there's no need to use .then() and .catch() here.
-        const gigs = await draftmodel.find({ brandId: new mongoose.Types.ObjectId(brandId), isActive: true }).sort({ created: -1 });
+        const gigs = await draftmodel.find({ brandId: new mongoose.Types.ObjectId(brandId), isActive: true, lastDateForApply: { $gte: today } }).sort({ created: -1 });
 
         if (gigs.length === 0) {
             // If no gigs are found, send an empty array in the response
@@ -819,10 +962,10 @@ const getBrandPostedJobsByID = async (req, res, next) => {
         // if (!authResult) {
         //   return res.status(401).json({ status: false, msg: 'Authentication failed' });
         // }
-
+        const today = new Date();
 
         // Since we're using async/await, there's no need to use .then() and .catch() here.
-        const gigs = await gigsmodel.find({ brandId: new mongoose.Types.ObjectId(brandId), isActive: true }).sort({ created: -1 });
+        const gigs = await gigsmodel.find({ brandId: new mongoose.Types.ObjectId(brandId), isActive: true, lastDateForApply: { $gte: today },adminApproved:true }).sort({ created: -1 });
 
         if (gigs.length === 0) {
             // If no gigs are found, send an empty array in the response
@@ -868,7 +1011,8 @@ const getAllJobs = async (req, res, next) => {
         const gigs = await gigsmodel.find({
             brandId: new mongoose.Types.ObjectId(userId),
             isActive: true,
-            lastDateForApply: { $gte: today }
+            lastDateForApply: { $gte: today },
+            adminApproved:true,
         }).sort({ createdAt: -1 });
         console.log("gigs", gigs)
 
@@ -939,6 +1083,13 @@ const deleteJob = async (req, res, next) => {
             { new: true } // Return the updated document
         );
 
+         // Also update gigDetails.isActive to false in favouritemodel
+         await favouritesgigsmodel.updateMany(
+            { gigId: gigId },
+            { 'gigDetails.isActive': false }
+        );
+
+
         // If successful, send success response
         res.json({
             status: true,
@@ -971,7 +1122,7 @@ const getAnyJobById = async (req, res, next) => {
         }
 
         // First, try to find the job in gigsmodel
-        let job = await gigsmodel.findById({ _id: gigId, isActive: true }).sort({ createdAt: -1 });
+        let job = await gigsmodel.findById({ _id: gigId, isActive: true,adminApproved:true }).sort({ createdAt: -1 });
 
         // If not found in gigsmodel, try to find it in draftmodel
         if (!job) {
@@ -1029,7 +1180,8 @@ const jobCount = async (req, res, next) => {
 
         const postJobCount = await gigsmodel.countDocuments({
             brandId: new mongoose.Types.ObjectId(brandId),
-            isActive: true
+            isActive: true,
+            adminApproved:true
         });
 
         // Calculate the total count of drafts and post jobs
@@ -1080,11 +1232,13 @@ const jobCount = async (req, res, next) => {
 const searchJobs = async (req, res, next) => {
     try {
         // Extract search parameters from request body
-        const { jobTitle, jobLocation, age, skills, keyword, jobType, employmentType, talentId, category,state,city } = req.body;
+        const { jobTitle,country, jobLocation, age, skills, keyword, jobType, employmentType, talentId, category,state,city } = req.body;
         // Define the fields to search in
         const searchableFields = [
             'jobTitle',
-            'jobLocation',
+            'country',
+            'state',
+            'city',
             'streetAddress',
             'employmentType',
             'jobDescription',
@@ -1115,6 +1269,9 @@ const searchJobs = async (req, res, next) => {
             queryConditions = searchableFields.map(field => ({
                 [field]: { $regex: new RegExp(keyword, 'i') }
             }));
+        }
+        if (country) {
+            queryConditions.push({ country: { $regex: new RegExp(country, 'i') } });
         }
         if (state) {
             queryConditions.push({ state: { $regex: new RegExp(state, 'i') } });
@@ -1358,7 +1515,8 @@ async function saveNotifications(brandId, talentId, gigId, brandNotificationMess
                 brandName: brand.brandName,
                 brandEmail: brand.brandEmail,
                 logo: brand.logo,
-                brandImage: brand.brandImage
+                brandImage: brand.brandImage,  
+                brandPhone:brand.brandPhone,
                 // Add other brand details as needed
             },
             talentDetails: {
@@ -1414,7 +1572,7 @@ async function saveApplyJobs(brandId, talentId, gigId) {
         // Determine user types for brand and talent
         const brandType = await determineUserType(brandId);
         const talentType = await determineUserType(talentId);
-
+      console.log("branfvjdgbkjfngkjfnkjnkfngkd",brand)
         // Create the notification document
         const apply = new applymodel({
 
@@ -1428,7 +1586,8 @@ async function saveApplyJobs(brandId, talentId, gigId) {
                 brandName: brand.brandName,
                 brandEmail: brand.brandEmail,
                 logo: brand.logo,
-                brandImage: brand.brandImage
+                brandImage: brand.brandImage,
+                brandPhone:brand.brandPhone,
                 // Add other brand details as needed
             },
             talentDetails: {
@@ -1834,11 +1993,17 @@ const informSelectedLevel = async (req, res) => {
 
         });
 
+        // const mailOptions = {
+        //     from: host,
+        //     to: emails.join(', '), // Sends to all collected emails
+        //     subject: 'Talent Notification',
+        //     text: 'Hai,'||req.body.text
+        // };
         const mailOptions = {
             from: host,
             to: emails.join(', '), // Sends to all collected emails
             subject: 'Talent Notification',
-            text: 'Hai,'
+            text: 'Hai,' + (req.body.officeAddress || '')
         };
 
         // Notification title and message
@@ -1865,39 +2030,49 @@ const informSelectedLevel = async (req, res) => {
                 notificationTitle = 'Application Update';
                 notificationMessage = 'We regret to inform you that you were not selected.';
                 break;
+            //case 'interviewInvitations':
             case 'interviewInvitations':
-                const interviewType = req.body.interviewType;
-                const meetingLink = req.body.meetingLink; // For online interviews
-                const officeAddress = req.body.officeAddress; // For offline interviews
-                if (!interviewType) {
-                    return res.status(400).json({
-                        status: false,
-                        message: 'interviewType is required for interview invitations'
-                    });
-                }
-                mailOptions.subject = 'Interview Invitation';
-                mailOptions.text += ` This will be a ${interviewType} interview. `;
-                notificationTitle = 'Interview Invitation';
-                notificationMessage = `You have been invited to a ${interviewType} interview.`;
+                    mailOptions.subject = 'Interview Invitation';
+                    mailOptions.text = req.body.officeAddress || ''; 
+                    notificationTitle = 'Interview Invitation';
+                    notificationMessage = `You have been invited to a interview.`;
+                   
+                // const interviewType = req.body.interviewType;
+                // const meetingLink = req.body.meetingLink; // For online interviews
+                // const officeAddress = req.body.officeAddress; // For offline interviews
+                // if (!interviewType) {
+                //     return res.status(400).json({
+                //         status: false,
+                //         message: 'interviewType is required for interview invitations'
+                //     });
+                // }
+                // mailOptions.subject = 'Interview Invitation';
+                // mailOptions.text += ` This will be a ${interviewType} interview. `;
+                // notificationTitle = 'Interview Invitation';
+                // notificationMessage = `You have been invited to a ${interviewType} interview.`;
 
-                // Append additional information based on interview type
-                if (interviewType === 'online') {
-                    if (meetingLink) {
-                        mailOptions.text += `Here is your meeting link: ${meetingLink}.`;
-                        notificationMessage += ` Here is your meeting link: ${meetingLink}.`;
-                    } else {
-                        mailOptions.text += 'A meeting link will be provided soon.';
-                        notificationMessage += ' A meeting link will be provided soon.';
-                    }
-                } else if (interviewType === 'offline') {
-                    if (officeAddress) {
-                        mailOptions.text += `Please attend in person at the following address: ${officeAddress}.`;
-                        notificationMessage += ` Please attend in person at the following address: ${officeAddress}.`;
-                    } else {
-                        mailOptions.text += 'Please attend in person at our office. The exact address will be provided soon.';
-                        notificationMessage += ' Please attend in person at our office. The exact address will be provided soon.';
-                    }
-                }
+                // // Append additional information based on interview type
+                // if (interviewType === 'online') {
+                //     if (meetingLink) {
+                        
+                //         mailOptions.text += `Here is your meeting link: ${meetingLink}.`;
+                //         notificationMessage += ` Here is your meeting link: ${meetingLink}.`;
+                //     } else {
+                //         mailOptions.text += 'A meeting link will be provided soon.';
+                        
+                //         notificationMessage += ' A meeting link will be provided soon.';
+                //     }
+                // } else if (interviewType === 'offline') {
+                //     if (officeAddress) {
+                //         mailOptions.text += `Please attend in person at the following address: ${officeAddress}.`;
+                        
+                //         notificationMessage += ` Please attend in person at the following address: ${officeAddress}.`;
+                //     } else {
+                //         mailOptions.text += 'Please attend in person at our office. The exact address will be provided soon.';
+                        
+                //         notificationMessage += ' Please attend in person at our office. The exact address will be provided soon.';
+                //     }
+                // }
                 break;
             default:
                 return res.status(400).json({
@@ -2218,7 +2393,8 @@ async function saveFavouritesJobs(brandId, talentId, gigId) {
                 twitterMin: gig.twitterMin,
                 twitterMax: gig.twitterMax,
                 youTubeMin:gig.youTubeMin,
-                youTubeMax:gig.youTubeMax
+                youTubeMax:gig.youTubeMax,
+                isActive:gig.isActive
 
 
             }
@@ -2240,7 +2416,7 @@ async function saveFavouritesJobs(brandId, talentId, gigId) {
 const getSavedJobsByTalentId = async (req, res) => {
     try {
         // Find documents in favouritesgigsmodel where talentId matches the provided value
-        const favourites = await favouritesgigsmodel.find({ talentId: req.body.talentId, isActive: true, isFavourite: true });
+        const favourites = await favouritesgigsmodel.find({ talentId: req.body.talentId, isActive: true, isFavourite: true,'gigDetails.isActive': true });
 
         // Return the found favourites
         return res.json({
@@ -2944,12 +3120,13 @@ const getBrandJobs = async (req, res, next) => {
     try {
         // Extracting brandId from request body or parameters
         const brandId = req.body.brandId || req.params.brandId;
-
+        const today = new Date();
+     
         // Finding active gigs sorted by creation date in descending order
-        const gigs = await gigsmodel.find({ brandId: new mongoose.Types.ObjectId(brandId), isActive: true }).sort({ created: -1 });
+        const gigs = await gigsmodel.find({ brandId: new mongoose.Types.ObjectId(brandId), isActive: true,adminApproved:true, lastDateForApply: { $gte: today } }).sort({ created: -1 });
 
         // Finding active draft gigs sorted by creation date in descending order
-        const draft = await draftmodel.find({ brandId: new mongoose.Types.ObjectId(brandId), isActive: true }).sort({ created: -1 });
+        const draft = await draftmodel.find({ brandId: new mongoose.Types.ObjectId(brandId), isActive: true, lastDateForApply: { $gte: today } }).sort({ created: -1 });
 
         // Combine gigs and draft arrays
         const combinedJobs = gigs.concat(draft);
@@ -2980,7 +3157,40 @@ const getBrandJobs = async (req, res, next) => {
         });
     }
 };
+/**
+*******getAllNotification**
+* @param {*} req from user
+* @param {*} res return data
+* @param {*} next undefined
+*/
+const getAllNotification = async (req, res, next) => {
+    try {
+      
 
+
+        // Fetch all active notifications for the specified brandId
+        const notifications = await notificationmodel.find({
+            notificationType: { $in: ['Registration Approval for talent', 'Job Approval','Help And Support'] },
+            isActive: true,
+        }).sort({ createdAt: -1 });
+
+
+        // You could uncomment and modify this if you have a draft model to fetch drafts as well
+        // const drafts = await draftmodel.find({ brandId: new mongoose.Types.ObjectId(brandId), isActive: true }).sort({ createdAt: -1 });
+
+        res.json({
+            status: true,
+            data: notifications
+        });
+    } catch (error) {
+        console.error("Error fetching notifications:", error);
+        res.status(500).json({
+            status: false,
+            msg: 'Failed to fetch notifications',
+            error: error.message
+        });
+    }
+};
 
 module.exports = {
     createJob, getAllJobs, getJobsByID, draftJob, getDraftJobsByID, getDraftJobs, postJobByDraft,
@@ -2989,6 +3199,6 @@ module.exports = {
     getTalentNotification, getCountNotification, getAppliedjobs, selectedLevelRange,
     informSelectedLevel, newCandidates, getSelectionList, updateFavouriteJobs,
     getSavedJobsByTalentId, getSkills, removeFavouritesJob, updatePassword, createJobAlert,
-    updateJobAlert, inviteTalentToApply, isApprovedForjobByPlan,getBrandJobs
+    updateJobAlert, inviteTalentToApply, isApprovedForjobByPlan,getBrandJobs,getAllNotification
 
 };

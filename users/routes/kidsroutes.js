@@ -13,7 +13,7 @@ router.post('/resetPassword',users.resetPassword)//for resetPassword
 router.post('/updateAdults/:user_id',users.updateAdults)//for editUser
 router.post('/deleteUser/:user_id',users.deleteUser)//for deleteUser
 router.post('/otpVerification',users.otpVerification)//for otpVerification
-router.post('/subscriptionPlan/:user_id',users.subscriptionPlan)//for subscriptionPlan
+router.post('/subscriptionPlan',users.subscriptionPlan)//for subscriptionPlan
 router.post('/otpVerificationAdult',users.otpVerificationAdult)//for otpVerificationAdult
 router.post('/editKids/:user_id',users.editKids)//for editKids
 router.post('/unifiedDataFetch/:user_id/:dataType',users.unifiedDataFetch)//for kidsDataFetch

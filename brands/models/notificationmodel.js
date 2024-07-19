@@ -8,9 +8,16 @@ const notificationSchema = new Schema({
     gigId: { type: mongoose.Schema.Types.ObjectId, ref: 'Gig' },
     brandNotificationMessage: { type: String, required: false },
     talentNotificationMessage: { type: String, required: false },
+    notificationMessage:{type: String},
     isActive: { type: Boolean, default: true },
     read: { type: Boolean, default: false },
     userType:{type:String},
+    profileApprove:{type:Boolean,default:false},
+    adminApproved:{type:Boolean,default:false},
+    status:{
+        type:String,
+        default:'Pending'
+    },
     brandDetails: {
         brandName: String,
         brandEmail: String,
@@ -21,13 +28,17 @@ const notificationSchema = new Schema({
         parentFirstName: String,
         parentLastName: String,
         parentEmail: String,
+        email:String,
+        talentId:String,
         childFirstName: String,
         childLastName: String,
         preferredChildFirstname:String,
         preferredChildLastName:String,
-        image: Array
+        image: Array,
+        verificationId:Array
     },
     gigDetails:{
+        lastDateForApply:Date,
         jobTitle:String,
         category:String,
         employmentType:String,
@@ -47,6 +58,10 @@ const notificationSchema = new Schema({
         youTubeMax:String,
     },
     appliedOn: Date,
+    read:{
+        type:Boolean,
+        default:true
+    }
 },
 {
     timestamps: true

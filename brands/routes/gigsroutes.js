@@ -39,7 +39,7 @@ router.post('/updateJobAlert',gigs.updateJobAlert)//for updateJobAlert
 router.post('/inviteTalentToApply',gigs.inviteTalentToApply)//for inviteTalentToApply
 router.post('/isApprovedForjobByPlan',gigs.isApprovedForjobByPlan)//for isApprovedForjobByPlan
 router.get('/getBrandJobs/:brandId',gigs.getBrandJobs)//for getBrandJobs
-
+router.get('/getAllNotification',gigs.getAllNotification)//for getAllNotification
 
 
 

@@ -16,6 +16,7 @@ const applyjobSchema = new Schema({
         brandEmail: String,
         logo: Array,
         brandImage: Array,
+        brandPhone:String
     },
     talentDetails: {
         parentFirstName: String,

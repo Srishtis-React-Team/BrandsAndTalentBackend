@@ -265,6 +265,7 @@ facebookId: {
    inActive:
    {
       type: Boolean,
+      default:true
       
    },
    subscriptionType:{
@@ -289,6 +290,18 @@ facebookId: {
       type:String
    },
    videoAudioUrls: [String],
+   publicUrl:{
+      type:String
+  },
+  status:{
+   type:String,
+   default:'Pending'
+  },
+  profileApprove:{
+   type:Boolean,
+   default:false
+  },
+
 
 
 },

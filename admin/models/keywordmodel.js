@@ -14,7 +14,15 @@ const authenticationSchema = new Schema({
     type:  Schema.Types.ObjectId,
     ref: 'brands'
     },
-    
+    // user_id: {
+    //     type: Schema.Types.ObjectId, // Now correctly refers to the defined Schema variable
+    //     required: true,
+    // },
+    // type: {
+    //     type: String,
+    //     required: true,
+    //     enum: ['kids', 'adult'], // Indicates which collection to refer to
+    // },
 },
 {
     timestamps: true

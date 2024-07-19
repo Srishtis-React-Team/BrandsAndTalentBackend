@@ -280,6 +280,8 @@ const pricing = require('./admin/routes/pricingroutes');
 const profession = require('./admin/routes/professionroutes');
 const features = require('./admin/routes/featuresroutes');
 const keyword = require('./admin/routes/keywordroutes.js');
+const content = require('./admin/routes/contentroutes.js');
+const blog = require('./admin/routes/blogroutes.js');
 
 //brands
 const brands = require('./brands/routes/brandroutes');
@@ -289,6 +291,7 @@ const notification = require('./brands/routes/notification.js');
 const conversation = require('./brands/routes/conversationroutes.js');
 const message = require('./brands/routes/messageroutes.js');
 const chat = require('./brands/routes/chatroutes.js');
+
 
 
 // Define routes
@@ -305,6 +308,8 @@ app.use('/brandsntalent_api/notification',notification);
 app.use('/brandsntalent_api/conversation',conversation);
 app.use('/brandsntalent_api/message',message);
 app.use('/brandsntalent_api/chat',chat);
+app.use('/brandsntalent_api/content',content);
+app.use('/brandsntalent_api/blog',blog);
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/upload1', express.static(path.join(__dirname, 'upload1')));

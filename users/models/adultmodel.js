@@ -247,6 +247,7 @@ var authenticationSchema = new schema({
    inActive:
    {
       type: Boolean,
+      default:true
       
    },
    subscriptionType:{
@@ -287,7 +288,17 @@ var authenticationSchema = new schema({
    },
 
    videoAudioUrls: [String],
-   
+   publicUrl:{
+      type:String
+  },
+  status:{
+   type:String,
+   default:'Pending'
+  },
+  profileApprove:{
+   type:Boolean,
+   default:false
+  } ,
 
 },
    {
