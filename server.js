@@ -317,7 +317,89 @@ app.use('/upload1', express.static(path.join(__dirname, 'upload1')));
 
 app.use(express.json()); // Middleware to parse JSON bodies
 
-    
+// const axios = require('axios');
+
+// const generateHash = (paramsString, publicKey) => {
+//   return crypto.createHmac('sha512', publicKey).update(paramsString).digest('base64');
+// };
+
+// const getFormattedDate = () => {
+//   const now = new Date();
+//   const year = now.getUTCFullYear();
+//   const month = String(now.getUTCMonth() + 1).padStart(2, '0');
+//   const day = String(now.getUTCDate()).padStart(2, '0');
+//   const hours = String(now.getUTCHours()).padStart(2, '0');
+//   const minutes = String(now.getUTCMinutes()).padStart(2, '0');
+//   const seconds = String(now.getUTCSeconds()).padStart(2, '0');
+//   return `${year}${month}${day}${hours}${minutes}${seconds}`;
+// };
+
+// const generateRandomString = (length = 5) => {
+//   const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+//   let result = '';
+//   for (let i = 0; i < length; i++) {
+//       result += characters.charAt(Math.floor(Math.random() * characters.length));
+//   }
+//   return result;
+// };
+
+// const payment = async (req, res) => {
+//   const language = 'en';
+//   const req_time = getFormattedDate();
+//   const merchant_id = 'ec427730';
+//   const tran_id = generateRandomString();
+//   const amount = 100.00;
+//   const type = 'purchase';
+//   const payment_option = 'abapay';
+//   const currency = 'USD';
+//   const publicKey = '3e2a9f6db6e01271d36f0de2a2e50ca2066bd17b';
+//   const paramsString = `${req_time}${merchant_id}${tran_id}${amount}${type}${payment_option}${currency}`;
+//   const hash = generateHash(paramsString, publicKey);
+
+//   const data = {
+//       language,
+//       req_time,
+//       merchant_id,
+//       tran_id,
+//       amount,
+//       type,
+//       payment_option,
+//       currency,
+//       hash
+//   };
+
+//   const FormData = require('form-data');
+//   const formData = new FormData();
+  
+//   for (const key in data) {
+//       if (data.hasOwnProperty(key)) {
+//           formData.append(key, data[key]);
+//       }
+//   }
+
+//   try {
+//       const response = await axios.post('https://checkout-sandbox.payway.com.kh/api/payment-gateway/v1/payments/purchase/', formData, {
+//           headers: {
+//               'Authorization': `Bearer 3e2a9f6db6e01271d36f0de2a2e50ca2066bd17b`,
+//              // 'Content-Type': 'application/json',
+//               'language': language
+//           }
+//       });
+
+//       res.send(response.data);
+//   } catch (error) {
+  
+//       console.log(error.response,error.response.data,error.message);
+//       // console.log(error.response ? error.response.data : error.message);
+//       res.status(500).send(error);
+//   }
+// };
+// const port = 8080;
+// app.get('/pay',payment);
+// app.listen(port, () => {
+//   console.log('================================================================================================================================');
+//   console.log(`Server is running on http://localhost:${port}`);
+// });
 
 // Start HTTP server on port 4014
 httpServer.listen(4014, () => {

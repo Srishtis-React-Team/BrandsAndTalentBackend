@@ -76,6 +76,7 @@ const getPostedJobs = async (req, res, next) => {
     try {
         const today = new Date();
         // Fetching all active gigs and sorting them by creation date in descending order
+       // const gigs = await gigsmodel.find({ isActive: true, lastDateForApply: { $gte: today },adminApproved:true}).sort({ created: -1 }).exec();//adminApproved:true 
         const gigs = await gigsmodel.find({ isActive: true, lastDateForApply: { $gte: today },adminApproved:true}).sort({ created: -1 }).exec();//adminApproved:true 
         const favoriteGigs = await favouritesgigsmodel.find({ isActive: true, talentId: talentId, isFavourite: true }).sort({ created: -1 }).exec();
 
@@ -237,6 +238,9 @@ const notificationsave = async (brandId,gigId,adminApproved, notificationMessage
   
     await transporter.sendMail(mailOptions);
   };
+
+
+
 const draftJob = async (req, res, next) => {
     try {
         console.log('inside draft job.............................................')
@@ -259,7 +263,7 @@ const draftJob = async (req, res, next) => {
                 jobLimitPerMonth = 5;
                 break;
             case 'Premium':
-                jobLimitPerMonth = 25;
+                jobLimitPerMonth = 15;
                 break;
             default:
                 return res.status(400).json({ message: "Invalid plan name" });
@@ -276,6 +280,17 @@ const draftJob = async (req, res, next) => {
             brandId: brandId,
             createdAt: { $gte: firstDayOfMonth, $lte: currentDate }
         });
+
+        console.log("jobCount", jobCount)
+
+        if (jobCount >= jobLimitPerMonth) {
+            return res.status(200).json({
+              status: false,
+              statusInfo: "limit-reached",
+              message: `Job posting limit for this month (${jobLimitPerMonth}) reached. Upgrade to Pro or Premium to post more.`
+            });
+          }
+        // Create a new draft job
          // Check if plan is Pro or Premium to set isApproved and adminApproved
          const isProOrPremium = brand.planName === 'Pro' || brand.planName === 'Premium';
          const isAdminApproved = isProOrPremium ? true : false;
@@ -378,16 +393,7 @@ const draftJob = async (req, res, next) => {
         // }
 
         }
-        console.log("jobCount", jobCount)
-
-        if (jobCount >= jobLimitPerMonth) {
-            return res.status(200).json({
-              status: false,
-              statusInfo: "limit-reached",
-              message: `Job posting limit for this month (${jobLimitPerMonth}) reached. Upgrade to Pro or Premium to post more.`
-            });
-          }
-        // Create a new draft job
+        
         
 
    
@@ -598,7 +604,7 @@ const postJobByDraft = async (req, res, next) => {
         if (!draftGig) {
             return res.status(200).json({
                 status: false,
-                message: 'Admin approval is needed for post the job'
+                message: 'The admin needs to approve this job'
             });
         }
 
@@ -1019,12 +1025,13 @@ const getAllJobs = async (req, res, next) => {
         const drafts = await draftmodel.find({
             brandId: new mongoose.Types.ObjectId(userId),
             isActive: true,
+            adminApproved:true,
             lastDateForApply: { $gte: today }
         }).sort({ createdAt: -1 });
 
         // Combine gigs and drafts into a single array and sort them by creation date, newest first
         const jobs = [...gigs, ...drafts].sort((a, b) => b.createdAt - a.createdAt);
-
+        //const jobs = [...gigs].sort((a, b) => b.createdAt - a.createdAt);
         res.json({
             status: true,
             data: jobs
@@ -1175,6 +1182,7 @@ const jobCount = async (req, res, next) => {
         // Use countDocuments for a more direct and efficient counting
         const draftCount = await draftmodel.countDocuments({
             brandId: new mongoose.Types.ObjectId(brandId),
+            adminApproved:true,
             isActive: true
         });
 
@@ -1511,7 +1519,7 @@ async function saveNotifications(brandId, talentId, gigId, brandNotificationMess
             talentNotificationMessage: talentNotificationMessage,
             userType: talentType, // Use talent's user type for the notification
             brandDetails: {
-                _id: brand._id,
+                _id: brandId,
                 brandName: brand.brandName,
                 brandEmail: brand.brandEmail,
                 logo: brand.logo,
@@ -1520,7 +1528,7 @@ async function saveNotifications(brandId, talentId, gigId, brandNotificationMess
                 // Add other brand details as needed
             },
             talentDetails: {
-                _id: talent._id,
+                _id: talentId,
                 parentFirstName: talent.parentFirstName,
                 parentLastName: talent.parentLastName,
                 parentEmail: talent.parentEmail || talent.adultEmail,
@@ -1528,7 +1536,41 @@ async function saveNotifications(brandId, talentId, gigId, brandNotificationMess
                 childLastName: talent.childLastName,
                 preferredChildFirstname: talent.preferredChildFirstname,
                 preferredChildLastName: talent.preferredChildLastName,
-                image: talent.image
+                image: talent.image,
+                publicUrl:talent.publicUrl,
+                profession:talent.profession,
+                relevantCategories:talent.relevantCategories,
+                childGender:talent.childGender,
+                maritalStatus:talent.maritalStatus,
+                childNationality:talent.childNationality,
+                childEthnicity:talent.childEthnicity,
+                languages:talent.languages,
+                childDob:talent.childDob,
+                childLocation:talent.childLocation,
+                childCity:talent.childCity,
+                childAboutYou:talent.childAboutYou,
+                cv:talent.cv,
+                videosAndAudios:talent.videosAndAudios,
+                features:talent.features,
+                portfolio:talent.portfolio,
+                verificationId:talent.verificationId,
+                idType:talent.idType,
+                bodyType:talent.bodyType,
+                industry:talent.industry,
+                isFavorite:talent.isFavorite,
+                bookJob:talent.bookJob,
+                rating:talent.rating,
+                image:talent.image,
+                services:talent.services,
+                reviews:talent.reviews,
+                maritalStatus:talent.maritalStatus,
+                age:talent.age,
+                profileStatus:talent.profileStatus,
+                applications:talent.applications,
+                videoAudioUrls:talent.videoAudioUrls,
+                noOfJobsCompleted:talent.noOfJobsCompleted,
+                averageStarRatings:talent.averageStarRatings,
+                planName:talent.planName
                 // Add other talent details as needed
             },
             gigDetails: {
@@ -2439,7 +2481,7 @@ const getSkills = async (req, res) => {
     try {
         // Use the aggregation pipeline to find all unique skills from active job listings and format them
         const uniqueSkills = await gigsmodel.aggregate([
-            { $match: { isActive: true } },  // Filter to include only active jobs
+           // { $match: { isActive: true } },  // Filter to include only active jobs
             { $unwind: '$skills' },         // Deconstruct the skills array
             { $group: { _id: null, skills: { $addToSet: '$skills' } } },  // Group to collect all unique skills
             { $project: { _id: 0, skills: 1 } },  // Remove '_id', just keep the skills array
@@ -3170,7 +3212,7 @@ const getAllNotification = async (req, res, next) => {
 
         // Fetch all active notifications for the specified brandId
         const notifications = await notificationmodel.find({
-            notificationType: { $in: ['Registration Approval for talent', 'Job Approval','Help And Support'] },
+            notificationType: { $in: ['Registration Approval for talent', 'Job Approval','Help And Support','Talent Verification Approval','Talent Profile Approval','Review Notification'] },
             isActive: true,
         }).sort({ createdAt: -1 });
 

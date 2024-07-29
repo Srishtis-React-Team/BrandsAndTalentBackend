@@ -5,7 +5,13 @@ const features = require('../controllers/features'); // Adjust the path as neces
 //const { FileUploadMultiple, multipleUpload } = require('./fileUploadHandler');
 
 
-router.post('/addFeatures', features.addFeatures);
-router.get('/getFeatures', features.getFeatures);
+router.post('/addFieldDatas', features.addFieldDatas);
+router.post('/getFieldDatas', features.getFieldDatas);
  router.post('/FileUploadMultiple',features.upload.array("files"),features.FileUploadMultiple)
+ router.post('/updateFieldDatas', features.updateFieldDatas);
+ router.post('/deleteFieldDatas', features.deleteFieldDatas);
+ router.get('/getAllDatas', features.getAllDatas);
+ 
+
+ 
 module.exports = router;

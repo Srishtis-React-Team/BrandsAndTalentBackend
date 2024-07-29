@@ -59,7 +59,8 @@ const addBlog = async (req, res, next) => {
       description: req.body.description,
       type: req.body.type,
       mainTitle: 'FEATURED ARTICLES',
-      isActive: true
+      isActive: true,
+      blogBy:"BY BT TEAM",
     });
 
     // Save blog entry to the database

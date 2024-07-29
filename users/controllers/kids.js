@@ -36,8 +36,8 @@ const sendOTPByEmail = async (email, otp) => {
     <p>Email: <a href="mailto:brandsntalent@gmail.com">brandsntalent@gmail.com</a></p>
     <p>Thank you and best regards,</p>
     <p>The Brands & Talent (BT) Team</p>`
-};
-    //text: `Your OTP (One-Time Password) is ${otp}. Please use this code to complete your verification process. Do not share this code with anyone. Thank you for using our services.\n\nKind regards,\nTeam`
+  };
+  //text: `Your OTP (One-Time Password) is ${otp}. Please use this code to complete your verification process. Do not share this code with anyone. Thank you for using our services.\n\nKind regards,\nTeam`
 
 
   try {
@@ -204,9 +204,9 @@ const adultSignUp = async (req, res, next) => {
     // Check if the user already exists
     // Check if the email already exists in any model
     const userExists = await Promise.any([
-      kidsmodel.findOne({ parentEmail: req.body.adultEmail, isActive: true, inActive: true }).then(user => user || Promise.reject()),
-      adultmodel.findOne({ adultEmail: req.body.adultEmail, isActive: true, inActive: true }).then(user => user || Promise.reject()),
-      brandsmodel.findOne({ brandEmail: req.body.adultEmail, isActive: true, inActive: true }).then(user => user || Promise.reject())
+      kidsmodel.findOne({ parentEmail: req.body.adultEmail, isActive: true }).then(user => user || Promise.reject()),
+      adultmodel.findOne({ adultEmail: req.body.adultEmail, isActive: true }).then(user => user || Promise.reject()),
+      brandsmodel.findOne({ brandEmail: req.body.adultEmail, isActive: true }).then(user => user || Promise.reject())
     ]).catch(() => null);  // Handling when no match is found
 
     if (userExists) {
@@ -717,7 +717,7 @@ const talentLogin = async (req, res) => {
 //       // Check if the provided password matches for both adult and kids accounts
 //       const isMatch = await bcrypt.compare(password, user.talentPassword);
 //       if (!isMatch) {
-  
+
 //         return res.json({
 //           status: false,
 //           message: 'Password does not match'
@@ -732,8 +732,8 @@ const talentLogin = async (req, res) => {
 //       });
 //     }
 
-  
-   
+
+
 
 //     // Update the fcmToken for the found user
 //     if (fcmToken) {
@@ -1171,7 +1171,7 @@ const saveNotification = async (talentId, notificationMessage) => {
         childLastName: talent.childLastName,
         preferredChildFirstname: talent.preferredChildFirstname,
         preferredChildLastName: talent.preferredChildLastName,
-        image: talent.image||req.body.image,
+        image: talent.image || req.body.image,
         verificationId: talent.verificationId,
         // Add other talent details as needed
       },
@@ -1378,13 +1378,13 @@ const unifiedDataFetch = async (req, res, next) => {
         return res.json({ status: true, data: fileDataArray });
       }
       //case 2:
-      case 3:
-      case 5: {
+      case 3:{
+     // case 5: {
         //case 6: {
         const selectField = {
-       //   2: 'videosAndAudios',
+          //   2: 'videosAndAudios',
           3: 'cv',
-          5: 'reviews',
+          //5: 'reviews',
           //6: 'services'
         }[dataType];
 
@@ -1406,25 +1406,25 @@ const unifiedDataFetch = async (req, res, next) => {
       }
       case 2: {
         try {
-            // Find the document based on the given criteria
-            const document = await model.findOne({ _id: objectId, isActive: true, inActive: true })
-                .sort({ createdAt: -1 })
-                .select('videosAndAudios');
-    
-            if (!document || !document.videosAndAudios || document.videosAndAudios.length === 0) {
-                return res.status(200).json({ status: false, msg: 'videosAndAudios data not found' });
-            }
-    
-            // Directly map the URLs
-            const videosAndAudiosData = document.videosAndAudios.map(videosAndAudios => videosAndAudios);
-    
-            return res.json({ status: true, videosAndAudios: videosAndAudiosData });
+          // Find the document based on the given criteria
+          const document = await model.findOne({ _id: objectId, isActive: true, inActive: true })
+            .sort({ createdAt: -1 })
+            .select('videosAndAudios');
+
+          if (!document || !document.videosAndAudios || document.videosAndAudios.length === 0) {
+            return res.status(200).json({ status: false, msg: 'videosAndAudios data not found' });
+          }
+
+          // Directly map the URLs
+          const videosAndAudiosData = document.videosAndAudios.map(videosAndAudios => videosAndAudios);
+
+          return res.json({ status: true, videosAndAudios: videosAndAudiosData });
         } catch (error) {
-            console.error('Error fetching videosAndAudios data:', error);
-            return res.status(500).json({ status: false, msg: 'Internal server error' });
+          console.error('Error fetching videosAndAudios data:', error);
+          return res.status(500).json({ status: false, msg: 'Internal server error' });
         }
-    }
-    
+      }
+
       case 4: {
         const featuresData = await model.findOne({ _id: objectId, isActive: true, inActive: true }, 'features').sort({ createdAt: -1 });;
 
@@ -1439,6 +1439,25 @@ const unifiedDataFetch = async (req, res, next) => {
         }));
 
         return res.json({ status: true, data: formattedFeatures });
+      }
+      case 5: {
+        const reviewsData = await model.findOne({ _id: objectId, isActive: true, inActive: true }, 'reviews').sort({ createdAt: -1 });
+        if (!reviewsData || !reviewsData.reviews || reviewsData.reviews.length === 0) {
+          return res.status(200).json({ status: false, msg: 'Reviews data not found' });
+        }
+        const approvedReviews = reviewsData.reviews.filter(review => review.reviewApproved === 'Approved');
+        if (approvedReviews.length === 0) {
+          return res.status(200).json({ status: false, msg: 'No approved reviews found' });
+        }
+        const formattedReviews = approvedReviews.map(review => ({
+          comment: review.comment,
+          starRatings: review.starRatings,
+          reviewDate: review.reviewDate,
+          reviewerName: review.reviewerName,
+          reviewerId: review.reviewerId,
+          reviewApproved: review.reviewApproved
+        }));
+        return res.json({ status: true, data: formattedReviews });
       }
       case 6: {
         try {
@@ -1596,7 +1615,7 @@ const otpResend = async (req, res, next) => {
       <p>Email: <a href="mailto:brandsntalent@gmail.com">brandsntalent@gmail.com</a></p>
       <p>Thank you and best regards,</p>
       <p>The Brands & Talent (BT) Team</p>`
-     // text: `Your One-Time Password (OTP) is ${otp}. Please use this code to complete your verification process. Do not share this code with anyone. Thank you for using our services.\n \nKind regards,\nTeam`,
+      // text: `Your One-Time Password (OTP) is ${otp}. Please use this code to complete your verification process. Do not share this code with anyone. Thank you for using our services.\n \nKind regards,\nTeam`,
     };
 
     // Send email with OTP
@@ -1665,7 +1684,7 @@ const otpResendAdult = async (req, res, next) => {
       <p>Email: <a href="mailto:brandsntalent@gmail.com">brandsntalent@gmail.com</a></p>
       <p>Thank you and best regards,</p>
       <p>The Brands & Talent (BT) Team</p>`
-     // text: `Your One-Time Password (OTP) is ${otp}. Please use this code to complete your verification process. Do not share this code with anyone. Thank you for using our services.\n \nKind regards,\nTeam`,
+      // text: `Your One-Time Password (OTP) is ${otp}. Please use this code to complete your verification process. Do not share this code with anyone. Thank you for using our services.\n \nKind regards,\nTeam`,
     };
 
     // Send email with OTP
@@ -1882,29 +1901,29 @@ const talentFilterData = async (req, res) => {
     // Selected terms filter
     if (req.body.selectedTerms) {
       const selectedTerms = req.body.selectedTerms;
-      const selectedTermsFields = ['adultEmail',  'contactEmail', 'country', 'parentFirstName', 'parentLastName', 'parentEmail', 'parentMobileNo', 'parentCountry', 'parentState', 'parentAddress', 'profession.value', 'profession.label', 'relevantCategories', 'industry', 'childFirstName', 'childLastName', 'preferredChildFirstname', 'preferredChildLastName',   'childEthnicity', 'childPhone', 'childEmail', 'childLocation', 'childCity', 'childAboutYou', 'services', 'portfolio', 'features.label', 'features.value', 'maritalStatus']//['adultEmail','childNationality', 'gender', 'childGender', 'contactEmail', 'country', 'parentFirstName', 'parentLastName', 'parentEmail', 'parentMobileNo', 'parentCountry', 'parentState', 'parentAddress', 'profession.value', 'profession.label','industry', 'relevantCategories', 'childFirstName', 'childLastName', 'preferredChildFirstname', 'preferredChildLastName', 'childGender', 'childNationality', 'childEthnicity', 'languages', 'childPhone', 'childEmail', 'childLocation', 'childCity', 'childAboutYou', 'services', 'portfolio', 'features.label', 'features.value', 'maritalStatus'];
+      const selectedTermsFields = ['adultEmail', 'contactEmail', 'country', 'parentFirstName', 'parentLastName', 'parentEmail', 'parentMobileNo', 'parentCountry', 'parentState', 'parentAddress', 'profession.value', 'profession.label', 'relevantCategories', 'industry', 'childFirstName', 'childLastName', 'preferredChildFirstname', 'preferredChildLastName', 'childEthnicity', 'childPhone', 'childEmail', 'childLocation', 'childCity', 'childAboutYou', 'services', 'portfolio', 'features.label', 'features.value', 'maritalStatus']//['adultEmail','childNationality', 'gender', 'childGender', 'contactEmail', 'country', 'parentFirstName', 'parentLastName', 'parentEmail', 'parentMobileNo', 'parentCountry', 'parentState', 'parentAddress', 'profession.value', 'profession.label','industry', 'relevantCategories', 'childFirstName', 'childLastName', 'preferredChildFirstname', 'preferredChildLastName', 'childGender', 'childNationality', 'childEthnicity', 'languages', 'childPhone', 'childEmail', 'childLocation', 'childCity', 'childAboutYou', 'services', 'portfolio', 'features.label', 'features.value', 'maritalStatus'];
       const selectedTermsConditions = selectedTermsFields.map(field => ({ [field]: { $regex: new RegExp(selectedTerms, 'i') } }));
       orConditions.push(...selectedTermsConditions);
     }
 
     // Gender filter
-    if ( req.body.childGender) {
+    if (req.body.childGender) {
       let genderConditions = [];
-     
+
       if (req.body.childGender) {
         genderConditions.push({ childGender: req.body.childGender });
       }
       orConditions.push({ $or: genderConditions });
     }
 
-  // Array-based filters
-  if (req.body.childNationality && req.body.childNationality.length > 0) {
-    orConditions.push({ childNationality: { $in: req.body.childNationality } });
-  }
+    // Array-based filters
+    if (req.body.childNationality && req.body.childNationality.length > 0) {
+      orConditions.push({ childNationality: { $in: req.body.childNationality } });
+    }
 
-  if (req.body.languages && req.body.languages.length > 0) {
-    orConditions.push({ languages: { $in: req.body.languages } });
-  }
+    if (req.body.languages && req.body.languages.length > 0) {
+      orConditions.push({ languages: { $in: req.body.languages } });
+    }
 
     //   if (req.body.childEthnicity) {
     //   orConditions.push({ childEthnicity: req.body.childEthnicity });
@@ -1928,48 +1947,48 @@ const talentFilterData = async (req, res) => {
 
 
 
- // Keyword filter (checking in both adult and kids models)
-//  if (req.body.keyword) {
-//   const keyword = req.body.keyword;
+    // Keyword filter (checking in both adult and kids models)
+    //  if (req.body.keyword) {
+    //   const keyword = req.body.keyword;
 
-//   const keywordConditions = [
-//     { 'adultEmail': { $regex: new RegExp(keyword, 'i') } },
-//     {'parentEmail':{ $regex: new RegExp(keyword, 'i') }},
-//     {'childEmail':{ $regex: new RegExp(keyword, 'i') }},
-//    // { 'childNationality': { $regex: new RegExp(keyword, 'i') } },
-//     //{ 'languages': { $in: [keyword] } },
-//    // { 'childGender': { $regex: new RegExp(keyword, 'i') }},
-//     {'contactEmail':{ $regex: new RegExp(keyword, 'i') }},
-//     {'country':{ $regex: new RegExp(keyword, 'i') }},
-//     {'parentFirstName':{ $regex: new RegExp(keyword, 'i') }},
-//     {'parentLastName':{ $regex: new RegExp(keyword, 'i') }},
+    //   const keywordConditions = [
+    //     { 'adultEmail': { $regex: new RegExp(keyword, 'i') } },
+    //     {'parentEmail':{ $regex: new RegExp(keyword, 'i') }},
+    //     {'childEmail':{ $regex: new RegExp(keyword, 'i') }},
+    //    // { 'childNationality': { $regex: new RegExp(keyword, 'i') } },
+    //     //{ 'languages': { $in: [keyword] } },
+    //    // { 'childGender': { $regex: new RegExp(keyword, 'i') }},
+    //     {'contactEmail':{ $regex: new RegExp(keyword, 'i') }},
+    //     {'country':{ $regex: new RegExp(keyword, 'i') }},
+    //     {'parentFirstName':{ $regex: new RegExp(keyword, 'i') }},
+    //     {'parentLastName':{ $regex: new RegExp(keyword, 'i') }},
 
-//     // {'parentCountry':{ $regex: new RegExp(keyword, 'i') }},
-//     // {'parentState':{ $regex: new RegExp(keyword, 'i') }},
-//     {'parentAddress':{ $regex: new RegExp(keyword, 'i') }},
-//     // {'profession.value':{ $regex: new RegExp(keyword, 'i') }},
-//     // {'profession.label':{ $regex: new RegExp(keyword, 'i') }},
-//     //{'relevantCategories':{ $regex: new RegExp(keyword, 'i') }},
-//     {'industry':{ $regex: new RegExp(keyword, 'i') }},
-//     {'childFirstName':{ $regex: new RegExp(keyword, 'i') }},
-//     {'childLastName':{ $regex: new RegExp(keyword, 'i') }},
-//     {'preferredChildFirstname':{ $regex: new RegExp(keyword, 'i') }},
-//     {'preferredChildLastname':{ $regex: new RegExp(keyword, 'i') }},
-//    // {'childEthnicity':{ $regex: new RegExp(keyword, 'i') }},
+    //     // {'parentCountry':{ $regex: new RegExp(keyword, 'i') }},
+    //     // {'parentState':{ $regex: new RegExp(keyword, 'i') }},
+    //     {'parentAddress':{ $regex: new RegExp(keyword, 'i') }},
+    //     // {'profession.value':{ $regex: new RegExp(keyword, 'i') }},
+    //     // {'profession.label':{ $regex: new RegExp(keyword, 'i') }},
+    //     //{'relevantCategories':{ $regex: new RegExp(keyword, 'i') }},
+    //     {'industry':{ $regex: new RegExp(keyword, 'i') }},
+    //     {'childFirstName':{ $regex: new RegExp(keyword, 'i') }},
+    //     {'childLastName':{ $regex: new RegExp(keyword, 'i') }},
+    //     {'preferredChildFirstname':{ $regex: new RegExp(keyword, 'i') }},
+    //     {'preferredChildLastname':{ $regex: new RegExp(keyword, 'i') }},
+    //    // {'childEthnicity':{ $regex: new RegExp(keyword, 'i') }},
 
-//     {'childLocation':{ $regex: new RegExp(keyword, 'i') }},
-//    // {'childCity':{ $regex: new RegExp(keyword, 'i') }},
-//     {'childAboutYou':{ $regex: new RegExp(keyword, 'i') }},
-//     {'services':{ $regex: new RegExp(keyword, 'i') }},
-//     {'portfolio':{ $regex: new RegExp(keyword, 'i') }},
-//     // {'features.label':{ $regex: new RegExp(keyword, 'i') }},
-//     // {'features.value':{ $regex: new RegExp(keyword, 'i') }},
-//     {'maritalStatus':{ $regex: new RegExp(keyword, 'i') }}
- 
-//     // Add more conditions as needed for other fields
-//   ];
-//   orConditions.push({ $or: keywordConditions });
-// }
+    //     {'childLocation':{ $regex: new RegExp(keyword, 'i') }},
+    //    // {'childCity':{ $regex: new RegExp(keyword, 'i') }},
+    //     {'childAboutYou':{ $regex: new RegExp(keyword, 'i') }},
+    //     {'services':{ $regex: new RegExp(keyword, 'i') }},
+    //     {'portfolio':{ $regex: new RegExp(keyword, 'i') }},
+    //     // {'features.label':{ $regex: new RegExp(keyword, 'i') }},
+    //     // {'features.value':{ $regex: new RegExp(keyword, 'i') }},
+    //     {'maritalStatus':{ $regex: new RegExp(keyword, 'i') }}
+
+    //     // Add more conditions as needed for other fields
+    //   ];
+    //   orConditions.push({ $or: keywordConditions });
+    // }
 
     // Keyword filter (checking in both adult and kids models)
     if (req.body.keyword) {
@@ -2010,7 +2029,7 @@ const talentFilterData = async (req, res) => {
       ];
       orConditions.push({ $or: keywordConditions });
     }
- 
+
 
     console.log("orConditions", orConditions)
     // Add conditions for isActive: true and inActive: true
@@ -2084,7 +2103,7 @@ const talentFilterData = async (req, res) => {
 //       'childAboutYou', 'services', 'portfolio', 'features.label', 'features.value', 
 //       'maritalStatus'
 //     ];
-    
+
 //     fields.forEach(field => {
 //       if (req.body[field]) {
 //         let condition = {};
@@ -2455,7 +2474,7 @@ const subscriptionStatus = async (req, res, next) => {
     } else if (brandUser) {
       model = brandsmodel;
       user = brandUser;
-    } 
+    }
     else {
       return res.status(200).json({ status: false, msg: 'User not found or not active' });
     }
@@ -2629,10 +2648,10 @@ const removeFavorite = async (req, res) => {
     const type = req.body.type; // Assuming this is passed in the request to distinguish between 'kid' and 'adult'
 
     /* Authentication */
-    const authResult = await auth.CheckAuth(req.headers["x-access-token"], userId);
-    if (!authResult) {
-      return res.json({ status: false, msg: 'Authentication failed' });
-    }
+    // const authResult = await auth.CheckAuth(req.headers["x-access-token"], userId);
+    // if (!authResult) {
+    //   return res.json({ status: false, msg: 'Authentication failed' });
+    // }
     /* Authentication */
 
     let Model; // Determine which model to use based on userType
@@ -2653,9 +2672,12 @@ const removeFavorite = async (req, res) => {
     } catch (err) {
       res.json({ status: false, msg: err.message });
     }
-  } catch (error) {
-    res.json({ status: false, msg: 'Invalid Token' });
-  }
+  // } catch (error) {
+  //   res.json({ status: false, msg: 'Invalid Token' });
+  // }
+} catch (error) {
+  res.json({ status: false, msg: error.message });
+}
 };
 /**
  *********remove favourtites*****
@@ -2865,7 +2887,7 @@ const adultForgotPassword = async (req, res, next) => {
        
       `
     };
-        // <p><a href="${resetLink}">${resetLink}</a></p>
+    // <p><a href="${resetLink}">${resetLink}</a></p>
 
     await transporter.sendMail(mailOptions);
 
@@ -3303,6 +3325,46 @@ const typeChecking = async (req, res) => {
  * @param {*} res return data
  * @param {*} next undefined
  */
+// Function to save notifications to the database
+const saveReviewNotification = async (talentId, notificationMessage,reviewerId) => {
+  try {
+    // Fetch details of brand and gig
+    const talent = await findUserById(talentId);
+
+
+    // Create the notification document
+    const notification = new notificationmodel({
+      notificationType: 'Review Notification',
+      talentId: talentId,
+      notificationMessage: notificationMessage,
+      reviewerId: reviewerId,
+      reviewApproved: 'Pending',
+      adminApproved:true,
+      profileApprove:true,
+      talentDetails: {
+        parentFirstName: talent.parentFirstName,
+        parentLastName: talent.parentLastName,
+        parentEmail: talent.parentEmail,
+        talentId: talentId,
+        email: talent.adultEmail ? talent.adultEmail : talent.parentEmail ? talent.parentEmail : talent.brandEmail,
+        childFirstName: talent.childFirstName,
+        childLastName: talent.childLastName,
+        preferredChildFirstname: talent.preferredChildFirstname,
+        preferredChildLastName: talent.preferredChildLastName,
+        image: talent.image,
+        reviews:talent.reviews,
+       
+
+      }
+    });
+
+    // Save the notification document
+    const savedNotification = await notification.save();
+    console.log("Notification saved successfully", savedNotification);
+  } catch (error) {
+    console.error("Error saving notification:", error);
+  }
+};
 const reviewsPosting = async (req, res) => {
   const { comment, starRatings, reviewerName, talentId, reviewerId } = req.body;
 
@@ -3316,8 +3378,12 @@ const reviewsPosting = async (req, res) => {
       talent = await adultmodel.findOne({ _id: talentId });
       modelType = "adult";
     }
-
+      // Prepare and save the notification
+    const message = `${talent.preferredChildFirstname} added a review`;
+    await saveReviewNotification(talentId, message,reviewerId);
     // If talent is found, update the reviews array
+
+    console.log("talent",talent)
     if (talent) {
       // Add the new review to the reviews array
       talent.reviews.push({
@@ -3325,7 +3391,8 @@ const reviewsPosting = async (req, res) => {
         starRatings: starRatings.toString(),
         reviewDate: new Date(), // Set the current date
         reviewerName: reviewerName,
-        reviewerId: reviewerId
+        reviewerId: reviewerId,
+        reviewApproved: 'Pending'
       });
 
       // Calculate the average of the starRatings values

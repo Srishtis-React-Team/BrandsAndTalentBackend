@@ -31,8 +31,10 @@ router.post('/profileApproval',admin.profileApproval)//for profileApproval
 router.post('/bellIconCount',admin.bellIconCount)//for bellIconCount
 router.post('/readNotification',admin.readNotification)//for readNotification
 router.post('/giftMail',admin.giftMail)//for giftMail
-router.post('/payment',admin.payment)//for payment
+router.post('/payment',admin.payment)//for createTransaction
 router.post('/checkTransaction',admin.checkTransaction)//for checkTransaction
+router.post('/reviewApproval',admin.reviewApproval)//for reviewApproval
+
 
 module.exports = router
 

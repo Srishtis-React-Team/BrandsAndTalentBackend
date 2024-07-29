@@ -6,7 +6,7 @@ const auth = new authentication;
 const async = require('async');
 const crypto = require('crypto');
 const moment = require('moment');
-const { v4: uuid } = require('uuid');
+const { v4: uuidv4 } = require('uuid');
 const multer = require("multer");
 const express = require('express');
 const fs = require('fs');
@@ -22,28 +22,82 @@ const featuresmodel = require('../models/featuresmodel');
  * @param {*} res return data
  * @param {*} next undefined
  */
-const addFeatures = async (req, res, next) => {
-    try {
-        console.log(req.body);
-        const Add_Features = new featuresmodel({
-            features: req.body.features,
-            isActive: true
-        });
+const addFieldDatas = async (req, res, next) => {
+  try {
+    console.log(req.body);
 
-        const response = await Add_Features.save();
-
-        return res.json({
-            message: "Added Successfully",
-            status: true,
-            data: Add_Features,
-        });
-    } catch (error) {
-        console.log(error);
-        return res.json({
-            message: "An Error Occurred"
-        });
+    // Check if req.body.features is defined and is an array
+    if (!Array.isArray(req.body.features)) {
+      return res.status(400).json({
+        message: "Features must be an array",
+        status: false
+      });
     }
+
+    let featuresToSave;
+
+    if (req.body.type === 'category' || req.body.type === 'profession') {
+      // Add unique IDs to each feature for categories and professions
+      featuresToSave = req.body.features.map(feature => ({
+        id: uuidv4(), // Generate unique ID
+        label: feature.label,
+        value: feature.value,
+        description: feature.description || '' // Include description if present, default to empty string
+      }));
+    } else {
+      // For other types, assume features are provided directly
+      featuresToSave = req.body.features;
+    }
+
+    // Create a new document with features and type
+    const Add_Features = new featuresmodel({
+      features: featuresToSave,
+      type: req.body.type,
+      isActive: true
+    });
+
+    // Save the document
+    const response = await Add_Features.save();
+
+    // Return success response
+    return res.json({
+      message: "Added Successfully",
+      status: true,
+      data: response,
+    });
+  } catch (error) {
+    // Log and return error response
+    console.log(error);
+    return res.status(500).json({
+      message: "An Error Occurred",
+      status: false
+    });
+  }
 };
+
+// const addFeatures = async (req, res, next) => {
+//     try {
+//         console.log(req.body);
+//         const Add_Features = new featuresmodel({
+//             features: req.body.features,
+//             type:req.body.type,
+//             isActive: true
+//         });
+
+//         const response = await Add_Features.save();
+
+//         return res.json({
+//             message: "Added Successfully",
+//             status: true,
+//             data: Add_Features,
+//         });
+//     } catch (error) {
+//         console.log(error);
+//         return res.json({
+//             message: "An Error Occurred"
+//         });
+//     }
+// };
 
 
 /**
@@ -52,21 +106,53 @@ const addFeatures = async (req, res, next) => {
 * @param {*} res return data
 * @param {*} next undefined
 */
-const getFeatures = async (req, res, next) => {
+const getFieldDatas = async (req, res, next) => {
+  try {
+    // Fetching all documents from the featuresmodel collection that are active and match the type
+    const firstresponse = await featuresmodel.find({ isActive: true, type: req.body.type }).sort({ created: -1 }).exec();
 
-    featuresmodel.find({ isActive: true}).sort({ created: -1 })
-        .then((response) => {
-            res.json({
-                status: true,
-                data: response
-            });
-        })
-        .catch((error) => {
-            res.json({
-                Status: false,
-            });
-        });
-  };
+    // Sort the 'features' array within each document based on the 'label' field in alphabetical order
+    const sortedResponse = firstresponse.map(doc => {
+      return {
+        ...doc._doc,
+        features: doc.features.sort((a, b) => a.label.localeCompare(b.label))
+      };
+    });
+
+    // Reverse the sorted results
+    const response = sortedResponse.reverse();
+
+    res.json({
+      status: true,
+      data: response
+    });
+  } catch (error) {
+    res.json({
+      status: false,
+      message: error.message
+    });
+  }
+};
+
+
+// const getFieldDatas = async (req, res, next) => {
+//   try {
+//   const firstresponse = await featuresmodel.find({ isActive: true, type: req.body.type }).sort({ created: -1 }).exec();
+
+//   // Reverse the sorted results
+//   const response = firstresponse.reverse();
+
+//   res.json({
+//     status: true,
+//     data: response
+//   });
+// } catch (error) {
+//   res.json({
+//     status: false,
+//     message: error.message
+//   });
+// }
+// };
 
 /**
  ******* FileUploadMultiple 
@@ -75,289 +161,479 @@ const getFeatures = async (req, res, next) => {
 * @param {*} next undefined
 */
 const FileUploadMultiple = (req, res, msg) => {
-    if (!req.files || req.files.length === 0) {
-        return res.status(400).json({ status: false, message: "No file uploaded" });
+  if (!req.files || req.files.length === 0) {
+    return res.status(400).json({ status: false, message: "No file uploaded" });
+  }
+
+  // Initialize an array to hold the response data for each file
+  let responses = [];
+
+  // Process each file in the req.files array
+  req.files.forEach((fileData) => {
+    let fileType;
+
+    // Check mimetype and filename extension to determine file type
+    if (fileData.mimetype.includes('video')) {
+      fileType = 'video';
+    } else if (fileData.mimetype.includes('audio')) {
+      fileType = 'audio';
+    } else if (fileData.mimetype.includes('image')) {
+      fileType = 'image';
+    } else if (fileData.mimetype.includes('pdf')) {
+      fileType = 'pdf';
+    } else if (fileData.mimetype.includes('text') || fileData.originalname.endsWith('.txt')) {
+      fileType = 'text';
+    } else if (fileData.mimetype.includes('doc') || fileData.mimetype.includes('docx')) {
+      fileType = 'document';
+    } else if (fileData.mimetype.includes('webp')) {
+      fileType = 'webp';
+    } else {
+      fileType = 'unknown';
     }
 
-    // Initialize an array to hold the response data for each file
-    let responses = [];
+    // Use the saveFileDetails function to save details for each file
+    const fileId = generateUniqueIdentifier(); // Directly use the generated ID
+    saveFileDetails(fileData.filename, fileData.originalname, fileType, (err, fileId) => {
+      if (err) {
+        console.error("Error saving file details:", err); // Log error without stopping the whole process
+        return;
+      }
 
-    // Process each file in the req.files array
-    req.files.forEach((fileData) => {
-        let fileType;
+      // Append the response for this file to the responses array
+      responses.push({
+        fileId: fileId,
+        filename: fileData.filename,
+        originalname: fileData.originalname,
+        filetype: fileType,
+      });
 
-        // Check mimetype and filename extension to determine file type
-        if (fileData.mimetype.includes('video')) {
-            fileType = 'video';
-        } else if (fileData.mimetype.includes('audio')) {
-            fileType = 'audio';
-        } else if (fileData.mimetype.includes('image')) {
-            fileType = 'image';
-        } else if (fileData.mimetype.includes('pdf')) {
-            fileType = 'pdf';
-        } else if (fileData.mimetype.includes('text') || fileData.originalname.endsWith('.txt')) {
-            fileType = 'text';
-        } else if (fileData.mimetype.includes('doc') || fileData.mimetype.includes('docx')) {
-            fileType = 'document';
-        } else if (fileData.mimetype.includes('webp')) {
-            fileType = 'webp';
-        } else {
-            fileType = 'unknown';
-        }
-
-        // Use the saveFileDetails function to save details for each file
-        const fileId = generateUniqueIdentifier(); // Directly use the generated ID
-        saveFileDetails(fileData.filename, fileData.originalname, fileType, (err, fileId) => {
-            if (err) {
-                console.error("Error saving file details:", err); // Log error without stopping the whole process
-                return;
-            }
-
-            // Append the response for this file to the responses array
-            responses.push({
-                fileId: fileId,
-                filename: fileData.filename,
-                originalname: fileData.originalname,
-                filetype: fileType,
-            });
-
-            // If all files have been processed, send the response
-            if (responses.length === req.files.length) {
-                res.json({
-                    status: true,
-                    data: responses,
-                    message: "Files Uploaded Successfully",
-                });
-            }
+      // If all files have been processed, send the response
+      if (responses.length === req.files.length) {
+        res.json({
+          status: true,
+          data: responses,
+          message: "Files Uploaded Successfully",
         });
+      }
     });
+  });
 };
 
-// const FileUploadMultiple = (req, res, msg) => {
-//     if (!req.files || req.files.length === 0) {
-//         return res.status(400).json({ status: false, message: "No file uploaded" });
-//     }
 
-//     // Initialize an array to hold the response data for each file
-//     let responses = [];
-
-//     // Process each file in the req.files array
-//     req.files.forEach((fileData) => {
-//         let fileType;
-//         if (fileData.mimetype.includes('video')) {
-//             fileType = 'video';
-//         } else if (fileData.mimetype.includes('audio')) {
-//             fileType = 'audio';
-//         } else if (fileData.mimetype.includes('image')) {
-//             fileType = 'image';
-//         } else if (fileData.mimetype.includes('pdf') || fileData.mimetype.includes('doc') || fileData.mimetype.includes('txt') || fileData.mimetype.includes('docx')) {
-//             fileType = 'document';
-//         } else if (fileData.mimetype.includes('webp')) {
-//             fileType = 'webp';
-//         } else {
-//             fileType = 'unknown';
-//         }
-
-//         // Use the saveFileDetails function to save details for each file
-//         const fileId = generateUniqueIdentifier(); // Directly use the generated ID
-//         saveFileDetails(fileData.filename, fileData.originalname, fileType, (err, fileId) => {
-//             if (err) {
-//                 console.error("Error saving file details:", err); // Log error without stopping the whole process
-//                 return;
-//             }
-
-//             // Append the response for this file to the responses array
-//             responses.push({
-//                 fileId: fileId,
-//                 filename: fileData.filename,
-//                 originalname: fileData.originalname,
-//                 filetype: fileType,
-//             });
-
-//             // If all files have been processed, send the response
-//             if (responses.length === req.files.length) {
-//                 res.json({
-//                     status: true,
-//                     data: responses,
-//                     message: "Files Uploaded Successfully",
-//                 });
-//             }
-//         });
-//     });
-// };
 // // Function to save file details in the database
 function saveFileDetails(filename, originalname, fileType, callback) {
-    // Placeholder function for saving file details in the database
-    // Replace this with your actual database saving logic
-    // For demonstration purposes, we'll simply generate a unique identifier here
-    const fileId = generateUniqueIdentifier();
-    // Assuming you have saved the file details, invoke the callback with the fileId
-    callback(null, fileId);
+  // Placeholder function for saving file details in the database
+  // Replace this with your actual database saving logic
+  // For demonstration purposes, we'll simply generate a unique identifier here
+  const fileId = generateUniqueIdentifier();
+  // Assuming you have saved the file details, invoke the callback with the fileId
+  callback(null, fileId);
 }
 
 // Function to generate a unique identifier (placeholder)
 function generateUniqueIdentifier() {
-    // Placeholder function for generating a unique identifier
-    // For demonstration, we'll generate a UUID here
-    return uuid();
+  // Placeholder function for generating a unique identifier
+  // For demonstration, we'll generate a UUID here
+  return uuid();
 }
 
 const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-      cb(null, "upload1");
-    },
-    filename: function (req, file, cb) {
-      cb(null, uuid() + path.extname(file.originalname));
-    },
-  });
-  
-  // Adjusted file size limits
-  const maxSize = 100 * 1024 * 1024; // Increased to 100 MB
-  const Fieldsize = 10 * 1024 * 1024; // Increased to 10 MB
-  
-  const upload = multer({
-    storage: storage,
-    limits: { fileSize: maxSize, fieldSize: Fieldsize },
-    fileFilter: function (req, file, cb) {
-      // Set the filetypes to match video, audio, image, pdf, txt, doc, mov, avi, jpg, jpeg
-      var filetypes = /video|audio|image|pdf|txt|doc|mov|avi|jpg|jpeg|mp4|mp3|png|docx|webp/;
-      var extname = file.originalname.match(/\.(mp4|mov|avi|mp3|jpg|jpeg|png|pdf|txt|doc|docx|webp)$/i);
-      if (extname && filetypes.test(path.extname(file.originalname).toLowerCase())) {
-        return cb(null, true);
+  destination: function (req, file, cb) {
+    cb(null, "upload1");
+  },
+  filename: function (req, file, cb) {
+    cb(null, uuid() + path.extname(file.originalname));
+  },
+});
+
+// Adjusted file size limits
+const maxSize = 100 * 1024 * 1024; // Increased to 100 MB
+const Fieldsize = 10 * 1024 * 1024; // Increased to 10 MB
+
+const upload = multer({
+  storage: storage,
+  limits: { fileSize: maxSize, fieldSize: Fieldsize },
+  fileFilter: function (req, file, cb) {
+    // Set the filetypes to match video, audio, image, pdf, txt, doc, mov, avi, jpg, jpeg
+    var filetypes = /video|audio|image|pdf|txt|doc|mov|avi|jpg|jpeg|mp4|mp3|png|docx|webp/;
+    var extname = file.originalname.match(/\.(mp4|mov|avi|mp3|jpg|jpeg|png|pdf|txt|doc|docx|webp)$/i);
+    if (extname && filetypes.test(path.extname(file.originalname).toLowerCase())) {
+      return cb(null, true);
+    }
+
+    cb(
+      "Error: File upload only supports the following filetypes - " +
+      "video, audio, image, pdf, txt, doc, mov, avi, jpg, jpeg"
+    );
+  },
+});
+
+/**
+ *********updateFeatures******
+ * @param {*} req from user
+ * @param {*} res return data
+ * @param {*} next undefined
+ */
+
+const updateFieldDatas = async (req, res, next) => {
+  try {
+    console.log(req.body);
+
+    const { newFeature, updateFeature, type } = req.body;
+
+    const updateOps = {};
+
+    if (type === 'features') {
+      // Handle updates for features
+      const arrayFilters = [];
+      if (updateFeature) {
+        updateOps.$set = {
+          'features.$[elem].options': updateFeature.options,
+          'features.$[elem].label': updateFeature.label,
+          'features.$[elem].type': updateFeature.type
+        };
+        arrayFilters.push({ 'elem.label': updateFeature.oldLabel });
       }
-  
-      cb(
-        "Error: File upload only supports the following filetypes - " +
-        "video, audio, image, pdf, txt, doc, mov, avi, jpg, jpeg"
+
+      if (newFeature) {
+        updateOps.$push = { features: newFeature };
+      }
+
+      // const arrayFilters = updateFeature ? [{ 'elem.label': updateFeature.label }] : [];
+
+      const response = await featuresmodel.updateOne(
+        { type: req.body.type },// { _id: new mongoose.Types.ObjectId(_id) },
+        updateOps,
+        { arrayFilters: arrayFilters.length > 0 ? arrayFilters : undefined }
+        //  { arrayFilters }
       );
-    },
-  }); 
 
-// const FileUploadMultiple = (req, res, msg) => {
-//     if (!req.files || req.files.length === 0) {
-//         return res.status(400).json({ status: false, message: "No file uploaded" });
-//     }
+      if (response.matchedCount === 0) {
+        return res.status(200).json({
+          message: "No document matched",
+          status: false
+        });
+      }
 
-//     // Determine file type based on mimetype
-//     const fileData = req.files[0]; // Assuming you are handling multiple files, access the first file in the array
-//     let fileType;
-//     if (fileData.mimetype.includes('video')) {
-//         fileType = 'video';
-//     } else if (fileData.mimetype.includes('audio')) {
-//         fileType = 'audio';
-//     } else if (fileData.mimetype.includes('image')) {
-//         fileType = 'image';
-//     } else if (fileData.mimetype.includes('pdf') || fileData.mimetype.includes('doc') || fileData.mimetype.includes('txt') || fileData.mimetype.includes('docx')) {
-//         fileType = 'document';
-//     } else if (fileData.mimetype.includes('webp')) {
-//         fileType = 'webp';
+      if (response.modifiedCount === 0) {
+        return res.status(200).json({
+          message: "No changes made",
+          status: false
+        });
+      }
+
+    } else if (type === 'category' || type === 'profession') {
+      // Handle updates for category or profession
+      const { updateCategory, newCategory } = req.body;
+
+      if (updateCategory) {
+        updateOps.$set = {
+          'features.$[elem].label': updateCategory.label,
+          'features.$[elem].value': updateCategory.value,
+          'features.$[elem].description': updateCategory.description
+        };
+      }
+
+      if (newCategory) {
+        // Generate a unique ID for new categories or professions
+        newCategory.id = uuidv4();
+        updateOps.$push = { features: newCategory };
+      }
+
+
+      const arrayFilters = updateCategory ? [{ 'elem.id': updateCategory.id }] : [];
+
+      const response = await featuresmodel.updateOne(
+        { type: req.body.type },
+        updateOps,
+        { arrayFilters }
+      );
+
+      if (response.matchedCount === 0) {
+        return res.status(200).json({
+          message: "No document matched",
+          status: false
+        });
+      }
+
+      if (response.modifiedCount === 0) {
+        return res.status(200).json({
+          message: "No changes made",
+          status: false
+        });
+      }
+
+    } else {
+      return res.status(200).json({
+        message: "Invalid type specified",
+        status: false
+      });
+    }
+
+    return res.json({
+      message: "Updated Successfully",
+      status: true,
+      data: req.body
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: "An Error Occurred",
+      error: error.message
+    });
+  }
+};
+
+
+/**
+ *********deleteFeatures******
+ * @param {*} req from user
+ * @param {*} res return data
+ * @param {*} next undefined
+ */
+const deleteFieldDatas = async (req, res, next) => {
+  try {
+    const { id, type, labelToDelete } = req.body;
+
+    let response;
+
+    if (type === 'features') {
+      if (!labelToDelete) {
+        return res.status(400).json({
+          message: "Label to delete is required",
+          status: false
+        });
+      }
+      // Handle deletion of a feature by label
+      response = await featuresmodel.updateOne(
+        { type: 'features' },
+        { $pull: { features: { label: labelToDelete } } }
+      );
+    }
+    else if (type === 'profession' || type === 'category') {
+      // Handle deletion of a feature by id
+      response = await featuresmodel.updateOne(
+        { "features.id": id },
+        { $pull: { features: { id: id } } }
+      );
+    } else {
+      return res.status(200).json({
+        message: "Invalid type specified",
+        status: false
+      });
+    }
+
+    if (response.matchedCount === 0) {
+      return res.status(200).json({
+        message: "No document matched",
+        status: false
+      });
+    }
+
+    if (response.modifiedCount === 0) {
+      return res.status(200).json({
+        message: "No changes made",
+        status: false
+      });
+    }
+
+    return res.json({
+      message: "Deleted Successfully",
+      status: true
+    });
+
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: "An Error Occurred",
+      error: error.message
+    });
+  }
+};
+
+//  const deleteFieldDatas = async (req, res, next) => {
+//   try {
+//     const { type, id } = req.body;
+
+//     let response;
+
+//     if (type === 'features') {
+//       // Handle deletion of a feature by id
+//       response = await featuresmodel.updateOne(
+//         { _id: new mongoose.Types.ObjectId(id) },
+//         { $pull: { features: { id: id } } }
+//       );
+
+//     } else if (type === 'profession' || type === 'category') {
+//       // Delete a profession or category by id
+//       response = await featuresmodel.updateOne(
+//         { _id: new mongoose.Types.ObjectId(id) },
+//         { $pull: { features: { id: id } } }
+//       );
+
 //     } else {
-//         fileType = 'unknown';
+//       return res.status(200).json({
+//         message: "Invalid type specified",
+//         status: false
+//       });
 //     }
 
-//     // Assuming a function to save file details in the database
-//     saveFileDetails(fileData.filename, fileData.originalname, fileType, (err, fileId) => {
-//         if (err) {
-//             return res.status(500).json({ status: false, message: "Error saving file details" });
-//         }
+//     if (response.matchedCount === 0) {
+//       return res.status(200).json({
+//         message: "No document matched",
+//         status: false
+//       });
+//     }
 
-//         res.json({
-//             status: true,
-//             data: {
-//                 fileId: fileId, // Unique identifier for the uploaded file
-//                 filename: fileData.filename,
-//                 originalname: fileData.originalname, // Actual uploaded file name
-//                 filetype: fileType, // File type
-//             },
-//             message: "File Uploaded Successfully",
-//         });
+//     if (response.modifiedCount === 0) {
+//       return res.status(200).json({
+//         message: "No changes made",
+//         status: false
+//       });
+//     }
+
+//     return res.json({
+//       message: "Deleted Successfully",
+//       status: true
 //     });
+
+//   } catch (error) {
+//     console.log(error);
+//     return res.status(500).json({
+//       message: "An Error Occurred",
+//       error: error.message
+//     });
+//   }
 // };
 
-// // Function to save file details in the database
-// function saveFileDetails(filename, originalname, fileType, callback) {
-//     // Placeholder function for saving file details in the database
-//     // Replace this with your actual database saving logic
-//     // For demonstration purposes, we'll simply generate a unique identifier here
-//     const fileId = generateUniqueIdentifier();
-//     // Assuming you have saved the file details, invoke the callback with the fileId
-//     callback(null, fileId);
-// }
 
-// // Function to generate a unique identifier (placeholder)
-// function generateUniqueIdentifier() {
-//     // Placeholder function for generating a unique identifier
-//     // For demonstration, we'll generate a UUID here
-//     return uuid();
-// }
+//  const deleteFieldDatas = async (req, res, next) => {
+//   try {
+//       console.log(req.body);
+//       const { _id, labelToDelete, type, id } = req.body;
 
-// const storage = multer.diskStorage({
-//     destination: function (req, file, cb) {
-//       cb(null, "upload1");
-//     },
-//     filename: function (req, file, cb) {
-//       cb(null, uuid() + path.extname(file.originalname));
-//     },
-//   });
-  
-//   // Adjusted file size limits
-//   const maxSize = 100 * 1024 * 1024; // Increased to 100 MB
-//   const Fieldsize = 10 * 1024 * 1024; // Increased to 10 MB
-  
-//   const upload = multer({
-//     storage: storage,
-//     limits: { fileSize: maxSize, fieldSize: Fieldsize },
-//     fileFilter: function (req, file, cb) {
-//       // Set the filetypes to match video, audio, image, pdf, txt, doc, mov, avi, jpg, jpeg
-//       var filetypes = /video|audio|image|pdf|txt|doc|mov|avi|jpg|jpeg|mp4|mp3|png|docx|webp/;
-//       var extname = file.originalname.match(/\.(mp4|mov|avi|mp3|jpg|jpeg|png|pdf|txt|doc|docx|webp)$/i);
-//       if (extname && filetypes.test(path.extname(file.originalname).toLowerCase())) {
-//         return cb(null, true);
+//       let response;
+
+//       if (type === 'features') {
+//           // Handle deletion of a feature by label
+//           response = await featuresmodel.updateOne(
+//               { _id: new mongoose.Types.ObjectId(_id) },
+//               { $pull: { features: { label: labelToDelete } } }
+//           );
+
+//       } else if (type === 'profession'||type==='category') {
+//         // Delete a profession by id
+//         response = await featuresmodel.updateOne(
+//             { _id: new mongoose.Types.ObjectId(_id) },
+//             { $pull: { features: { id: id } } }
+//         );
+//     } else {
+//           return res.status(200).json({
+//               message: "Invalid type specified",
+//               status: false
+//           });
 //       }
-  
-//       cb(
-//         "Error: File upload only supports the following filetypes - " +
-//         "video, audio, image, pdf, txt, doc, mov, avi, jpg, jpeg"
-//       );
-//     },
-//   }); 
 
-// Function for handling multiple file uploads
-// const FileUploadMultiple = (req, res, msg) => {
+//       if (response.matchedCount === 0) {
+//           return res.status(200).json({
+//               message: "No document matched",
+//               status: false
+//           });
+//       }
+
+//       if (response.modifiedCount === 0) {
+//           return res.status(200).json({
+//               message: "No changes made",
+//               status: false
+//           });
+//       }
+
+//       return res.json({
+//           message: "Deleted Successfully",
+//           status: true
+//       });
+
+//   } catch (error) {
+//       console.log(error);
+//       return res.status(500).json({
+//           message: "An Error Occurred",
+//           error: error.message
+//       });
+//   }
+// };
+
+
+/**
+*********get all field Datas******
+* @param {*} req from user
+* @param {*} res return data
+* @param {*} next undefined
+*/
+
+
+
+
+
+
+
+
+
+const getAllDatas = async (req, res, next) => {
+  try {
+    // Retrieve all documents where isActive is true
+    const response = await featuresmodel
+      .find({ isActive: true })
+      .exec();
+
+    // Sort features within each document based on features.label
+    response.forEach(doc => {
+      if (doc.features && Array.isArray(doc.features)) {
+        doc.features.sort((a, b) => (a.label > b.label ? 1 : -1));
+      }
+      if (doc.categories && Array.isArray(doc.categories)) {
+        doc.categories.sort((a, b) => (a.label > b.label ? 1 : -1));
+      }
+    });
+
+    res.json({
+      status: true,
+      data: response
+    });
+  } catch (error) {
+    res.json({
+      status: false,
+      message: error.message
+    });
+  }
+};
+
+
+
+
+// const getAllDatas = async (req, res, next) => {
+
+//   try {
+//     const response = await featuresmodel.find({ isActive: true }).sort({ created: -1 }).exec();
+
+    
+
 //     res.json({
 //       status: true,
-//       data: req.files, // Access uploaded files via req.files
-//       message: "Success, Files Uploaded...!",
+//       data: response
 //     });
-//   };
-  
-//   // Set up multer storage for file uploads
-// const storage = multer.diskStorage({
-//     destination: function (req, file, cb) {
-//       cb(null, "upload1"); // Ensure this directory exists
-//     },
-//     filename: function (req, file, cb) {
-//       cb(null, uuid() + path.extname(file.originalname)); // Use UUID for unique filenames
-//     },
-//   });
-  
-//   // Configure multer instance for file upload
-//   const upload = multer({
-//     storage: storage,
-//     limits: { fileSize: 50 * 1024 * 1024 }, // 50 MB
-//     fileFilter: function (req, file, cb) {
-//       var filetypes = /jpeg|jpg|png|pdf|txt|doc/;
-//       var mimetype = filetypes.test(file.mimetype);
-//       var extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-//       if (mimetype && extname) {
-//         return cb(null, true);
-//       }
-//       cb("Error: File upload only supports the following filetypes - " + filetypes);
-//     },
-//   });
- 
+//   } catch (error) {
+//     res.json({
+//       status: false,
+//       message: error.message
+//     });
+//   }
+// };
+
+
+
 
 module.exports = {
-    addFeatures, getFeatures,FileUploadMultiple, upload
+  addFieldDatas, getFieldDatas, FileUploadMultiple, upload, updateFieldDatas, deleteFieldDatas,
+  getAllDatas
 
 };

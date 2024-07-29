@@ -73,6 +73,7 @@ const addAdmin = async (req, res, next) => {
       email: req.body.email,
       password: hashedPass,
       image: req.body.image,
+      userType:req.body.userType,
       isActive: true
     });
 
@@ -1209,8 +1210,10 @@ const sendJobApprovalEmail = (userEmail) => {
     html: `
     <h1>Congratulations!</h1>
     <p>Your profile has been approved by the admin.</p>
+    <p>You need to post the job through this link. Please click this link to post your job: <a href="https://hybrid.sicsglobal.com/project/brandsandtalent/list-jobs">Post Job</a></p>
     <p>Thank you for being a part of our community.</p>
     <p>Best Regards,<br>Admin Team</p>`
+    
   };
 
   transporter.sendMail(mailOptions, (error, info) => {
@@ -1536,7 +1539,7 @@ const ListBrandForJobPost = async (req, res) => {
 const filterByStatus = async (req, res) => {
   try {
     let users = [];
-    const notificationTypes = ['Job Approval', 'Talent Verification Approval', 'Talent Profile Approval'];
+    const notificationTypes = ['Job Approval', 'Talent Verification Approval', 'Talent Profile Approval','Review Notification'];
 
     if (req.body.notificationType === 'All' && req.body.status === 'All') {
       // Fetch all notifications regardless of their status
@@ -1595,6 +1598,33 @@ const filterByStatus = async (req, res) => {
           status: 'Pending'
         });
       }
+    } else if (req.body.notificationType === 'Review Notification') {
+      if (req.body.status === 'Approved') {
+        users = await notificationmodel.find({
+          notificationType: { $in: notificationTypes },
+          isActive: true,
+          reviewApproved: 'Approved'
+        });
+      } else if (req.body.status === 'Rejected') {
+        users = await notificationmodel.find({
+          notificationType: { $in: notificationTypes },
+          isActive: true,
+          reviewApproved: 'Rejected'
+        });
+      } else if (req.body.status === 'Pending') {
+        console.log("vjdvjvbfbfjkbgfn",)
+        users = await notificationmodel.find({
+          notificationType: { $in: notificationTypes },
+          isActive: true,
+          reviewApproved: 'Pending'
+        });
+      }
+      if (req.body.status === 'All') {
+        users = await notificationmodel.find({
+          notificationType: { $in: notificationTypes },
+          isActive: true
+        });
+      } 
     } else if (req.body.status === 'All') {
       users = await notificationmodel.find({
         notificationType: req.body.notificationType,
@@ -1606,21 +1636,24 @@ const filterByStatus = async (req, res) => {
           notificationType: req.body.notificationType,
           isActive: true,
           adminApproved: true,
-          status: 'Approved'
+          status: 'Approved',
+          reviewApproved: 'Approved'
         });
       } else if (req.body.status === 'Rejected') {
         users = await notificationmodel.find({
           notificationType: req.body.notificationType,
           isActive: true,
           adminApproved: false,
-          status: 'Rejected'
+          status: 'Rejected',
+          reviewApproved: 'Rejected'
         });
       } else if (req.body.status === 'Pending') {
         users = await notificationmodel.find({
           notificationType: req.body.notificationType,
           isActive: true,
           adminApproved: false,
-          status: 'Pending'
+          status: 'Pending',
+          reviewApproved: 'Pending'
         });
       }
     }
@@ -2372,98 +2405,80 @@ const giftMail = async (req, res) => {
 
 
 
-//create transcations
 
-const payment =async(req,res)=>{
+
+
+
+ const payment = async (req, res) => {
+  const { amount, currency, items, payment_option,firstname,lastname,email,phone } = req.body;
+
+  // Generate a unique transaction ID (you may want to use a more robust method)
+  const transactionId = Math.random();
+
+  // Current timestamp for request time formatted as YYYYmmddHis
+  const now = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14);
+
+  // Replace with your actual merchant_id, tran_id, payment_option, and public_key
+  const ABA_PAYWAY_API_URL = 'https://checkout-sandbox.payway.com.kh/api/payment-gateway/v1/payments/purchase';
+  const MERCHANT_ID = 'ec427730';
+  const API_KEY = '3e2a9f6db6e01271d36f0de2a2e50ca2066bd17b';
+
+  // Define return and cancel URLs
+  const returnUrl = 'https://yourapp.com/payment-success';
+  const cancelUrl = 'https://yourapp.com/payment-failure';
+
+  // Construct the message to be hashed
+  const message = `${now}${MERCHANT_ID}${transactionId}${amount}${items}${currency}${payment_option}${returnUrl}${cancelUrl}${API_KEY}`;
+
+  // Create a HMAC-SHA512 hash
+  const hmac = crypto.createHmac('sha512', Buffer.from(API_KEY, 'utf-8'));
+  hmac.update(message);
+  const hash = hmac.digest('base64');
+
   try {
-    const response = await axios.post('https://checkout-sandbox.payway.com.kh/pay', {
-        amount: '100',
-        currency: 'USD',
-        customerEmail: 'victor@extrahourz.com',
-        merchantId: 'ec427730'
-    }, {
-        headers: {
-            'Authorization': `Bearer 3e2a9f6db6e01271d36f0de2a2e50ca2066bd17b`,
-            'Content-Type': 'application/json'
-        }
-    });
+    // Prepare data for the POST request
+    const requestData = {
+      req_time: now,
+      hash: hash,
+      merchant_id: MERCHANT_ID,
+      api_key: API_KEY,
+      amount: amount,
+      currency: currency,
+      tran_id: transactionId,
+      items: items,
+      payment_option: payment_option,
+      return_url: returnUrl,
+      cancel_url: cancelUrl
+    };
 
-    res.json(response.data);
-} catch (error) {
-    console.error(error);
-    res.status(500).send(error);
-}
+    // Make the POST request to initiate payment
+    const response = await axios.post(ABA_PAYWAY_API_URL, requestData);
 
-}
+    // Log success message or handle response data accordingly
+    //console.log('Payment initiation successful:', response.data);
 
-// const payment = async (req, res) => {
-//   const { amount, currency, items, payment_option,firstname,lastname,email,phone } = req.body;
+    // Example of handling successful payment initiation
+    // const formattedResponse = {
+    //   status: {
+    //     code: '00',
+    //     message: 'Success!'
+    //   },
+    //   description: 'Payment initiation successful',
+    //   transactionId: transactionId,
+    //   qrString: response.data.qrString, // Assuming qrString is part of the response data
+    //   req_time: response.data.req_time
+    // };
+    
 
-//   // Generate a unique transaction ID (you may want to use a more robust method)
-//   const transactionId = Math.random();
+    //res.json({ formattedResponse });
+    res.json({ data: 'https://checkout-sandbox.payway.com.kh/api' });
 
-//   // Current timestamp for request time formatted as YYYYmmddHis
-//   const now = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14);
-
-//   // Replace with your actual merchant_id, tran_id, payment_option, and public_key
-//   const ABA_PAYWAY_API_URL = 'https://checkout-sandbox.payway.com.kh/api/payment-gateway/v1/payments/purchase';
-//   const MERCHANT_ID = 'ec427730';
-//   const API_KEY = '3e2a9f6db6e01271d36f0de2a2e50ca2066bd17b';
-
-//   // Define return and cancel URLs
-//   const returnUrl = 'https://yourapp.com/payment-success';
-//   const cancelUrl = 'https://yourapp.com/payment-failure';
-
-//   // Construct the message to be hashed
-//   const message = `${now}${MERCHANT_ID}${transactionId}${amount}${items}${currency}${payment_option}${returnUrl}${cancelUrl}${API_KEY}`;
-
-//   // Create a HMAC-SHA512 hash
-//   const hmac = crypto.createHmac('sha512', Buffer.from(API_KEY, 'utf-8'));
-//   hmac.update(message);
-//   const hash = hmac.digest('base64');
-
-//   try {
-//     // Prepare data for the POST request
-//     const requestData = {
-//       req_time: now,
-//       hash: hash,
-//       merchant_id: MERCHANT_ID,
-//       api_key: API_KEY,
-//       amount: amount,
-//       currency: currency,
-//       tran_id: transactionId,
-//       items: items,
-//       payment_option: payment_option,
-//       return_url: returnUrl,
-//       cancel_url: cancelUrl
-//     };
-
-//     // Make the POST request to initiate payment
-//     const response = await axios.post(ABA_PAYWAY_API_URL, requestData);
-
-//     // Log success message or handle response data accordingly
-//     //console.log('Payment initiation successful:', response.data);
-
-//     // Example of handling successful payment initiation
-//     // const formattedResponse = {
-//     //   status: {
-//     //     code: '00',
-//     //     message: 'Success!'
-//     //   },
-//     //   description: 'Payment initiation successful',
-//     //   transactionId: transactionId,
-//     //   qrString: response.data.qrString, // Assuming qrString is part of the response data
-//     //   req_time: response.data.req_time
-//     // };
-
-//     res.json({ data: response.data });
-
-//   } catch (error) {
-//     console.error('Payment initiation error:', error.response ? error.response.data : error.message);
-//     // Handle the error by sending an appropriate response
-//     res.status(error.response ? error.response.status : 500).json({ message: 'Payment initiation failed', error: error.message });
-//   }
-// };
+  } catch (error) {
+    console.error('Payment initiation error:', error.response ? error.response.data : error.message);
+    // Handle the error by sending an appropriate response
+    res.status(error.response ? error.response.status : 500).json({ message: 'Payment initiation failed', error: error.message });
+  }
+};
 
 
 //check transaction
@@ -2503,6 +2518,71 @@ const checkTransaction = async (req, res) => {
 
 
 
+//Review Approval
+
+const reviewApproval = async (req, res) => {
+  try {
+    const { talentId, reviewApproved, reviewerId} = req.body;
+
+    let userType = '';
+    let updateResult = null;
+  
+
+    // Check in adultmodel
+    const adultUser = await adultmodel.findOne({ _id: talentId, isActive: true });
+    if (adultUser) {
+      userType = 'adults';
+      updateResult = await adultmodel.updateOne(
+        { _id: talentId, "reviews.reviewerId": reviewerId },
+        { $set: { "reviews.$.reviewApproved": reviewApproved } }
+      );
+
+   
+
+      await notificationmodel.updateOne(
+        {  talentId: talentId, notificationType: 'Review Notification' },
+        { $set: { reviewApproved,status:req.body.reviewApproved } }
+      );
+    } else {
+      // Check in kidsmodel if not found in adultmodel
+      const kidUser = await kidsmodel.findOne({ _id: talentId, isActive: true });
+      if (kidUser) {
+        userType = 'kids';
+        updateResult = await kidsmodel.updateOne(
+          { _id: talentId, "reviews.reviewerId": reviewerId },
+          { $set: { "reviews.$.reviewApproved": reviewApproved } }
+        );
+
+        await notificationmodel.updateOne(
+          { talentId: talentId , notificationType: 'Review Notification' },
+          { $set: { reviewApproved,status:req.body.reviewApproved } }
+        );
+      } 
+    }
+
+    // If user type is still empty, user was not found in any model
+    if (!userType) {
+      return res.json({ status: false, msg: 'User not found' });
+    }
+
+    console.log("updateResult", updateResult);
+
+    // Check if update was successful
+    if (updateResult && updateResult.modifiedCount > 0) {
+      console.log("updateResultfinal", updateResult);
+
+
+      return res.json({ status: true, msg: 'Approved successfully', type: userType });
+    } else {
+      return res.json({ status: false, msg: 'Failed to approve profile' });
+    }
+  } catch (error) {
+    console.error('Error in admin approval:', error);
+    return res.status(500).json({ status: false, msg: 'Internal server error' });
+  }
+};
+
+
 
 
 
@@ -2510,7 +2590,7 @@ module.exports = {
   addAdmin, adminLogin, adminProfile, forgotPassword, resetPassword, fileUpload, uploads, addCountry, listState, adminFetch, listLocation, listCountries,
   listCity, getAllStatesList, getAllCitiesList, chatbot, adminApproval, jobApproval, notApprovedMembers, ListBrandForJobPost,
   filterByStatus, jobApprovalByBrandsList, adminApprovalByList, profileApproval, bellIconCount, readNotification, giftMail,
-  payment,checkTransaction
+ checkTransaction,payment,reviewApproval
 
 
 };

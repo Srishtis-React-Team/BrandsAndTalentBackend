@@ -35,10 +35,10 @@ const sendOTPByEmail = async (email, otp) => {
     <p>Email: <a href="mailto:brandsntalent@gmail.com">brandsntalent@gmail.com</a></p>
     <p>Thank you and best regards,</p>
     <p>The Brands & Talent (BT) Team</p>`
-};
+  };
 
-    //text: `Your OTP (One-Time Password) is ${otp}. Please use this code to complete your verification process. Do not share this code with anyone. Thank you for using our services.\n\nKind regards,\nTeam`
- 
+  //text: `Your OTP (One-Time Password) is ${otp}. Please use this code to complete your verification process. Do not share this code with anyone. Thank you for using our services.\n\nKind regards,\nTeam`
+
 
   try {
     await transporter.sendMail(mailOptions);
@@ -72,10 +72,22 @@ const contactmodel = require("../models/contactmodel.js");
  * @param {*} next undefined
  */
 
+// Utility function to validate email addresses
+const validateEmail = (email) => {
+  const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return regex.test(email);
+};
+
 const brandsRegister = async (req, res, next) => {
   try {
     console.log(req.body);
-
+    // Email validation
+    if (!validateEmail(req.body.brandEmail)) {
+      return res.status(200).json({
+        message: "Enter a valid email",
+        status: false
+      });
+    }
     // It's good practice to validate confirmPassword here before proceeding.
     if (req.body.brandPassword !== req.body.confirmPassword) {
       return res.status(400).json({
@@ -86,49 +98,49 @@ const brandsRegister = async (req, res, next) => {
 
     const hashedPass = await bcrypt.hash(req.body.brandPassword, 10);
     console.log("hashedPass", hashedPass);
-     // Check if the email already exists in any model
-     const userExists = await Promise.any([
-      kidsmodel.findOne({ parentEmail: req.body.brandEmail, isActive: true,inActive:true}).then(user => user || Promise.reject()),
-      adultmodel.findOne({ adultEmail: req.body.brandEmail, isActive: true,inActive:true }).then(user => user || Promise.reject()),
-      brandsmodel.findOne({ brandEmail: req.body.brandEmail, isActive: true,inActive:true }).then(user => user || Promise.reject())
+    // Check if the email already exists in any model
+    const userExists = await Promise.any([
+      kidsmodel.findOne({ parentEmail: req.body.brandEmail, isActive: true, inActive: true }).then(user => user || Promise.reject()),
+      adultmodel.findOne({ adultEmail: req.body.brandEmail, isActive: true, inActive: true }).then(user => user || Promise.reject()),
+      brandsmodel.findOne({ brandEmail: req.body.brandEmail, isActive: true, inActive: true }).then(user => user || Promise.reject())
     ]).catch(() => null);  // Handling when no match is found
-    
+
     if (userExists) {
       console.log("Email matches");
       return res.json({
-        message: "Email ID Already Exists",
+        message: "This Email is already registered with us.",
         status: false
       });
     }
 
 
     const newBrandData = {
-      position:req.body.position,
+      position: req.body.position,
       brandName: req.body.brandName,
       brandEmail: req.body.brandEmail,
       brandPassword: hashedPass,
       confirmPassword: hashedPass,
-      planName :'Basic',
+      planName: 'Basic',
       isActive: true,
       userType: 'brand',
       isVerified: false,
-      fcmToken:req.body.fcmToken,
-      brandPhone:req.body.brandPhone,
-      brandZipCode:req.body.brandZipCode,
-      howHearAboutAs:req.body.howHearAboutAs,
-      address:req.body.address,
-      logo:req.body.logo,
-      brandImage:req.body.brandImage,
-      fcmToken:req.body.fcmToken,
-      userName:req.body.userName,
-      profileImage:req.body.profileImage,
-      userName:req.body.userName,
-      profileImage:req.body.profileImage,
-      websiteLink:req.body.websiteLink,
-      publicUrl:req.body.publicUrl
+      fcmToken: req.body.fcmToken,
+      brandPhone: req.body.brandPhone,
+      brandZipCode: req.body.brandZipCode,
+      howHearAboutAs: req.body.howHearAboutAs,
+      address: req.body.address,
+      logo: req.body.logo,
+      brandImage: req.body.brandImage,
+      fcmToken: req.body.fcmToken,
+      userName: req.body.userName,
+      profileImage: req.body.profileImage,
+      userName: req.body.userName,
+      profileImage: req.body.profileImage,
+      websiteLink: req.body.websiteLink,
+      publicUrl: req.body.publicUrl
 
     };
- 
+
 
     const newBrand = new brandsmodel(newBrandData);
     const savedBrand = await newBrand.save();
@@ -169,10 +181,10 @@ const otpVerificationBrands = async (req, res, next) => {
     const { otp: inputOTP, brandEmail: email } = req.body;
 
     // Fetch the user from the database for the given email
-    const user = await brandsmodel.findOne({ brandEmail: email, isActive: true,inActive:true });
+    const user = await brandsmodel.findOne({ brandEmail: email, isActive: true, inActive: true });
     if (!user) {
       console.log("Error: User not found for email", email); // Log for debugging; be cautious about logging sensitive information
-      return res.status(404).json({
+      return res.status(200).json({
         message: "User not found",
         status: false
       });
@@ -195,18 +207,18 @@ const otpVerificationBrands = async (req, res, next) => {
         // Ensure this operation is intended and aligns with your data model
         updateData.brandDetails = req.body.brandDetails;
       }
-     
+
 
       await brandsmodel.findOneAndUpdate({ brandEmail: email }, { $set: updateData }, { new: true });
 
       res.json({
         message: "User verified",
         status: true,
-        data: { brandEmail: email ,brandUserId:user._id,brandName:user.brandName} // for consistency, wrap email in an object
+        data: { brandEmail: email, brandUserId: user._id, brandName: user.brandName } // for consistency, wrap email in an object
       });
     } else {
       console.log("Error: OTP does not match for email", email); // Log for debugging
-      res.status(400).json({
+      res.status(200).json({
         message: "OTP does not match",
         status: false
       });
@@ -288,7 +300,7 @@ const brandsLogin = async (req, res, next) => {
  * @param {*} res return data
  * @param {*} next undefined
  */
- const editBrands = async (req, res) => {
+const editBrands = async (req, res) => {
   try {
     const userId = req.body.user_id || req.params.user_id;
 
@@ -309,27 +321,27 @@ const brandsLogin = async (req, res, next) => {
       brandZipCode: req.body.brandZipCode,
       howHearAboutAs: req.body.howHearAboutAs,
       logo: req.body.logo,
-      brandImage:req.body.logo,
+      brandImage: req.body.logo,
       address: req.body.address,
-      brandImage:req.body.brandImage,
-      position:req.body.position,
-      inActive:true,
-      userName:req.body.userName,
-      profileImage:req.body.profileImage,
-      websiteLink:req.body.websiteLink,
-      publicUrl:req.body.publicUrl,
-      yourFullName:req.body.yourFullName,
-      brandType:req.body.brandType,
-      brandCountry:req.body.brandCountry,
-      brandState:req.body.brandState,
-      brandCity:req.body.brandCity,
-      brandWebsite:req.body.brandWebsite,
-      linkedinUrl:req.body.linkedinUrl,
-      facebookUrl:req.body.facebookUrl,
-      twitterUrl:req.body.twitterUrl,
-      aboutBrand:req.body.aboutBrand,
-      whyWorkWithUs:req.body.whyWorkWithUs
-     
+      brandImage: req.body.brandImage,
+      position: req.body.position,
+      inActive: true,
+      userName: req.body.userName,
+      profileImage: req.body.profileImage,
+      websiteLink: req.body.websiteLink,
+      publicUrl: req.body.publicUrl,
+      yourFullName: req.body.yourFullName,
+      brandType: req.body.brandType,
+      brandCountry: req.body.brandCountry,
+      brandState: req.body.brandState,
+      brandCity: req.body.brandCity,
+      brandWebsite: req.body.brandWebsite,
+      linkedinUrl: req.body.linkedinUrl,
+      facebookUrl: req.body.facebookUrl,
+      twitterUrl: req.body.twitterUrl,
+      aboutBrand: req.body.aboutBrand,
+      whyWorkWithUs: req.body.whyWorkWithUs
+
     };
 
     try {
@@ -412,19 +424,19 @@ const checkPublicUrl = async (req, res) => {
     const name = req.body.name;
     const type = req.body.type;
     const category = req.body.category;
-    if(type == 'brand'){
-       // Find a brand with the specified publicUrl
-        const brand = await brandsmodel.findOne({ publicUrl: name });
+    if (type == 'brand') {
+      // Find a brand with the specified publicUrl
+      const brand = await brandsmodel.findOne({ publicUrl: name });
 
-        if (brand) {
-          // If the brand exists, return a message indicating that the name already exists
-          return res.json({ status: false, msg: "Name already exists" });
-        } else {
-          // If the brand does not exist, return a message indicating that the name is available
-          return res.json({ status: true, msg: "Name is available" });
-        }
-    }else if(type == 'talent'){
-      if(category == 'kids'){
+      if (brand) {
+        // If the brand exists, return a message indicating that the name already exists
+        return res.json({ status: false, msg: "Name already exists" });
+      } else {
+        // If the brand does not exist, return a message indicating that the name is available
+        return res.json({ status: true, msg: "Name is available" });
+      }
+    } else if (type == 'talent') {
+      if (category == 'kids') {
         const kids = await kidsmodel.findOne({ publicUrl: name });
         if (kids) {
           // If the kids exists, return a message indicating that the name already exists
@@ -433,7 +445,7 @@ const checkPublicUrl = async (req, res) => {
           // If the kids does not exist, return a message indicating that the name is available
           return res.json({ status: true, msg: "Name is available" });
         }
-      }else if(category == 'adults'){
+      } else if (category == 'adults') {
         const adults = await adultmodel.findOne({ publicUrl: name });
         if (adults) {
           // If the adults exists, return a message indicating that the name already exists
@@ -445,7 +457,7 @@ const checkPublicUrl = async (req, res) => {
       }
     }
 
-   
+
   } catch (err) {
     // Handle any errors that occur during the operation
     return res.json({ status: false, msg: err.message });
@@ -462,7 +474,7 @@ const checkPublicUrl = async (req, res) => {
 
 const topBrands = async (req, res, next) => {
   try {
-    const response = await brandsmodel.find({ isActive: true,inActive:true }).select({ brandImage: 1, brandName: 1 });
+    const response = await brandsmodel.find({ isActive: true, inActive: true }).select({ brandImage: 1, brandName: 1 });
     res.json({
       status: true,
       data: response
@@ -483,9 +495,9 @@ const topBrands = async (req, res, next) => {
 const favouritesList = async (req, res) => {
   try {
     // Fetch favorites from kidsmodel
-    const kidsFavorites = await kidsmodel.find({ isActive: true, isFavorite: true,inActive:true });
+    const kidsFavorites = await kidsmodel.find({ isActive: true, isFavorite: true, inActive: true });
     // Fetch favorites from adultmodel
-    const adultFavorites = await adultmodel.find({ isActive: true, isFavorite: true,inActive:true });
+    const adultFavorites = await adultmodel.find({ isActive: true, isFavorite: true, inActive: true });
 
     // Combine kidsFavorites and adultFavorites into a single array
     const combinedFavorites = [...kidsFavorites, ...adultFavorites];
@@ -519,7 +531,7 @@ const searchDatas = async (req, res) => {
   const query = req.body.query.toLowerCase(); // Convert query to lowercase for case-insensitive search
 
   // Perform search logic
-  const searchResults = searchData.filter(item => 
+  const searchResults = searchData.filter(item =>
     item.name.toLowerCase().includes(query) ||
     item.description.toLowerCase().includes(query)
   );
@@ -553,24 +565,24 @@ const socailSignUpBrands = async (req, res, next) => {
       isActive: true,
       isFavorite: false,
       profileStatus: false,
-      facebookId:req.body.facebookId,
-      inActive:true,
-      publicUrl:req.body.publicUrl
+      facebookId: req.body.facebookId,
+      inActive: true,
+      publicUrl: req.body.publicUrl
 
 
- 
+
     };
 
     const newBrand = new brandsmodel(newBrandData);
     const savedBrand = await newBrand.save();
 
-    
+
     return res.status(200).json({
       message: "Save successfully",
       status: true,
       email: req.body.brandEmail,
-      user_id:newBrand._id
-      
+      user_id: newBrand._id
+
     });
 
   } catch (error) {
@@ -591,7 +603,7 @@ const updateBrandPassword = async (req, res) => {
   try {
     const userId = req.body.user_id || req.params.user_id;
 
-  
+
     const hashedPass = await bcrypt.hash(req.body.brandPassword, 10);
 
     const updateResult = await brandsmodel.updateOne(
@@ -655,11 +667,11 @@ const updateBrandPassword = async (req, res) => {
 
 
 
- const brandsForgotPassword = async (req, res, next) => {
+const brandsForgotPassword = async (req, res, next) => {
   try {
     const token = crypto.randomBytes(20).toString('hex');
 
-    const user = await brandsmodel.findOne({ brandEmail: req.body.brandEmail, isActive: true ,inActive:true});
+    const user = await brandsmodel.findOne({ brandEmail: req.body.brandEmail, isActive: true, inActive: true });
 
     if (!user) {
       return res.json({
@@ -775,9 +787,9 @@ const brandsResetPassword = async (req, res, next) => {
 
 const getBrands = async (req, res) => {
   try {
-   
 
-    const user = await brandsmodel.find({  isActive: true,inActive:true }).sort({ created: -1 });
+
+    const user = await brandsmodel.find({ isActive: true, inActive: true }).sort({ created: -1 });
     if (user) {
       return res.json({ status: true, data: user });
     } else {
@@ -841,31 +853,31 @@ const deleteNotification = async (req, res, next) => {
 
 const updatePasswordInSettings = async (req, res, next) => {
   try {
-      const { brandId, password, newPassword } = req.body;
+    const { brandId, password, newPassword } = req.body;
 
-      if (!brandId || !password || !newPassword) {
-          return res.status(200).json({ status: false, message: 'Missing required fields' });
-      }
+    if (!brandId || !password || !newPassword) {
+      return res.status(200).json({ status: false, message: 'Missing required fields' });
+    }
 
-      let brand = await brandsmodel.findOne({ _id: brandId, isActive: true,inActive:true});
-     
+    let brand = await brandsmodel.findOne({ _id: brandId, isActive: true, inActive: true });
 
-      const isMatch = await bcrypt.compare(password, brand.brandPassword);
-      if (!isMatch) {
-          return res.status(200).json({ status: false, message: 'Old password is incorrect' });
-      }
 
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(newPassword, salt);
+    const isMatch = await bcrypt.compare(password, brand.brandPassword);
+    if (!isMatch) {
+      return res.status(200).json({ status: false, message: 'Old password is incorrect' });
+    }
 
-      brand.brandPassword = hashedPassword;
-      brand.confirmPassword = hashedPassword;
-      await brand.save();
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
 
-      res.json({ status: true, message: 'Password updated successfully' });
+    brand.brandPassword = hashedPassword;
+    brand.confirmPassword = hashedPassword;
+    await brand.save();
+
+    res.json({ status: true, message: 'Password updated successfully' });
   } catch (error) {
-      console.error("Error in updating password:", error);
-      res.status(200).json({ status: false, message: 'An error occurred' });
+    console.error("Error in updating password:", error);
+    res.status(200).json({ status: false, message: 'An error occurred' });
   }
 };
 
@@ -876,7 +888,7 @@ const updatePasswordInSettings = async (req, res, next) => {
  * @param {*} res return data
  * @param {*} next undefined
  */
- const activateBrandUser = async (req, res) => {
+const activateBrandUser = async (req, res) => {
   try {
     const userId = req.body.brandId || req.params.brandId;
 
@@ -886,7 +898,7 @@ const updatePasswordInSettings = async (req, res, next) => {
 
     // Find the user in the brandsmodel
     const user = await brandsmodel.findById(userId);
-    
+
     if (!user) {
       return res.json({ status: false, msg: 'User not found' });
     }
@@ -910,78 +922,78 @@ const updatePasswordInSettings = async (req, res, next) => {
 // Function to save notifications to the database
 const saveNotification = async (talentId, notificationMessage) => {
   try {
-      // Fetch details of brand and gig
-      const talent = await findUserById(talentId);
-      console.log('talent',talent)
+    // Fetch details of brand and gig
+    const talent = await findUserById(talentId);
+    console.log('talent', talent)
 
-      // Create the notification document
-      const notification = new notificationmodel({
-          notificationType: 'Help And Support',
-          notificationMessage: notificationMessage,
-          talentDetails:{
-           parentFirstName: talent.parentFirstName,
-           parentLastName: talent.parentLastName,
-           parentEmail: talent.parentEmail,
-           talentId:talentId,
-           email:talent.adultEmail?talent.adultEmail:talent.parentEmail?talent.parentEmail:talent.brandEmail,
-           childFirstName: talent.childFirstName,
-           childLastName: talent.childLastName,
-           preferredChildFirstname: talent.preferredChildFirstname,
-           preferredChildLastName: talent.preferredChildLastName,
-           image: talent.image
+    // Create the notification document
+    const notification = new notificationmodel({
+      notificationType: 'Help And Support',
+      notificationMessage: notificationMessage,
+      talentDetails: {
+        parentFirstName: talent.parentFirstName,
+        parentLastName: talent.parentLastName,
+        parentEmail: talent.parentEmail,
+        talentId: talentId,
+        email: talent.adultEmail ? talent.adultEmail : talent.parentEmail ? talent.parentEmail : talent.brandEmail,
+        childFirstName: talent.childFirstName,
+        childLastName: talent.childLastName,
+        preferredChildFirstname: talent.preferredChildFirstname,
+        preferredChildLastName: talent.preferredChildLastName,
+        image: talent.image
 
-         } 
-      });
+      }
+    });
 
-      // Save the notification document
-      const savedNotification = await notification.save();
-      console.log("Notification saved successfully", savedNotification);
+    // Save the notification document
+    const savedNotification = await notification.save();
+    console.log("Notification saved successfully", savedNotification);
   } catch (error) {
-      console.error("Error saving notification:", error);
+    console.error("Error saving notification:", error);
   }
 };
-  // Helper function to find a user by their ID
-  async function findUserById(userId) {
-    try {
-        const brand = await brandsmodel.findOne({ _id: userId, isActive: true, inActive: true });
-        if (brand) return brand;
-  
-        const kidTalent = await kidsmodel.findOne({ _id: userId, inActive: true, isActive: true });
-        if (kidTalent) return kidTalent;
-  
-        const adultTalent = await adultmodel.findOne({ _id: userId, inActive: true, isActive: true });
-        if (adultTalent) return adultTalent;
-  
-        return null;
-    } catch (error) {
-        console.error("Error finding user by ID:", error);
-        return null;
-    }
-  }
+// Helper function to find a user by their ID
+async function findUserById(userId) {
+  try {
+    const brand = await brandsmodel.findOne({ _id: userId, isActive: true, inActive: true });
+    if (brand) return brand;
 
- const postSupportMail = async (req, res, next) => {
+    const kidTalent = await kidsmodel.findOne({ _id: userId, inActive: true, isActive: true });
+    if (kidTalent) return kidTalent;
+
+    const adultTalent = await adultmodel.findOne({ _id: userId, inActive: true, isActive: true });
+    if (adultTalent) return adultTalent;
+
+    return null;
+  } catch (error) {
+    console.error("Error finding user by ID:", error);
+    return null;
+  }
+}
+
+const postSupportMail = async (req, res, next) => {
   try {
     const { name, enquiry, phoneNo, email } = req.body;
 
 
-        // Search for the talentId in both kids and adult models
-        let talent = await kidsmodel.findOne({ parentEmail: email });
-        if (!talent) {
-          talent = await adultmodel.findOne({ adultEmail: email });
-        }
-    
-        const talentId = talent ? talent._id : null;
-    
-        // Save the support request details in the contact model
-        const newContact = new contactmodel({
-          name: name,
-          enquiry: enquiry,
-          phoneNo: phoneNo,
-          email: email,
-          talentId: talentId
-        });
-    
-        await newContact.save();
+    // Search for the talentId in both kids and adult models
+    let talent = await kidsmodel.findOne({ parentEmail: email });
+    if (!talent) {
+      talent = await adultmodel.findOne({ adultEmail: email });
+    }
+
+    const talentId = talent ? talent._id : null;
+
+    // Save the support request details in the contact model
+    const newContact = new contactmodel({
+      name: name,
+      enquiry: enquiry,
+      phoneNo: phoneNo,
+      email: email,
+      talentId: talentId
+    });
+
+    await newContact.save();
     // Create a transporter object using the default SMTP transport
     const transporter = nodemailer.createTransport({
       service: 'Gmail',
@@ -1063,32 +1075,32 @@ const saveNotification = async (talentId, notificationMessage) => {
 //       console.error("Error saving notification:", error);
 //   }
 // };
-  // Helper function to find a user by their ID
-  async function findUserById(userId) {
-    try {
-        const brand = await brandsmodel.findOne({ _id: userId, isActive: true, inActive: true });
-        if (brand) return brand;
-  
-        const kidTalent = await kidsmodel.findOne({ _id: userId, inActive: true, isActive: true });
-        if (kidTalent) return kidTalent;
-  
-        const adultTalent = await adultmodel.findOne({ _id: userId, inActive: true, isActive: true });
-        if (adultTalent) return adultTalent;
-  
-        return null;
-    } catch (error) {
-        console.error("Error finding user by ID:", error);
-        return null;
-    }
-  }
+// Helper function to find a user by their ID
+async function findUserById(userId) {
+  try {
+    const brand = await brandsmodel.findOne({ _id: userId, isActive: true, inActive: true });
+    if (brand) return brand;
 
- const contactUsReply = async (req, res, next) => {
+    const kidTalent = await kidsmodel.findOne({ _id: userId, inActive: true, isActive: true });
+    if (kidTalent) return kidTalent;
+
+    const adultTalent = await adultmodel.findOne({ _id: userId, inActive: true, isActive: true });
+    if (adultTalent) return adultTalent;
+
+    return null;
+  } catch (error) {
+    console.error("Error finding user by ID:", error);
+    return null;
+  }
+}
+
+const contactUsReply = async (req, res, next) => {
   try {
     const { email, answer, subject, text } = req.body;
 
     // Find the contact request by email and get relevant fields
     const contact = await contactmodel.findOne({ email: email }).select('name enquiry phoneNo talentId');
-    
+
     if (!contact) {
       return res.json({
         status: false,
@@ -1137,7 +1149,7 @@ const saveNotification = async (talentId, notificationMessage) => {
   }
 };
 
- /********** contactUsList******
+/********** contactUsList******
 * @param {*} req from user
 * @param {*} res return data
 * @param {*} next undefined
@@ -1146,8 +1158,8 @@ const saveNotification = async (talentId, notificationMessage) => {
 
 const contactUsList = async (req, res) => {
   try {
-   
-    const contact = await contactmodel.find({isActive: true });
+
+    const contact = await contactmodel.find({ isActive: true });
     if (contact) {
       return res.json({ status: true, data: contact });
     } else {
@@ -1157,8 +1169,8 @@ const contactUsList = async (req, res) => {
     return res.json({ status: false, msg: 'Error fetching user profile' });
   }
 };
- 
- /********** deleteContact******
+
+/********** deleteContact******
 * @param {*} req from user
 * @param {*} res return data
 * @param {*} next undefined
@@ -1169,7 +1181,7 @@ const deleteContact = async (req, res) => {
   const { contactId } = req.body; // Correctly extract contactId from req.body
   try {
     const contact = await contactmodel.findById(contactId);
-    
+
     if (!contact) {
       return res.json({ status: false, msg: 'Contact not found' });
     }
@@ -1183,7 +1195,7 @@ const deleteContact = async (req, res) => {
   }
 };
 
- /********** contactUsList per talent******
+/********** contactUsList per talent******
 * @param {*} req from user
 * @param {*} res return data
 * @param {*} next undefined
@@ -1192,8 +1204,8 @@ const deleteContact = async (req, res) => {
 
 const contactUsById = async (req, res) => {
   try {
-   
-    const contact = await contactmodel.find({isActive: true,_id:req.params.contactId });
+
+    const contact = await contactmodel.find({ isActive: true, _id: req.params.contactId });
     if (contact) {
       return res.json({ status: true, data: contact });
     } else {
@@ -1205,8 +1217,8 @@ const contactUsById = async (req, res) => {
 };
 module.exports = {
   brandsRegister, otpVerificationBrands, brandsLogin, editBrands, deleteBrands, getBrandById, topBrands,
-  favouritesList,searchDatas,socailSignUpBrands,updateBrandPassword,brandsForgotPassword,brandsResetPassword,
-  getBrands,deleteNotification,updatePasswordInSettings,activateBrandUser,postSupportMail,contactUsReply,
-  contactUsList,deleteContact,contactUsById,checkPublicUrl
+  favouritesList, searchDatas, socailSignUpBrands, updateBrandPassword, brandsForgotPassword, brandsResetPassword,
+  getBrands, deleteNotification, updatePasswordInSettings, activateBrandUser, postSupportMail, contactUsReply,
+  contactUsList, deleteContact, contactUsById, checkPublicUrl
 
 };

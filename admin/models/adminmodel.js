@@ -33,6 +33,9 @@ var authenticationSchema = new schema({
         type: String,
 
     },
+    userType:{
+        type:String
+    },
 
     resetPasswordExpires: Date,
     created: { type: Date, default: Date.now }, 
