@@ -384,7 +384,7 @@ const draftJob = async (req, res, next) => {
             <p>Brands and Talent Team</p>
             `;
   
-            const notificationMessage = `${brandName}, this brand is post a job. Please approve them.`;
+            const notificationMessage = `The brand ${brandName}, posted a job.Please approve them.`;
   
             // Send notification and email
             console.log("response.adminApproved"),response.adminApproved

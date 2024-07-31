@@ -416,7 +416,7 @@ const otpVerification = async (req, res, next) => {
 */
 
 
-const saveNotificationPlanUpgrade = async (user_id, brandId, notificationMessage) => {
+const saveNotificationPlanUpgrade = async (user_id, brandId,planName, notificationMessage) => {
   try {
     let brand;
     if (brandId) {
@@ -437,12 +437,14 @@ const saveNotificationPlanUpgrade = async (user_id, brandId, notificationMessage
       talentId: user_id,
       profileApprove: false,
       notificationMessage: notificationMessage,
+      newPlan:planName,
       brandDetails: {
         _id: brand?._id,
         brandName: brand?.brandName,
         brandEmail: brand?.brandEmail,
         logo: brand?.logo,
-        brandImage: brand?.brandImage
+        brandImage: brand?.brandImage,
+        oldPlan:brand?.planName
       },
       talentDetails: {
         parentFirstName: talent.parentFirstName,
@@ -454,7 +456,8 @@ const saveNotificationPlanUpgrade = async (user_id, brandId, notificationMessage
         childLastName: talent.childLastName,
         preferredChildFirstname: talent.preferredChildFirstname,
         preferredChildLastName: talent.preferredChildLastName,
-        image: talent.image
+        image: talent.image,
+        oldPlan:talent.planName
       }
     });
 
@@ -530,7 +533,7 @@ const subscriptionPlan = async (req, res, next) => {
 
     // If no valid email found, return appropriate response
     if (!userEmail) {
-      return res.status(404).json({ message: "Email not defined for the user" });
+      return res.status(200).json({ message: "Email not defined for the user" });
     }
 
     if (user.profileApprove === true) {
@@ -543,7 +546,7 @@ const subscriptionPlan = async (req, res, next) => {
       );
 
       if (!updatedUser) {
-        return res.status(404).json({ message: "Need Admin Approval" });
+        return res.status(200).json({ message: "Need Admin Approval" });
       }
 
       return res.json({
@@ -567,7 +570,7 @@ const subscriptionPlan = async (req, res, next) => {
     // Send email to the user
     else {
       const mailOptions = {
-        from: 'your-email@gmail.com',
+        from: host,
         to: userEmail,
         subject: 'Subscription Plan Updated',
         html: `<p>Hi ${user.brandName || user.preferredChildFirstname},</p>
@@ -587,7 +590,7 @@ const subscriptionPlan = async (req, res, next) => {
       const notificationMessage = `${isKid ? user.preferredChildFirstname : isBrand ? user.brandName : user.preferredChildFirstname} has updated their plan to ${planName}.`;
 
       // Call saveNotificationPlanUpgrade to save the notification
-      await saveNotificationPlanUpgrade(user_id, brand_id, notificationMessage);
+      await saveNotificationPlanUpgrade(user_id, brand_id,planName, notificationMessage);
       // // Call saveNotificationPlanUpgrade to save the notification
       // const notificationMessage = `${isKid ? user.childFirstName : isBrand ? user.brandName : user.firstName} has updated their plan to ${planName}.`;
       // await saveNotificationPlanUpgrade(user_id, brand_id, notificationMessage);
@@ -1044,7 +1047,7 @@ const updateAdults = async (req, res) => {
     <p>Brands and Talent Team</p>
   `;
 
-        const notificationMessage = `${adultLegalFirstName}, this talent is registered. Please approve them.`;
+        const notificationMessage = `${adultLegalFirstName},has registered as a new talent. Kindly give them your approval.`;
 
         // Send notification and email
         await saveNotification(user_id, notificationMessage);
@@ -1349,6 +1352,7 @@ const editKids = async (req, res) => {
  */
 const unifiedDataFetch = async (req, res, next) => {
   try {
+    console.log("approvedReviewsssssssssssssssssssss")
     const userId = req.params.user_id;
     const dataType = parseInt(req.params.dataType);
     const objectId = new mongoose.Types.ObjectId(userId);
@@ -1440,25 +1444,7 @@ const unifiedDataFetch = async (req, res, next) => {
 
         return res.json({ status: true, data: formattedFeatures });
       }
-      case 5: {
-        const reviewsData = await model.findOne({ _id: objectId, isActive: true, inActive: true }, 'reviews').sort({ createdAt: -1 });
-        if (!reviewsData || !reviewsData.reviews || reviewsData.reviews.length === 0) {
-          return res.status(200).json({ status: false, msg: 'Reviews data not found' });
-        }
-        const approvedReviews = reviewsData.reviews.filter(review => review.reviewApproved === 'Approved');
-        if (approvedReviews.length === 0) {
-          return res.status(200).json({ status: false, msg: 'No approved reviews found' });
-        }
-        const formattedReviews = approvedReviews.map(review => ({
-          comment: review.comment,
-          starRatings: review.starRatings,
-          reviewDate: review.reviewDate,
-          reviewerName: review.reviewerName,
-          reviewerId: review.reviewerId,
-          reviewApproved: review.reviewApproved
-        }));
-        return res.json({ status: true, data: formattedReviews });
-      }
+     
       case 6: {
         try {
           const serviceData = await model.findOne({ _id: objectId, isActive: true, inActive: true }, 'services').sort({ createdAt: -1 });
@@ -1494,23 +1480,46 @@ const unifiedDataFetch = async (req, res, next) => {
         }
       }
       case 7: {
-        const reviewsData = await model.findOne({ _id: objectId, isActive: true, inActive: true }, 'reviews').sort({ createdAt: -1 });;
-
+        console.log("dgsgkjfkgjfnkj")
+        const reviewsData = await model.findOne({ _id: objectId, isActive: true, inActive: true}, 'reviews').sort({ createdAt: -1 });
         if (!reviewsData || !reviewsData.reviews || reviewsData.reviews.length === 0) {
-          return res.status(200).json({ status: false, msg: 'reviews data not found' });
+          return res.status(200).json({ status: false, msg: 'Reviews data not found' });
         }
-
-        // Format the features as per requirement
-        const formattedReviews = reviewsData.reviews.map(review => ({
-
+        console.log("reviewsData",reviewsData)
+       
+        const approvedReviews = reviewsData.reviews.filter(review => review.reviewApproved === 'Approved');
+        if (approvedReviews.length === 0) {
+          return res.status(200).json({ status: false, msg: 'No approved reviews found' });
+        }
+        console.log("approvedReviews",approvedReviews)
+        const formattedReviews = approvedReviews.map(review => ({
           comment: review.comment,
           starRatings: review.starRatings,
           reviewDate: review.reviewDate,
           reviewerName: review.reviewerName,
+          reviewerId: review.reviewerId,
+          reviewApproved: review.reviewApproved
         }));
-
         return res.json({ status: true, data: formattedReviews });
       }
+      // case 7: {
+      //   const reviewsData = await model.findOne({ _id: objectId, isActive: true, inActive: true }, 'reviews').sort({ createdAt: -1 });;
+
+      //   if (!reviewsData || !reviewsData.reviews || reviewsData.reviews.length === 0) {
+      //     return res.status(200).json({ status: false, msg: 'reviews data not found' });
+      //   }
+
+      //   // Format the features as per requirement
+      //   const formattedReviews = reviewsData.reviews.map(review => ({
+
+      //     comment: review.comment,
+      //     starRatings: review.starRatings,
+      //     reviewDate: review.reviewDate,
+      //     reviewerName: review.reviewerName,
+      //   }));
+
+      //   return res.json({ status: true, data: formattedReviews });
+      // }
       case 8: {
         // Find the document based on the given criteria
         const videoAudioUrlsData = await model.findOne({ _id: objectId, isActive: true, inActive: true })
@@ -3326,36 +3335,44 @@ const typeChecking = async (req, res) => {
  * @param {*} next undefined
  */
 // Function to save notifications to the database
-const saveReviewNotification = async (talentId, notificationMessage,reviewerId) => {
+const saveReviewNotification = async (talentId, notificationMessage, reviewerName, reviewerId) => {
   try {
-    // Fetch details of brand and gig
+    // Fetch details of talent and reviewer
     const talent = await findUserById(talentId);
-
+    const reviewer = await findUserById(reviewerId);
 
     // Create the notification document
     const notification = new notificationmodel({
       notificationType: 'Review Notification',
       talentId: talentId,
       notificationMessage: notificationMessage,
+      reviewerName: reviewerName,
       reviewerId: reviewerId,
-      reviewApproved: 'Pending',
-      adminApproved:true,
-      profileApprove:true,
+      isReport: true,
+      reviewApproved: 'Approved',
+      status:'Approved',
+      adminApproved: true,
+      profileApprove: true,
       talentDetails: {
         parentFirstName: talent.parentFirstName,
         parentLastName: talent.parentLastName,
         parentEmail: talent.parentEmail,
         talentId: talentId,
-        email: talent.adultEmail ? talent.adultEmail : talent.parentEmail ? talent.parentEmail : talent.brandEmail,
+        email: talent.adultEmail || talent.parentEmail || talent.brandEmail,
         childFirstName: talent.childFirstName,
         childLastName: talent.childLastName,
         preferredChildFirstname: talent.preferredChildFirstname,
         preferredChildLastName: talent.preferredChildLastName,
         image: talent.image,
-        reviews:talent.reviews,
-       
+        reviews: talent.reviews,
+      },
+      reviewerDetails: {
+        name: reviewer.preferredChildFirstname|| reviewer.brandName,
+        reviewerId: reviewerId,
+        email: reviewer.adultEmail || reviewer.parentEmail || reviewer.brandEmail,
+        image: reviewer.image
 
-      }
+      },
     });
 
     // Save the notification document
@@ -3365,6 +3382,57 @@ const saveReviewNotification = async (talentId, notificationMessage,reviewerId) 
     console.error("Error saving notification:", error);
   }
 };
+
+const reportReview = async (req, res) => {
+  const { comment, reviewerName, talentId, reviewerId } = req.body;
+
+  try {
+    // Check in the kids model first
+    let modelType = "kids";
+    let updateResult;
+
+    // Attempt to find and update a review in the kids model
+    updateResult = await kidsmodel.findOneAndUpdate(
+      { _id: talentId, "reviews.reviewerId": reviewerId,"reviews.comment":comment},
+      { $set: { "reviews.$.isReport": true } },
+      { new: true } // Return the updated document
+    );
+
+    // If not found in the kids model, check in the adult model
+    if (!updateResult) {
+      modelType = "adult";
+      updateResult = await adultmodel.findOneAndUpdate(
+        { _id: talentId, "reviews.reviewerId": reviewerId,"reviews.comment":comment},
+        { $set: { "reviews.$.isReport": true} },
+        { new: true } // Return the updated document
+      );
+    }
+
+    // Save the notification regardless of the update result
+    await saveReviewNotification(talentId, comment.trim(), reviewerName, reviewerId);
+
+    if (updateResult) {
+      res.status(200).send({ message: "Report sent successfully", status: true });
+    } else {
+      res.status(200).send({ message: "No matching reviews found", status: false });
+    }
+  } catch (error) {
+    console.error("Error reporting review:", error);
+    res.status(500).send({ message: "An error occurred while reporting the review" });
+  }
+};
+
+
+
+
+
+/**
+ *********reviewsPosting******
+ * @param {*} req from user
+ * @param {*} res return data
+ * @param {*} next undefined
+ */
+
 const reviewsPosting = async (req, res) => {
   const { comment, starRatings, reviewerName, talentId, reviewerId } = req.body;
 
@@ -3378,9 +3446,7 @@ const reviewsPosting = async (req, res) => {
       talent = await adultmodel.findOne({ _id: talentId });
       modelType = "adult";
     }
-      // Prepare and save the notification
-    const message = `${talent.preferredChildFirstname} added a review`;
-    await saveReviewNotification(talentId, message,reviewerId);
+    
     // If talent is found, update the reviews array
 
     console.log("talent",talent)
@@ -3392,7 +3458,8 @@ const reviewsPosting = async (req, res) => {
         reviewDate: new Date(), // Set the current date
         reviewerName: reviewerName,
         reviewerId: reviewerId,
-        reviewApproved: 'Pending'
+        reviewApproved: 'Approved',
+        isReport:false
       });
 
       // Calculate the average of the starRatings values
@@ -3424,7 +3491,7 @@ const reviewsPosting = async (req, res) => {
       });
       //res.status(200).send({ message: "Review added successfully",data: averageStarRatings:averageStarRatings, totalReviews:totalReviews]});
     } else {
-      res.status(404).send({ message: "Talent not found" });
+      res.status(200).send({ message: "Talent not found" });
     }
   } catch (error) {
     console.error("Error adding review:", error);
@@ -3478,6 +3545,56 @@ const deleteVideoUrls = async (req, res) => {
     res.status(500).send({ message: "An error occurred while deleting the URL" });
   }
 };
+/**
+ *********getDataByPublicUrl ******
+ * @param {*} req from user
+ * @param {*} res return data
+ * @param {*} next undefined
+ */
+ const getDataByPublicUrl = async (req, res) => {
+  try {
+    // Extract publicUrl from req.body and trim any extra spaces
+    const publicUrl = req.body.publicUrl.trim().toLowerCase(); // Normalize to lowercase
+
+    // Check if the user with the given publicUrl exists in adultmodel
+    const adultUser = await adultmodel.findOne({ 
+      publicUrl: { $regex: new RegExp(`^${publicUrl}$`, 'i') }, // Case-insensitive regex
+      isActive: true, 
+      inActive: true 
+    });
+    if (adultUser) {
+      return res.json({ status: true, data: adultUser });
+    }
+
+    // Check if the user with the given publicUrl exists in kidsmodel
+    const kidsUser = await kidsmodel.findOne({ 
+      publicUrl: { $regex: new RegExp(`^${publicUrl}$`, 'i') }, // Case-insensitive regex
+      isActive: true, 
+      inActive: true 
+    });
+    if (kidsUser) {
+      return res.json({ status: true, data: kidsUser });
+    }
+
+    // Check if the user with the given publicUrl exists in brandsmodel
+    const brandUser = await brandsmodel.findOne({ 
+      publicUrl: { $regex: new RegExp(`^${publicUrl}$`, 'i') }, // Case-insensitive regex
+      isActive: true, 
+      inActive: true 
+    });
+    if (brandUser) {
+      return res.json({ status: true, data: brandUser });
+    }
+
+    // If no user is found in any model, return an appropriate response
+    return res.json({ status: false, msg: 'No user found' });
+  } catch (error) {
+    console.error('Error occurred while fetching data:', error);
+    return res.status(500).json({ status: false, msg: 'Error occurred while fetching data' });
+  }
+};
+
+
 
 module.exports = {
   kidsSignUp, adultSignUp, adultFetch, forgotPassword, resetPassword, updateAdults, deleteUser, kidsFetch, otpVerification, subscriptionPlan,
@@ -3486,6 +3603,6 @@ module.exports = {
   getTalentById, updateProfileStatus, subscriptionStatus, getByProfession, loginTemplate, getPlanByType,
   removeFavorite, checkUserStatus, socialSignup, updateAdultPassword, adultForgotPassword, adultResetPassword,
   fetchUserData, countUsers, activateUser, addServices, deleteService, applyJobUsersList, deleteIndividualService,
-  typeChecking, reviewsPosting, deleteVideoUrls
+  typeChecking, reviewsPosting, deleteVideoUrls,reportReview,getDataByPublicUrl
 
 };

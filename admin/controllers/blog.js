@@ -60,6 +60,7 @@ const addBlog = async (req, res, next) => {
       type: req.body.type,
       mainTitle: 'FEATURED ARTICLES',
       isActive: true,
+      url:req.body.url,
       blogBy:"BY BT TEAM",
     });
 

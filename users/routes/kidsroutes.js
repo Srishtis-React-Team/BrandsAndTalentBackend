@@ -47,6 +47,8 @@ router.post('/deleteIndividualService',users.deleteIndividualService)//for delet
 router.post('/typeChecking',users.typeChecking)//for typeChecking
 router.post('/reviewsPosting',users.reviewsPosting)//for reviewsPosting
 router.post('/deleteVideoUrls',users.deleteVideoUrls)//for deleteVideoUrls
+router.post('/reportReview',users.reportReview)//for reportReview
+router.post('/getDataByPublicUrl',users.getDataByPublicUrl)//for getDataByPublicUrl
 
 module.exports = router
 

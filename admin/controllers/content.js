@@ -141,7 +141,7 @@ const deleteContent = async (req, res) => {
 
 const editContent = async (req, res) => {
     try {
-        if (req.body.contentType === 'faq' || req.body.contentType === 'How It works') {
+        if (req.body.contentType === 'faq' || req.body.contentType === 'How It works'||req.body.contentType === 'About Us') {
             const uniqueId = req.body.uniqueId;
             const updateFields = req.body;
     

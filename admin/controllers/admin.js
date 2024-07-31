@@ -1210,7 +1210,7 @@ const sendJobApprovalEmail = (userEmail) => {
     html: `
     <h1>Congratulations!</h1>
     <p>Your profile has been approved by the admin.</p>
-    <p>You need to post the job through this link. Please click this link to post your job: <a href="https://hybrid.sicsglobal.com/project/brandsandtalent/list-jobs">Post Job</a></p>
+    <p>You need to post the job through this link. Please click here: <a href="https://hybrid.sicsglobal.com/project/brandsandtalent/list-jobs"><strong><u>Post Job</u></strong></a></p>
     <p>Thank you for being a part of our community.</p>
     <p>Best Regards,<br>Admin Team</p>`
     
@@ -1495,40 +1495,6 @@ const ListBrandForJobPost = async (req, res) => {
   }
 };
 
-/*
-*********Notapprovedmembers*****
-* @param {*} req from user
-* @param {*} res return data
-* @param {*} next undefined
-*/
-// const filterByApprovalType = async (req, res) => {
-//   try {
-//     let users;
-
-//     if (req.body.notificationType) {
-//       if (req.body.notificationType === 'All') {
-//         users = await notificationmodel.find({
-//           notificationType: { $in: ['Job Approval', 'Talent Verification Approval', 'Talent Profile Approval'] },
-//           isActive: true
-//         });
-//       } else {
-//         users = await notificationmodel.find({
-//           notificationType: req.body.notificationType,
-//           isActive: true
-//         });
-//       }
-//     } else {
-//       return res.status(400).json({ status: false, msg: 'NotificationType is required' });
-//     }
-
-//     return res.json({ status: true, data: users });
-//   } catch (error) {
-//     console.error('Error fetching filtered members:', error);
-//     return res.status(500).json({ status: false, msg: 'Internal server error' });
-//   }
-// };
-
-
 
 /*
 *********filterByStatus*****
@@ -1552,14 +1518,14 @@ const filterByStatus = async (req, res) => {
         users = await notificationmodel.find({
           notificationType: { $in: notificationTypes },
           isActive: true,
-          adminApproved: true,
+         // adminApproved: true,
           status: 'Approved'
         });
       } else if (req.body.status === 'Rejected') {
         users = await notificationmodel.find({
           notificationType: { $in: notificationTypes },
           isActive: true,
-          adminApproved: false,
+        //  adminApproved: false,
           status: 'Rejected'
         });
       } else if (req.body.status === 'Pending') {
@@ -1567,64 +1533,167 @@ const filterByStatus = async (req, res) => {
         users = await notificationmodel.find({
           notificationType: { $in: notificationTypes },
           isActive: true,
-          adminApproved: false,
+         // adminApproved: false,
           status: 'Pending'
         });
       }
     } else if (req.body.notificationType === 'Talent Profile Approval') {
       if (req.body.status === 'Approved') {
         users = await notificationmodel.find({
-          notificationType: { $in: notificationTypes },
+        //  notificationType: { $in: notificationTypes },
+        notificationType: 'Talent Profile Approval',
           isActive: true,
-          adminApproved: true,
+         // adminApproved: true,
           profileApprove: true,
           status: 'Approved'
         });
       } else if (req.body.status === 'Rejected') {
         users = await notificationmodel.find({
-          notificationType: { $in: notificationTypes },
+       //   notificationType: { $in: notificationTypes },
+       notificationType: 'Talent Profile Approval',
           isActive: true,
-          adminApproved: false,
+        //  adminApproved: false,
           profileApprove: false,
           status: 'Rejected'
         });
       } else if (req.body.status === 'Pending') {
         console.log("vjdvjvbfbfjkbgfn",)
         users = await notificationmodel.find({
-          notificationType: { $in: notificationTypes },
+        //  notificationType: { $in: notificationTypes },
+        notificationType: 'Talent Profile Approval',
           isActive: true,
-          adminApproved: false,
+       //   adminApproved: false,
           profileApprove: false,
           status: 'Pending'
         });
       }
-    } else if (req.body.notificationType === 'Review Notification') {
+      else if (req.body.status === 'All') {
+       
+        users = await notificationmodel.find({
+        //  notificationType: { $in: notificationTypes },
+        notificationType: 'Talent Profile Approval',
+          isActive: true,
+       //   adminApproved: false,
+         
+        });
+      }
+    } 
+    else if (req.body.notificationType === 'Talent Verification Approval') {
       if (req.body.status === 'Approved') {
         users = await notificationmodel.find({
-          notificationType: { $in: notificationTypes },
+        //  notificationType: { $in: notificationTypes },
+        notificationType:'Talent Verification Approval',
           isActive: true,
-          reviewApproved: 'Approved'
+          adminApproved: true,
+         // profileApprove: true,
+          status: 'Approved'
         });
       } else if (req.body.status === 'Rejected') {
         users = await notificationmodel.find({
-          notificationType: { $in: notificationTypes },
+       //   notificationType: { $in: notificationTypes },
+       notificationType:'Talent Verification Approval',
           isActive: true,
-          reviewApproved: 'Rejected'
+          adminApproved: false,
+         // profileApprove: false,
+          status: 'Rejected'
         });
       } else if (req.body.status === 'Pending') {
         console.log("vjdvjvbfbfjkbgfn",)
         users = await notificationmodel.find({
-          notificationType: { $in: notificationTypes },
+         // notificationType: { $in: notificationTypes },
+         notificationType:'Talent Verification Approval',
           isActive: true,
-          reviewApproved: 'Pending'
+          adminApproved: false,
+         // profileApprove: false,
+          status: 'Pending'
         });
       }
-      if (req.body.status === 'All') {
+      else if (req.body.status === 'All') {
+        console.log("vjdvjvbfbfjkbgfn",)
         users = await notificationmodel.find({
-          notificationType: { $in: notificationTypes },
-          isActive: true
+          notificationType:'Talent Verification Approval', //{ $in: notificationTypes },
+          isActive: true,
+         // adminApproved: true,
+         // profileApprove: false,
+         // status: 'Pending'
+        });
+      }
+    } 
+    else if (req.body.notificationType === 'Job Approval') {
+      if (req.body.status === 'Approved') {
+        users = await notificationmodel.find({
+        //  notificationType: { $in: notificationTypes },
+        notificationType:'Job Approval',
+          isActive: true,
+          adminApproved: true,
+         // profileApprove: true,
+          status: 'Approved'
+        });
+      } else if (req.body.status === 'Rejected') {
+        users = await notificationmodel.find({
+       //   notificationType: { $in: notificationTypes },
+       notificationType:'Job Approval',
+          isActive: true,
+          adminApproved: false,
+         // profileApprove: false,
+          status: 'Rejected'
+        });
+      } else if (req.body.status === 'Pending') {
+        console.log("vjdvjvbfbfjkbgfn",)
+        users = await notificationmodel.find({
+         // notificationType: { $in: notificationTypes },
+         notificationType:'Job Approval',
+          isActive: true,
+          adminApproved: false,
+         // profileApprove: false,
+          status: 'Pending'
+        });
+      }
+      else if (req.body.status === 'All') {
+        console.log("vjdvjvbfbfjkbgfn",)
+        users = await notificationmodel.find({
+         // notificationType: { $in: notificationTypes },
+         notificationType:'Job Approval',
+          isActive: true,
+         // adminApproved: true,
+         // profileApprove: false,
+         // status: 'Pending'
+        });
+      }
+    }else if (req.body.notificationType === 'Review Notification') {
+
+      console.log("check................")
+      if (req.body.status === 'Approved') {
+        users = await notificationmodel.find({
+         
+          isActive: true,
+          reviewApproved: 'Approved',
+          notificationType:'Review Notification'
         });
       } 
+      else if (req.body.status === 'All') {
+        users = await notificationmodel.find({
+         // notificationType: { $in: notificationTypes },
+          isActive: true,
+          notificationType:'Review Notification'
+        });
+      } else if (req.body.status === 'Rejected') {
+        users = await notificationmodel.find({
+         // notificationType: { $in: notificationTypes },
+          isActive: true,
+          reviewApproved: 'Rejected',
+          notificationType:'Review Notification'
+        });
+      } else if (req.body.status === 'Pending') {
+        console.log("vjdvjvbfbfjkbgfn",)
+        users = await notificationmodel.find({
+          //notificationType: { $in: notificationTypes },
+          isActive: true,
+          reviewApproved: 'Pending',
+          notificationType:'Review Notification'
+        });
+      }
+     
     } else if (req.body.status === 'All') {
       users = await notificationmodel.find({
         notificationType: req.body.notificationType,
@@ -2522,44 +2591,60 @@ const checkTransaction = async (req, res) => {
 
 const reviewApproval = async (req, res) => {
   try {
-    const { talentId, reviewApproved, reviewerId} = req.body;
+    const { talentId, reviewApproved, reviewerId,comment,text} = req.body;
 
     let userType = '';
     let updateResult = null;
   
-
+      // Assuming comment is received from req.body or another source
+      const trimmedComment = comment.trim();
     // Check in adultmodel
     const adultUser = await adultmodel.findOne({ _id: talentId, isActive: true });
     if (adultUser) {
       userType = 'adults';
       updateResult = await adultmodel.updateOne(
-        { _id: talentId, "reviews.reviewerId": reviewerId },
-        { $set: { "reviews.$.reviewApproved": reviewApproved } }
+        { _id: talentId, "reviews.reviewerId": reviewerId,"reviews.comment": trimmedComment },
+       
+       { $set: { "reviews.$[elem].reviewApproved": reviewApproved ,isReport:true} },
+       { arrayFilters: [{ "elem.reviewerId": { $in: reviewerId },"elem.comment":{$in:trimmedComment} }] }
       );
-
+      
    
 
-      await notificationmodel.updateOne(
-        {  talentId: talentId, notificationType: 'Review Notification' },
-        { $set: { reviewApproved,status:req.body.reviewApproved } }
-      );
+    await notificationmodel.updateOne(
+      { talentId: talentId,reviewerId:reviewerId,notificationMessage:comment,  notificationType: 'Review Notification' },
+      { $set: { reviewApproved: reviewApproved, status: reviewApproved,isReport:true } }
+    );
+   // Send email to adult
+   const emailResponse = await sendEmailToUser(adultUser.adultEmail, 'Review Approval Notification', text);
+   console.log(emailResponse.message);
+  
     } else {
       // Check in kidsmodel if not found in adultmodel
       const kidUser = await kidsmodel.findOne({ _id: talentId, isActive: true });
       if (kidUser) {
         userType = 'kids';
         updateResult = await kidsmodel.updateOne(
-          { _id: talentId, "reviews.reviewerId": reviewerId },
-          { $set: { "reviews.$.reviewApproved": reviewApproved } }
+          { _id: talentId, "reviews.reviewerId": reviewerId,"reviews.comment": trimmedComment },
+         // { $set: { "reviews.$.reviewApproved": reviewApproved } }
+         { $set: { "reviews.$[elem].reviewApproved": reviewApproved,isReport:true } },
+         { arrayFilters: [{ "elem.reviewerId": { $in: reviewerId },"elem.comment":{$in:trimmedComment} }] }
         );
+        console.log("updateResult",updateResult)
+       
 
         await notificationmodel.updateOne(
-          { talentId: talentId , notificationType: 'Review Notification' },
-          { $set: { reviewApproved,status:req.body.reviewApproved } }
+          { talentId: talentId,reviewerId:reviewerId,notificationMessage:comment, notificationType: 'Review Notification' },
+          { $set: { reviewApproved: reviewApproved, status: reviewApproved,isReport:true } }
         );
+        // Send email to parent
+        const emailResponse = await sendEmailToUser(kidUser.parentEmail, 'Review Approval Notification', text);
+        console.log(emailResponse.message);
       } 
+   
     }
 
+   
     // If user type is still empty, user was not found in any model
     if (!userType) {
       return res.json({ status: false, msg: 'User not found' });
@@ -2582,7 +2667,24 @@ const reviewApproval = async (req, res) => {
   }
 };
 
+// Function to send email
+const sendEmailToUser = async (to, subject, text) => {
+  const mailOptions = {
+    from: host,
+    to,
+    subject,
+    text
+  };
 
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Email sent:', info.response);
+    return { success: true, message: 'Email sent successfully' };
+  } catch (error) {
+    console.error('Error sending email:', error);
+    return { success: false, message: 'Failed to send email' };
+  }
+};
 
 
 

@@ -27,6 +27,9 @@ const blogItemSchema = new Schema({
     blogBy:{
         type:String
     },
+    url:{
+        type:String
+    },
 }, {
     timestamps: true
 });

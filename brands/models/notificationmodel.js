@@ -12,10 +12,12 @@ const notificationSchema = new Schema({
     isActive: { type: Boolean, default: true },
     read: { type: Boolean, default: false },
     userType: { type: String },
+    isReport:{type: Boolean, default: false},
     profileApprove: { type: Boolean, default: false },
     adminApproved: { type: Boolean, default: false },
-    reviewApproved: { type: String, default: 'Pending' },
+    reviewApproved: { type: String, default: 'Approved' },
     reviewerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Talent', required: false },
+    newPlan:{type:String},
     status: {
         type: String,
         default: 'Pending'
@@ -25,8 +27,20 @@ const notificationSchema = new Schema({
         brandEmail: String,
         logo: Array,
         brandImage: Array,
+        oldPlan:String
+
+    },
+    reviewerDetails:{
+        
+        reviewerId:String,
+        email:  String,
+        name:  String,
+        image:  String,
+       
+
     },
     talentDetails: {
+        oldPlan:String,
         parentFirstName: String,
         parentLastName: String,
         parentEmail: String,
