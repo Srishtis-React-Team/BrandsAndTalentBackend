@@ -25,6 +25,14 @@ const httpServer = createServer(app); // Create the HTTP server from the Express
 const io = new Server(httpServer, {
   cors: "http://13.234.177.61:3000"
 });
+//user auth globally decalre
+// const authenticateToken = require('./middleware/authmiddleware.js');
+// require('dotenv').config();
+
+// // Apply authentication middleware globally
+// app.use(authenticateToken);
+
+//user auth globally decalre
 
 
 
@@ -72,19 +80,7 @@ let onlineUsers =[];
   }
 }
   
-    //   try {
-    //     // Update the user in each of the models
-    //     await Promise.all([
-    //       adultmodel.updateOne({ _id: userId }, { $set: { isOnline: true } }),
-    //       brandsmodel.updateOne({ _id: userId }, { $set: { isOnline: true } }),
-    //       kidsmodel.updateOne({ _id: userId }, { $set: { isOnline: true } })
-    //     ]);
-  
-    //     console.log(`User ${userId} set to online in all models.`);
-    //   } catch (error) {
-    //     console.error("Error setting user to online:", error);
-    //   }
-    // }
+   
 
      // Emit the updated list of online users
      io.emit("getOnlineUsers", onlineUsers);
@@ -127,17 +123,7 @@ let onlineUsers =[];
    console.log("uesr test",user)
     console.log("message",message)
     
-    // if (user) {
-    //   console.log("emit message",message)
-    //     io.to(user.socketId).emit("getMessage", message);
-    //     //console.log("message getttt",message)
-
-    //     io.to(user.socketId).emit("getNotification", {
-    //         senderId: message.senderId,
-    //         isRead: false,
-    //         date: new Date(),
-    //     });
-    // }
+    
     io.to(user.socketId).emit("getMessage", message);
         //console.log("message getttt",message)
 
@@ -148,10 +134,7 @@ let onlineUsers =[];
         });
 });
 
- 
-  // socket.on("disconnect",()=>{
-  //   onlineUsers=onlineUsers.filter((user)=>user.socketId!==socket.id);
-  //   io.emit("getOnlineUsers",onlineUsers)
+
 
   
   // })
@@ -180,21 +163,7 @@ let onlineUsers =[];
     } catch (error) {
       console.error("Error setting user to offline:", error);
     }
-    // try {
-    //   // Assume userId is available in the socket context, e.g., socket.userId
-    //   const userId = socket.userId;
-
-    //   // Update the user in each of the models
-    //   await Promise.all([
-    //     adultmodel.updateOne({ _id: userId }, { $set: { isOnline: false } }),
-    //     brandsmodel.updateOne({ _id: userId }, { $set: { isOnline: false } }),
-    //     kidsmodel.updateOne({ _id: userId }, { $set: { isOnline: false } })
-    //   ]);
-  
-    //   console.log(`User ${userId} set to offline in all models.`);
-    // } catch (error) {
-    //   console.error("Error setting user to offline:", error);
-    // }
+   
   });
   
  });
@@ -295,21 +264,22 @@ const chat = require('./brands/routes/chatroutes.js');
 
 
 // Define routes
-app.use('/brandsntalent_api/users',users);
-app.use('/brandsntalent_api/admin',admin);
-app.use('/brandsntalent_api/brands',brands);
-app.use('/brandsntalent_api/pricing',pricing);
-app.use('/brandsntalent_api/profession',profession);
-app.use('/brandsntalent_api/features',features);
-app.use('/brandsntalent_api/gigs',gigs);
-app.use('/brandsntalent_api/reviews',reviews);
-app.use('/brandsntalent_api/keyword',keyword);
-app.use('/brandsntalent_api/notification',notification);
-app.use('/brandsntalent_api/conversation',conversation);
-app.use('/brandsntalent_api/message',message);
-app.use('/brandsntalent_api/chat',chat);
-app.use('/brandsntalent_api/content',content);
-app.use('/brandsntalent_api/blog',blog);
+
+app.use('/api/users',users);
+app.use('/api/admin',admin);
+app.use('/api/brands',brands);
+app.use('/api/pricing',pricing);
+app.use('/api/profession',profession);
+app.use('/api/features',features);
+app.use('/api/gigs',gigs);
+app.use('/api/reviews',reviews);
+app.use('/api/keyword',keyword);
+app.use('/api/notification',notification);
+app.use('/api/conversation',conversation);
+app.use('/api/message',message);
+app.use('/api/chat',chat);
+app.use('/api/content',content);
+app.use('/api/blog',blog);
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/upload1', express.static(path.join(__dirname, 'upload1')));
@@ -317,93 +287,11 @@ app.use('/upload1', express.static(path.join(__dirname, 'upload1')));
 
 app.use(express.json()); // Middleware to parse JSON bodies
 
-// const axios = require('axios');
 
-// const generateHash = (paramsString, publicKey) => {
-//   return crypto.createHmac('sha512', publicKey).update(paramsString).digest('base64');
-// };
-
-// const getFormattedDate = () => {
-//   const now = new Date();
-//   const year = now.getUTCFullYear();
-//   const month = String(now.getUTCMonth() + 1).padStart(2, '0');
-//   const day = String(now.getUTCDate()).padStart(2, '0');
-//   const hours = String(now.getUTCHours()).padStart(2, '0');
-//   const minutes = String(now.getUTCMinutes()).padStart(2, '0');
-//   const seconds = String(now.getUTCSeconds()).padStart(2, '0');
-//   return `${year}${month}${day}${hours}${minutes}${seconds}`;
-// };
-
-// const generateRandomString = (length = 5) => {
-//   const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-//   let result = '';
-//   for (let i = 0; i < length; i++) {
-//       result += characters.charAt(Math.floor(Math.random() * characters.length));
-//   }
-//   return result;
-// };
-
-// const payment = async (req, res) => {
-//   const language = 'en';
-//   const req_time = getFormattedDate();
-//   const merchant_id = 'ec427730';
-//   const tran_id = generateRandomString();
-//   const amount = 100.00;
-//   const type = 'purchase';
-//   const payment_option = 'abapay';
-//   const currency = 'USD';
-//   const publicKey = '3e2a9f6db6e01271d36f0de2a2e50ca2066bd17b';
-//   const paramsString = `${req_time}${merchant_id}${tran_id}${amount}${type}${payment_option}${currency}`;
-//   const hash = generateHash(paramsString, publicKey);
-
-//   const data = {
-//       language,
-//       req_time,
-//       merchant_id,
-//       tran_id,
-//       amount,
-//       type,
-//       payment_option,
-//       currency,
-//       hash
-//   };
-
-//   const FormData = require('form-data');
-//   const formData = new FormData();
-  
-//   for (const key in data) {
-//       if (data.hasOwnProperty(key)) {
-//           formData.append(key, data[key]);
-//       }
-//   }
-
-//   try {
-//       const response = await axios.post('https://checkout-sandbox.payway.com.kh/api/payment-gateway/v1/payments/purchase/', formData, {
-//           headers: {
-//               'Authorization': `Bearer 3e2a9f6db6e01271d36f0de2a2e50ca2066bd17b`,
-//              // 'Content-Type': 'application/json',
-//               'language': language
-//           }
-//       });
-
-//       res.send(response.data);
-//   } catch (error) {
-  
-//       console.log(error.response,error.response.data,error.message);
-//       // console.log(error.response ? error.response.data : error.message);
-//       res.status(500).send(error);
-//   }
-// };
-// const port = 8080;
-// app.get('/pay',payment);
-// app.listen(port, () => {
-//   console.log('================================================================================================================================');
-//   console.log(`Server is running on http://localhost:${port}`);
-// });
 
 // Start HTTP server on port 4014
-httpServer.listen(4014, () => {
-  console.log("Server is listening on port 4014");
+httpServer.listen(4015, () => {
+  console.log("Server is listening on port 4015");
 });
 
 

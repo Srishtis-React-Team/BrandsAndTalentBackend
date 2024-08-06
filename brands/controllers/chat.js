@@ -150,56 +150,7 @@ const findChat =async(req,res)=>{
     }
 };
 
-// const findPreviousChatUsers = async (req, res) => {
-//     const userId = req.params.userId;
 
-//     try {
-//         // Fetch all chats where the user is a member
-//         const chats = await chatmodel.find({
-//             members: { $in: [userId] }
-//         });
-
-//         // Collect IDs of other members, excluding the logged-in user's ID
-//         const otherMemberIds = chats.flatMap(chat =>
-//             chat.members.filter(member => member !== userId)
-//         );
-
-//         // Get unique IDs to avoid duplicate queries and ensure they're valid ObjectIds
-//         const uniqueMemberIds = [...new Set(otherMemberIds)].filter(id =>
-//             mongoose.Types.ObjectId.isValid(id)
-//         );
-
-//         // Ensure the list is not empty after filtering invalid IDs
-//         if (uniqueMemberIds.length === 0) {
-//             res.json({ status: false, data: [] });
-//            // return res.status(200).json([]);
-//         }
-
-//         // Find related data for these other members in different models with isActive: true
-//         const [adults, kids, brands] = await Promise.all([
-//             adultmodel.find({ _id: { $in: uniqueMemberIds }, isActive: true,inActive:true }),
-//             kidsmodel.find({ _id: { $in: uniqueMemberIds }, isActive: true,inActive:true }),
-//             brandsmodel.find({ _id: { $in: uniqueMemberIds }, isActive: true,inActive:true })
-//         ]);
-
-//         // Combine all the data into a single array
-//         const combinedData = [
-//             ...adults,
-//             ...kids,
-//             ...brands
-//         ];
-//             // Sort the combined data by createdAt and then reverse it
-//             combinedData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).reverse();
-//         // Send response with the combined data
-//         res.status(200).json({
-//             status:true,
-//             data: combinedData // single array containing all adults, kids, and brands
-//         });
-//     } catch (error) {
-//         console.error(error); // log the error
-//         res.status(500).json({ error: 'Internal server error' });
-//     }
-// };
 /**
  *******filterNames*****
  * @param {*} req from user
@@ -212,7 +163,7 @@ const findChat =async(req,res)=>{
 
     // Ensure startingSequence is a string (including an empty string)
     if (typeof startingSequence !== 'string') {
-        return res.status(400).json({ error: 'Starting sequence must be a string.' });
+        return res.status(200).json({ error: 'Starting sequence must be a string.' });
     }
 
     try {
@@ -230,7 +181,7 @@ const findChat =async(req,res)=>{
         );
 
         if (uniqueMemberIds.length === 0) {
-            return res.status(404).json({ error: 'No valid members found' });
+            return res.status(200).json({ error: 'No valid members found' });
         }
 
         // Define the base query for finding members

@@ -60,8 +60,8 @@ const addBlog = async (req, res, next) => {
       type: req.body.type,
       mainTitle: 'FEATURED ARTICLES',
       isActive: true,
-      url:req.body.url,
-      blogBy:"BY BT TEAM",
+      url: req.body.url,
+      blogBy: "BY BT TEAM",
     });
 
     // Save blog entry to the database
@@ -88,14 +88,14 @@ const sendEmailNotifications = async () => {
     <p>
     Hi [User's name],
     <br>
-Congratulations for joining Brands & Talent Community.
-<br>
-Check out my latest blog on <a href="https://hybrid.sicsglobal.com/project/brandsandtalent/blogs"><strong>https://hybrid.sicsglobal.com/project/brandsandtalent/blogs</strong></a>.
-<br>
-See ya soon!
-<br>
-BT Team.
-</p>
+    Congratulations for joining Brands & Talent Community.
+    <br>
+    Check out my latest blog on <a href="https://brandsandtalent.com/blogs"><strong>https://brandsandtalent.com/blogs</strong></a>.
+    <br>
+    See ya soon!
+    <br>
+    BT Team.
+    </p>
     `;
 
 
@@ -135,34 +135,6 @@ console.log('Cron job scheduled to send emails on the 1st and 15th of each month
 
 
 
-
-
-//  const addBlog = async (req, res, next) => {
-//     try {
-//         console.log(req.body);
-//         const addBlog = new blogmodel({
-//             image: req.body.image,
-//             title: req.body.title,
-//             heading: req.body.heading,
-//             description: req.body.description,
-//             type: req.body.type,
-//             mainTitle:'FEATURED ARTICLES',
-//             isActive: true
-//         });
-
-//         const response = await addBlog.save();
-//         return res.json({
-//             message: "Added Successfully",
-//             status: true,
-//             data: addBlog,
-//         });
-//     } catch (error) {
-//         console.log(error);
-//         return res.json({
-//             message: "An Error Occurred"
-//         });
-//     }
-// };
 /*
 *********fetchBlogByType*****
 * @param {*} req from user

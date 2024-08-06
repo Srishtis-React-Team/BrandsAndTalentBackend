@@ -16,14 +16,14 @@ const getBusinessReviewEmailTemplate = (userId
     <div class="welcome-text" style="color: #000; font-family: sans-serif; font-size: 18px; font-style: normal; font-weight: 400; padding: 20px;">Welcome To Brands and Talent</div>
     <div class="main" style="width: 100%; max-width: 600px; margin: 0 auto; padding: 20px; box-shadow: 1px 8px 24px 0px rgba(0, 0, 0, 0.1); background-color: #ffffff; border-radius: 10px;">
       <div class="img" style="margin-bottom: 20px;">
-        <img class="bt-img" src="https://hybrid.sicsglobal.com/project/brandsandtalent/backend/uploads/825f87f1-8d62-44cb-baef-b3f5eccc204b.png" alt="">
+        <img class="bt-img" src="https://brandsandtalent.com/backend/uploads/825f87f1-8d62-44cb-baef-b3f5eccc204b.png" alt="">
       </div>
       <div class="title" style="color: #c2114b; font-family: sans-serif; font-size: 26px; font-weight: 600; margin-bottom: 10px;">Congratulations!</div>
       <div class="description" style="color: #000; font-family: sans-serif; font-size: 16px; margin-bottom: 20px;">
         Your account has been successfully activated, granting you full access to our platform. Feel free to log in and continue exploring our platform with your newly activated account.
       </div>
       <div class="btn" style="display: inline-block; width: 180px; height: 52px; background-color: #000; color: #fff; font-family: sans-serif; font-size: 17px; font-weight: 400; text-align: center; line-height: 52px; border-radius: 50px;">
-        <a href="https://hybrid.sicsglobal.com/project/brandsandtalent/login?type=talent&user_id=${userId}" style="color: #fff; text-decoration: none; display: block; width: 100%; height: 100%;">Login Now</a>
+        <a href="https://brandsandtalent.com/login?type=talent&user_id=${userId}" style="color: #fff; text-decoration: none; display: block; width: 100%; height: 100%;">Login Now</a>
       </div>
     </div>
   </div>
@@ -82,13 +82,13 @@ const chatKidsTemplate = () => `
     <div class="button-wrapper">
       <a
         class="button"
-        href="https://hybrid.sicsglobal.com/project/brandsandtalent/talent-signup-basic-details"
+        href="https://brandsandtalent.com/talent-signup-basic-details"
         target="_blank"
         >Add Profile</a
       >
       <a
         class="button"
-        href="https://hybrid.sicsglobal.com/project/brandsandtalent/login"
+        href="https://brandsandtalent.com/login"
         target="_blank"
         >Login</a
       >
@@ -147,13 +147,13 @@ const chatAdultTemplate = () => `
     <div class="button-wrapper">
       <a
         class="button"
-        href="https://hybrid.sicsglobal.com/project/brandsandtalent/adult-signup"
+        href="https://brandsandtalent.com/adult-signup"
         target="_blank"
         >Add Profile</a
       >
       <a
         class="button"
-        href="https://hybrid.sicsglobal.com/project/brandsandtalent/login"
+        href="https://brandsandtalent.com/login"
         target="_blank"
         >Login</a
       >
@@ -213,13 +213,13 @@ const chatBrandsTemplate = () => `
       
       <a
         class="button"
-        href="https://hybrid.sicsglobal.com/project/brandsandtalent/brand-firstGig"
+        href="https://brandsandtalent.com/brand-firstGig"
         target="_blank"
         >Sign Up
       </a>
       <a
         class="button"
-        href="https://hybrid.sicsglobal.com/project/brandsandtalent/create-jobs"
+        href="https://brandsandtalent.com/create-jobs"
         target="_blank"
         >Create job</a
       >

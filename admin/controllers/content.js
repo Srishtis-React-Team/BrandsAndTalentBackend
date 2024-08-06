@@ -11,14 +11,21 @@ const contentmodel = require('../models/contentmodel');
 */
 const addContent = async (req, res) => {
     try {
-        console.log(req.body);
-
+        
         let contentItems;
 
         if (Array.isArray(req.body.items)) {
             contentItems = req.body.items.map(item => ({
                 contentType: item.contentType,
                 title: item.title,
+                tiltle2:item.title2,
+                tiltle3:item.title3,
+                tiltle4:item.title4,
+                tiltle5:item.title5,
+                tiltle6:item.title6,
+                tiltle7:item.title7,
+                tiltle8:item.title8,
+                icon:item.icon,
                 uniqueId: uuidv4(), // Generate a unique ID for each item
                 description: item.description,
                 image: item.image,
@@ -30,9 +37,17 @@ const addContent = async (req, res) => {
             contentItems = [{
                 contentType: req.body.contentType,
                 title: req.body.title,
+                title2:req.body.title2,
+                title3:req.body.title3,
+                title4:req.body.title4,
+                title5:req.body.title5,
+                title6:req.body.title6,
+                title7:req.body.title7,
+                title8:req.body.title8,
                 uniqueId: uuidv4(), // Generate a unique ID for the item
                 description: req.body.description,
                 image: req.body.image,
+                icon:req.body.icon,
                 content:req.body.content,
                 userType:req.body.userType,
                
@@ -179,7 +194,7 @@ const editContent = async (req, res) => {
 
             // Validate if uniqueId is a valid ObjectId
             if (!mongoose.Types.ObjectId.isValid(uniqueId)) {
-                return res.status(400).json({
+                return res.status(200).json({
                     message: "Invalid uniqueId format",
                     status: false
                 });
@@ -193,7 +208,7 @@ const editContent = async (req, res) => {
             );
 
             if (!updatedContent) {
-                return res.status(404).json({
+                return res.status(200).json({
                     message: "Content document not found",
                     status: false
                 });
@@ -214,47 +229,7 @@ const editContent = async (req, res) => {
     }
 };
 
-// const editContent = async (req, res) => {
-//     try {
-//         const uniqueId = req.body.uniqueId;
-//         const updateFields = req.body;
 
-//         // Build the update object only with the provided fields
-//         let updateObject = {};
-//         for (let key in updateFields) {
-//             if (key !== 'uniqueId') {
-//                 updateObject[`items.$.${key}`] = updateFields[key];
-//             }
-//         }
-
-//         // Ensure uniqueId remains unchanged
-//         updateObject[`items.$.uniqueId`] = uniqueId;
-
-//         // Find the document containing the content item and update the item
-//         const response = await contentmodel.updateOne(
-//             { "items.uniqueId": uniqueId },
-//             { $set: updateObject }
-//         );
-
-//         if (response.nModified === 0) {
-//             return res.status(200).json({
-//                 message: "Content item not found",
-//                 status: false
-//             });
-//         }
-
-//         return res.json({
-//             message: "Content item updated successfully",
-//             status: true,
-//         });
-//     } catch (error) {
-//         console.log(error);
-//         return res.status(500).json({
-//             message: "An Error Occurred",
-//             status: false
-//         });
-//     }
-// };
 
 
 module.exports = {

@@ -7,8 +7,8 @@ const morgan = require('morgan')
 
 // Replace the following with your MongoDB connection string
 //const url = 'mongodb://eduoskus:Dreamz2023@13.234.177.61:27017/eduoskus';
-const url='mongodb://127.0.0.1:27017/brandsandtalent'
-
+//const url='mongodb://127.0.0.1:27017/brandsandtalent'
+const url='mongodb://127.0.0.1:27017/brandsandtalentlive'
 mongoose.connect(url, {  //change localhost:27017 
     useNewUrlParser: true, 
     useUnifiedTopology: true

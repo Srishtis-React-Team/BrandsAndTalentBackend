@@ -90,7 +90,7 @@ const brandsRegister = async (req, res, next) => {
     }
     // It's good practice to validate confirmPassword here before proceeding.
     if (req.body.brandPassword !== req.body.confirmPassword) {
-      return res.status(400).json({
+      return res.status(200).json({
         message: "Passwords do not match",
         status: false
       });
@@ -550,7 +550,7 @@ const socailSignUpBrands = async (req, res, next) => {
 
     if (userExist) {
       console.log("Email already exists");
-      return res.status(400).json({
+      return res.status(200).json({
         message: "Email ID already exists",
         status: false
       });
@@ -684,7 +684,7 @@ const brandsForgotPassword = async (req, res, next) => {
     user.resetPasswordExpires = moment(Date.now()) + 3600000;
 
     await user.save();
-    const resetLink = `https://hybrid.sicsglobal.com/project/brandsandtalent/reset-password/brand/${token}`;
+    const resetLink = `https://brandsandtalent.com/reset-password/brand/${token}`;
     const transporter = nodemailer.createTransport({
       service: 'Gmail',
       auth: {
@@ -815,7 +815,7 @@ const deleteNotification = async (req, res, next) => {
     const notification = await notificationmodel.findOne({ _id: notificationId, isActive: true });
 
     if (!notification) {
-      return res.status(404).json({
+      return res.status(200).json({
         status: false,
         message: 'Notification not found or already inactive'
       });
@@ -1044,37 +1044,8 @@ const postSupportMail = async (req, res, next) => {
  * @param {*} res return data
  * @param {*} next undefined
  */
-// Function to save notifications to the database
-// const saveNotifications = async (talentId, notificationMessage) => {
-//   try {
-//       // Fetch details of brand and gig
-//       const talent = await findUserById(talentId);
 
 
-//       // Create the notification document
-//       const notification = new notificationmodel({
-//           notificationType: 'Help And Support',
-//           notificationMessage:notificationMessage ,
-//           talentDetails:{
-//            parentFirstName: talent.parentFirstName,
-//            parentLastName: talent.parentLastName,
-//            parentEmail: talent.parentEmail,
-//            childFirstName: talent.childFirstName,
-//            childLastName: talent.childLastName,
-//            preferredChildFirstname: talent.preferredChildFirstname,
-//            preferredChildLastName: talent.preferredChildLastName,
-//            image: talent.image
-
-//          }
-//       });
-
-//       // Save the notification document
-//       const savedNotification = await notification.save();
-//       console.log("Notification saved successfully", savedNotification);
-//   } catch (error) {
-//       console.error("Error saving notification:", error);
-//   }
-// };
 // Helper function to find a user by their ID
 async function findUserById(userId) {
   try {

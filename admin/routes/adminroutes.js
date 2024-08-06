@@ -23,7 +23,6 @@ router.post('/adminApproval',admin.adminApproval)//for adminApproval
 router.post('/jobApproval',admin.jobApproval)//for jobApproval
 router.get('/notApprovedMembers',admin.notApprovedMembers)//for notApprovedMembers
 router.get('/ListBrandForJobPost',admin.ListBrandForJobPost)//for ListBrandForJobPost
-//router.post('/filterByApprovalType',admin.filterByApprovalType)//for filterByApprovalType
 router.post('/filterByStatus',admin.filterByStatus)//for filterByStatus
 router.post('/jobApprovalByBrandsList',admin.jobApprovalByBrandsList)//for jobApprovalByBrandsList
 router.post('/adminApprovalByList',admin.adminApprovalByList)//for adminApprovalByList

@@ -75,30 +75,6 @@ const addFieldDatas = async (req, res, next) => {
   }
 };
 
-// const addFeatures = async (req, res, next) => {
-//     try {
-//         console.log(req.body);
-//         const Add_Features = new featuresmodel({
-//             features: req.body.features,
-//             type:req.body.type,
-//             isActive: true
-//         });
-
-//         const response = await Add_Features.save();
-
-//         return res.json({
-//             message: "Added Successfully",
-//             status: true,
-//             data: Add_Features,
-//         });
-//     } catch (error) {
-//         console.log(error);
-//         return res.json({
-//             message: "An Error Occurred"
-//         });
-//     }
-// };
-
 
 /**
 *********pricingList******
@@ -134,26 +110,6 @@ const getFieldDatas = async (req, res, next) => {
   }
 };
 
-
-// const getFieldDatas = async (req, res, next) => {
-//   try {
-//   const firstresponse = await featuresmodel.find({ isActive: true, type: req.body.type }).sort({ created: -1 }).exec();
-
-//   // Reverse the sorted results
-//   const response = firstresponse.reverse();
-
-//   res.json({
-//     status: true,
-//     data: response
-//   });
-// } catch (error) {
-//   res.json({
-//     status: false,
-//     message: error.message
-//   });
-// }
-// };
-
 /**
  ******* FileUploadMultiple 
 * @param {*} req from user
@@ -162,7 +118,7 @@ const getFieldDatas = async (req, res, next) => {
 */
 const FileUploadMultiple = (req, res, msg) => {
   if (!req.files || req.files.length === 0) {
-    return res.status(400).json({ status: false, message: "No file uploaded" });
+    return res.status(200).json({ status: false, message: "No file uploaded" });
   }
 
   // Initialize an array to hold the response data for each file
@@ -277,7 +233,6 @@ const upload = multer({
 
 const updateFieldDatas = async (req, res, next) => {
   try {
-    console.log(req.body);
 
     const { newFeature, updateFeature, type } = req.body;
 
@@ -451,132 +406,12 @@ const deleteFieldDatas = async (req, res, next) => {
   }
 };
 
-//  const deleteFieldDatas = async (req, res, next) => {
-//   try {
-//     const { type, id } = req.body;
-
-//     let response;
-
-//     if (type === 'features') {
-//       // Handle deletion of a feature by id
-//       response = await featuresmodel.updateOne(
-//         { _id: new mongoose.Types.ObjectId(id) },
-//         { $pull: { features: { id: id } } }
-//       );
-
-//     } else if (type === 'profession' || type === 'category') {
-//       // Delete a profession or category by id
-//       response = await featuresmodel.updateOne(
-//         { _id: new mongoose.Types.ObjectId(id) },
-//         { $pull: { features: { id: id } } }
-//       );
-
-//     } else {
-//       return res.status(200).json({
-//         message: "Invalid type specified",
-//         status: false
-//       });
-//     }
-
-//     if (response.matchedCount === 0) {
-//       return res.status(200).json({
-//         message: "No document matched",
-//         status: false
-//       });
-//     }
-
-//     if (response.modifiedCount === 0) {
-//       return res.status(200).json({
-//         message: "No changes made",
-//         status: false
-//       });
-//     }
-
-//     return res.json({
-//       message: "Deleted Successfully",
-//       status: true
-//     });
-
-//   } catch (error) {
-//     console.log(error);
-//     return res.status(500).json({
-//       message: "An Error Occurred",
-//       error: error.message
-//     });
-//   }
-// };
-
-
-//  const deleteFieldDatas = async (req, res, next) => {
-//   try {
-//       console.log(req.body);
-//       const { _id, labelToDelete, type, id } = req.body;
-
-//       let response;
-
-//       if (type === 'features') {
-//           // Handle deletion of a feature by label
-//           response = await featuresmodel.updateOne(
-//               { _id: new mongoose.Types.ObjectId(_id) },
-//               { $pull: { features: { label: labelToDelete } } }
-//           );
-
-//       } else if (type === 'profession'||type==='category') {
-//         // Delete a profession by id
-//         response = await featuresmodel.updateOne(
-//             { _id: new mongoose.Types.ObjectId(_id) },
-//             { $pull: { features: { id: id } } }
-//         );
-//     } else {
-//           return res.status(200).json({
-//               message: "Invalid type specified",
-//               status: false
-//           });
-//       }
-
-//       if (response.matchedCount === 0) {
-//           return res.status(200).json({
-//               message: "No document matched",
-//               status: false
-//           });
-//       }
-
-//       if (response.modifiedCount === 0) {
-//           return res.status(200).json({
-//               message: "No changes made",
-//               status: false
-//           });
-//       }
-
-//       return res.json({
-//           message: "Deleted Successfully",
-//           status: true
-//       });
-
-//   } catch (error) {
-//       console.log(error);
-//       return res.status(500).json({
-//           message: "An Error Occurred",
-//           error: error.message
-//       });
-//   }
-// };
-
-
 /**
 *********get all field Datas******
 * @param {*} req from user
 * @param {*} res return data
 * @param {*} next undefined
 */
-
-
-
-
-
-
-
-
 
 const getAllDatas = async (req, res, next) => {
   try {
@@ -606,31 +441,6 @@ const getAllDatas = async (req, res, next) => {
     });
   }
 };
-
-
-
-
-// const getAllDatas = async (req, res, next) => {
-
-//   try {
-//     const response = await featuresmodel.find({ isActive: true }).sort({ created: -1 }).exec();
-
-    
-
-//     res.json({
-//       status: true,
-//       data: response
-//     });
-//   } catch (error) {
-//     res.json({
-//       status: false,
-//       message: error.message
-//     });
-//   }
-// };
-
-
-
 
 module.exports = {
   addFieldDatas, getFieldDatas, FileUploadMultiple, upload, updateFieldDatas, deleteFieldDatas,

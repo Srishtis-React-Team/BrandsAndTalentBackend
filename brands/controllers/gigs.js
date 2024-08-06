@@ -55,7 +55,7 @@ const createJob = async (req, res, next) => {
             data: add_gigs,
         });
     } catch (error) {
-        console.error("Error in createJob:", error);
+      
         return res.json({
             message: "An Error Occurred"
         });
@@ -102,7 +102,7 @@ const getPostedJobs = async (req, res, next) => {
             data: modifiedData
         });
     } catch (error) {
-        console.error('Error fetching posted jobs:', error);
+      
         res.status(500).json({
             status: false,
             message: 'Error fetching posted jobs',
@@ -128,7 +128,7 @@ const getJobsByID = async (req, res, next) => {
 
         if (!gig) {
             // If no gig is found, send a 404 not found response
-            return res.status(404).json({
+            return res.status(200).json({
                 status: false,
                 message: 'Gig not found'
             });
@@ -142,7 +142,7 @@ const getJobsByID = async (req, res, next) => {
 
     } catch (error) {
         // Log the error and send a 500 internal server error response
-        console.error("Error fetching gig:", error);
+    
         res.status(500).json({
             status: false,
             message: 'Server error'
@@ -186,7 +186,7 @@ const notificationsave = async (brandId,gigId,adminApproved, notificationMessage
       });
   
       const savedNotification = await notification.save();
-      console.log("Notification saved successfully", savedNotification);
+   
     } catch (error) {
       console.error("Error saving notification:", error);
     }
@@ -205,7 +205,7 @@ const notificationsave = async (brandId,gigId,adminApproved, notificationMessage
   
         return null;
     } catch (error) {
-        console.error("Error finding user by ID:", error);
+       
         return null;
     }
   }
@@ -243,14 +243,14 @@ const notificationsave = async (brandId,gigId,adminApproved, notificationMessage
 
 const draftJob = async (req, res, next) => {
     try {
-        console.log('inside draft job.............................................')
+     
         const { brandId } = req.body;
 
         // Fetch brand details to check the plan
         const brand = await brandsmodel.findById(brandId);
 
         if (!brand) {
-            return res.status(404).json({ message: "Brand not found" });
+            return res.status(200).json({ message: "Brand not found" });
         }
 
         // Determine job limit per month based on the plan
@@ -281,7 +281,7 @@ const draftJob = async (req, res, next) => {
             createdAt: { $gte: firstDayOfMonth, $lte: currentDate }
         });
 
-        console.log("jobCount", jobCount)
+      
 
         if (jobCount >= jobLimitPerMonth) {
             return res.status(200).json({
@@ -295,7 +295,7 @@ const draftJob = async (req, res, next) => {
          const isProOrPremium = brand.planName === 'Pro' || brand.planName === 'Premium';
          const isAdminApproved = isProOrPremium ? true : false;
 
-         console.log("gdfjsfjdh",isAdminApproved)
+        
  
         
 
@@ -363,9 +363,9 @@ const draftJob = async (req, res, next) => {
 
         const response = await add_gigs.save();
 
-        console.log('resposne---consoling--response---',response)
+      
         if(brand.planName=='Basic'){
-            console.log('inside basic...')
+           
             // Check in the notification model if a notification for this talent already exists
                 const notificationExists = await notificationmodel.findOne({
                 notificationType: "Job Approval",
@@ -387,7 +387,7 @@ const draftJob = async (req, res, next) => {
             const notificationMessage = `The brand ${brandName}, posted a job.Please approve them.`;
   
             // Send notification and email
-            console.log("response.adminApproved"),response.adminApproved
+           
             await notificationsave(brandId,response._id,response.adminApproved,notificationMessage);
             await emailSend(brandEmail, 'Approval', emailContent);
         // }
@@ -404,7 +404,7 @@ const draftJob = async (req, res, next) => {
           //  planName:brand.planName
         });
     } catch (error) {
-        console.error("Error in draftJob:", error);
+     
         return res.status(500).json({ message: "An Error Occurred" });
     }
 };
@@ -434,7 +434,7 @@ const getDraftJobsByID = async (req, res, next) => {
 
         if (!gig) {
             // If no gig is found, send a 404 not found response
-            return res.status(404).json({
+            return res.status(200).json({
                 status: false,
                 message: 'Gig not found'
             });
@@ -448,7 +448,7 @@ const getDraftJobsByID = async (req, res, next) => {
 
     } catch (error) {
         // Log the error and send a 500 internal server error response
-        console.error("Error fetching gig:", error);
+    
         res.status(500).json({
             status: false,
             message: 'Server error'
@@ -701,13 +701,13 @@ const postJobByDraft = async (req, res, next) => {
         // Generate job listings HTML
         const jobListings = jobs.map(job => `
       <div>
-          <h3><a href="https://hybrid.sicsglobal.com/project/brandsandtalent/link?jobId=${job._id}">${job.jobTitle}</a></h3>
+          <h3><a href=https://brandsandtalent.com/link?jobId=${job._id}">${job.jobTitle}</a></h3>
           <p><strong>Active Job:</strong> ${job.jobTitle}</p>
           <p><strong>Location:</strong> ${job.jobLocation}</p>
           <p>${job.jobDescription.slice(0, 100)}...</p>
       </div>
   `).join('<hr>');
-        console.log("jobListings", jobListings)
+      
         // Create email content
         const emailContent = `
       <html>
@@ -770,7 +770,7 @@ const postJobByDraft = async (req, res, next) => {
 
     } catch (error) {
         // Log the error and send a 500 internal server error response
-        console.error("Error in postJobByDraft:", error);
+       
         return res.status(500).json({
             status: false,
             message: 'Server error'
@@ -823,7 +823,7 @@ const editDraft = async (req, res) => {
         );
 
         if (!updatedDraft) {
-            return res.status(404).json({
+            return res.status(200).json({
                 status: false,
                 message: "Draft not found"
             });
@@ -836,7 +836,7 @@ const editDraft = async (req, res) => {
             data: updatedDraft
         });
     } catch (error) {
-        console.error("Error occurred while updating draft:", error);
+      
         res.status(500).json({
             status: false,
             message: 'Server error'
@@ -902,7 +902,7 @@ const editJob = async (req, res) => {
             data: updatedJob // Return the updated document
         });
     } catch (err) {
-        console.error("Error in editJob:", err);
+   
         res.status(500).json({ status: false, message: 'Error Occurred' });
     }
 };
@@ -944,7 +944,7 @@ const getBrandDraftJobsByID = async (req, res, next) => {
 
     } catch (error) {
         // Log the error and send a 500 internal server error response
-        console.error("Error fetching gigs:", error);
+       
         res.status(500).json({
             status: false,
             message: 'Server error'
@@ -989,7 +989,7 @@ const getBrandPostedJobsByID = async (req, res, next) => {
 
     } catch (error) {
         // Log the error and send a 500 internal server error response
-        console.error("Error fetching gigs:", error);
+     
         res.status(500).json({
             status: false,
             message: 'Server error'
@@ -1008,7 +1008,7 @@ const getBrandPostedJobsByID = async (req, res, next) => {
 const getAllJobs = async (req, res, next) => {
     try {
         const userId = req.body.userId || req.params.userId;
-        console.log("userId", userId);
+    
 
         const today = new Date();
 
@@ -1020,7 +1020,7 @@ const getAllJobs = async (req, res, next) => {
             lastDateForApply: { $gte: today },
             adminApproved:true,
         }).sort({ createdAt: -1 });
-        console.log("gigs", gigs)
+     
 
         const drafts = await draftmodel.find({
             brandId: new mongoose.Types.ObjectId(userId),
@@ -1037,7 +1037,7 @@ const getAllJobs = async (req, res, next) => {
             data: jobs
         });
     } catch (error) {
-        console.error("Error fetching all jobs:", error);
+    
         res.status(500).json({
             status: false,
             error: error.message
@@ -1105,7 +1105,7 @@ const deleteJob = async (req, res, next) => {
         });
     } catch (error) {
         // If an error occurs, send error response
-        console.error("Error in deleteDraftJob:", error);
+      
         res.status(500).json({
             status: false,
             message: 'An error occurred'
@@ -1138,7 +1138,7 @@ const getAnyJobById = async (req, res, next) => {
 
         // If the job is not found in both models
         if (!job) {
-            return res.status(404).json({ status: false, msg: 'Job not found' });
+            return res.status(200).json({ status: false, msg: 'Job not found' });
         }
 
         // Check if the job is applied by the user
@@ -1199,7 +1199,7 @@ const jobCount = async (req, res, next) => {
         let brand = await brandsmodel.findOne({ _id: new mongoose.Types.ObjectId(brandId) });
 
         if (!brand) {
-            return res.status(404).json({ status: false, message: "Brand not found" });
+            return res.status(200).json({ status: false, message: "Brand not found" });
         }
 
         // Update the draftCount, postJobCount, and totalCampaignCount fields
@@ -1223,7 +1223,7 @@ const jobCount = async (req, res, next) => {
             data: countsArray
         });
     } catch (error) {
-        console.error("Error updating counts:", error);
+      
         res.json({
             status: false,
             message: "Error updating counts"
@@ -1342,7 +1342,7 @@ const searchJobs = async (req, res, next) => {
         });
     } catch (error) {
         // Handle errors
-        console.error("Error in searching jobs:", error);
+     
         res.status(500).json({
             status: false,
             msg: 'Failed to search jobs'
@@ -1368,13 +1368,13 @@ const applyJobs = async (req, res, next) => {
         const brand = await findUserById(brandId);
 
         if (!talent || !brand) {
-            return res.status(404).json({ status: false, msg: 'Talent or Brand not found' });
+            return res.status(200).json({ status: false, msg: 'Talent or Brand not found' });
         }
 
         // Determine the correct model based on the talent type
         const talentType = await determineUserType(talentId);
         if (!talentType) {
-            return res.status(404).json({ status: false, msg: 'User type not found for talent' });
+            return res.status(200).json({ status: false, msg: 'User type not found for talent' });
         }
 
         const TalentModel = talentType === 'kids' ? kidsmodel : adultmodel;
@@ -1429,7 +1429,7 @@ const applyJobs = async (req, res, next) => {
 
         res.json({ status: true, msg: 'Application processed' });
     } catch (error) {
-        console.error("Error applying for job", error);
+      
         res.status(500).json({ status: false, msg: error.message });
     }
 };
@@ -1447,7 +1447,7 @@ async function findUserById(userId) {
 
         return null;
     } catch (error) {
-        console.error("Error finding user by ID:", error);
+      
         return null;
     }
 }
@@ -1469,7 +1469,7 @@ async function determineUserType(userId) {
 // Helper function to send a notification
 const sendNotification = async (fcmToken, title, text) => {
     if (!fcmToken) {
-        console.error("FCM Token is required");
+        
         return;
     }
 
@@ -1598,14 +1598,14 @@ async function saveNotifications(brandId, talentId, gigId, brandNotificationMess
 
         // Save the notification document
         const savedNotification = await notification.save();
-        console.log("Notification saved successfully", savedNotification);
+       
     } catch (error) {
         console.error("Error saving notification:", error);
     }
 }
 async function saveApplyJobs(brandId, talentId, gigId) {
     try {
-        console.log("fdshgvkdfkbfdknbk")
+     
         // Fetch details of brand, talent, and gig
         const brand = await findUserById(brandId);
         const talent = await findUserById(talentId);
@@ -1614,7 +1614,7 @@ async function saveApplyJobs(brandId, talentId, gigId) {
         // Determine user types for brand and talent
         const brandType = await determineUserType(brandId);
         const talentType = await determineUserType(talentId);
-      console.log("branfvjdgbkjfngkjfnkjnkfngkd",brand)
+     
         // Create the notification document
         const apply = new applymodel({
 
@@ -1679,7 +1679,7 @@ async function saveApplyJobs(brandId, talentId, gigId) {
 
         // Save the notification document
         const savedjobs = await apply.save();
-        console.log("Notification saved successfully", savedjobs);
+      
     } catch (error) {
         console.error("Error saving notification:", error);
     }
@@ -1749,7 +1749,7 @@ const getBrandNotification = async (req, res, next) => {
             data: notifications
         });
     } catch (error) {
-        console.error("Error fetching notifications:", error);
+       
         res.status(500).json({
             status: false,
             msg: 'Failed to fetch notifications',
@@ -1789,7 +1789,7 @@ const getTalentNotification = async (req, res, next) => {
             data: notifications
         });
     } catch (error) {
-        console.error("Error fetching notifications:", error);
+       
         res.status(500).json({
             status: false,
             msg: 'Failed to fetch notifications',
@@ -1838,7 +1838,7 @@ const getCountNotification = async (req, res, next) => {
             unreadCount: unreadCount
         });
     } catch (error) {
-        console.error("Error fetching notifications:", error);
+      
         res.status(500).json({
             status: false,
             msg: 'Failed to fetch notifications',
@@ -1865,7 +1865,7 @@ const getAppliedjobs = async (req, res, next) => {
         }
 
         if (!user || !user.applications || user.applications.length === 0) {
-            return res.status(404).json({
+            return res.status(200).json({
                 status: false,
                 message: 'No applications found'
             });
@@ -1886,7 +1886,7 @@ const getAppliedjobs = async (req, res, next) => {
         validGigDetails.sort((a, b) => b.createdAt - a.createdAt);
 
         if (validGigDetails.length === 0) {
-            return res.status(404).json({
+            return res.status(200).json({
                 status: false,
                 message: 'Gig details not found'
             });
@@ -1898,7 +1898,7 @@ const getAppliedjobs = async (req, res, next) => {
         });
 
     } catch (error) {
-        console.error("Error fetching gigs:", error);
+       
         res.status(500).json({
             status: false,
             message: 'Server error'
@@ -1962,7 +1962,7 @@ const selectedLevelRange = async (req, res, next) => {
         }
 
     } catch (error) {
-        console.error("Error updating selected level:", error);
+       
         return res.status(500).json({
             status: false,
             message: 'Internal server error'
@@ -2019,7 +2019,7 @@ const informSelectedLevel = async (req, res) => {
                 image: adult.image
             };
         } else {
-            return res.status(404).json({
+            return res.status(200).json({
                 status: false,
                 message: 'No active talent found with the provided talentId'
             });
@@ -2072,49 +2072,13 @@ const informSelectedLevel = async (req, res) => {
                 notificationTitle = 'Application Update';
                 notificationMessage = 'We regret to inform you that you were not selected.';
                 break;
-            //case 'interviewInvitations':
+          
             case 'interviewInvitations':
                     mailOptions.subject = 'Interview Invitation';
                     mailOptions.text = req.body.officeAddress || ''; 
                     notificationTitle = 'Interview Invitation';
                     notificationMessage = `You have been invited to a interview.`;
-                   
-                // const interviewType = req.body.interviewType;
-                // const meetingLink = req.body.meetingLink; // For online interviews
-                // const officeAddress = req.body.officeAddress; // For offline interviews
-                // if (!interviewType) {
-                //     return res.status(400).json({
-                //         status: false,
-                //         message: 'interviewType is required for interview invitations'
-                //     });
-                // }
-                // mailOptions.subject = 'Interview Invitation';
-                // mailOptions.text += ` This will be a ${interviewType} interview. `;
-                // notificationTitle = 'Interview Invitation';
-                // notificationMessage = `You have been invited to a ${interviewType} interview.`;
-
-                // // Append additional information based on interview type
-                // if (interviewType === 'online') {
-                //     if (meetingLink) {
-                        
-                //         mailOptions.text += `Here is your meeting link: ${meetingLink}.`;
-                //         notificationMessage += ` Here is your meeting link: ${meetingLink}.`;
-                //     } else {
-                //         mailOptions.text += 'A meeting link will be provided soon.';
-                        
-                //         notificationMessage += ' A meeting link will be provided soon.';
-                //     }
-                // } else if (interviewType === 'offline') {
-                //     if (officeAddress) {
-                //         mailOptions.text += `Please attend in person at the following address: ${officeAddress}.`;
-                        
-                //         notificationMessage += ` Please attend in person at the following address: ${officeAddress}.`;
-                //     } else {
-                //         mailOptions.text += 'Please attend in person at our office. The exact address will be provided soon.';
-                        
-                //         notificationMessage += ' Please attend in person at our office. The exact address will be provided soon.';
-                //     }
-                // }
+                
                 break;
             default:
                 return res.status(400).json({
@@ -2149,7 +2113,7 @@ const informSelectedLevel = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Error sending email or notification:", error);
+    
         res.status(500).json({
             status: false,
             message: 'Internal server error'
@@ -2191,7 +2155,7 @@ const newCandidates = async (req, res) => {
 
     } catch (error) {
         // Handle errors that occur during the fetch operation
-        console.error('Error fetching applications:', error);
+       
         return res.status(500).json({
             status: false,
             message: 'Failed to retrieve data',
@@ -2224,9 +2188,6 @@ const getSelectionList = async (req, res) => {
             selectedLevel: selectedLevel.trim(),
           });
 
-        console.log("brandId",brandId)
-        console.log("selectedLevel", selectedLevel)
-        console.log("talents", talents);
 
         if (!talents || talents.length === 0) {
             return res.status(200).json({
@@ -2245,7 +2206,7 @@ const getSelectionList = async (req, res) => {
 
     } catch (error) {
         // Handle errors that occur during the fetch operation
-        console.error('Error fetching talents:', error);
+     
         return res.status(500).json({
             status: false,
             message: 'Failed to retrieve data',
@@ -2267,13 +2228,13 @@ const updateFavouriteJobs = async (req, res, next) => {
         const brand = await findUserById(brandId);
 
         if (!talent || !brand) {
-            return res.status(404).json({ status: false, msg: 'Talent or Brand not found' });
+            return res.status(200).json({ status: false, msg: 'Talent or Brand not found' });
         }
 
         // Determine the correct model based on the talent type
         const talentType = await determineUserType(talentId);
         if (!talentType) {
-            return res.status(404).json({ status: false, msg: 'User type not found for talent' });
+            return res.status(200).json({ status: false, msg: 'User type not found for talent' });
         }
 
         const TalentModel = talentType === 'kids' ? kidsmodel : adultmodel;
@@ -2282,7 +2243,7 @@ const updateFavouriteJobs = async (req, res, next) => {
 
         res.json({ status: true, msg: 'Favourites Update Successfully' });
     } catch (error) {
-        console.error("Error applying for job", error);
+      
         res.status(500).json({ status: false, msg: error.message });
     }
 };
@@ -2301,7 +2262,7 @@ async function findUserById(userId) {
 
         return null;
     } catch (error) {
-        console.error("Error finding user by ID:", error);
+      
         return null;
     }
 }
@@ -2333,7 +2294,7 @@ async function savematchedJobs(gigId) {
             throw new Error('Gig not found');
         }
 
-        console.log('Gig updated successfully:', gig);
+      
     } catch (error) {
         console.error('Error updating the gig:', error.message);
     }
@@ -2444,7 +2405,7 @@ async function saveFavouritesJobs(brandId, talentId, gigId) {
 
         // Save the notification document
         await favouritejob.save();
-        console.log("Favourite job saved successfully");
+       
     } catch (error) {
         console.error("Error saving favourite job:", error);
     }
@@ -2467,7 +2428,7 @@ const getSavedJobsByTalentId = async (req, res) => {
             data: favourites
         });
     } catch (error) {
-        console.error("Error finding favourites by talentId:", error);
+     
         return null;
     }
 };
@@ -2512,7 +2473,7 @@ const getSkills = async (req, res) => {
             });
         }
     } catch (error) {
-        console.error("Error retrieving skills from active jobs:", error);
+       
         res.status(500).json({
             status: false,
             message: 'Failed to retrieve skills'
@@ -2542,13 +2503,7 @@ const removeFavouritesJob = async (req, res, next) => {
                 message: 'Job not found'
             });
         }
-        console.log("job._id", job._id)
-        // // Update the favourite job document to set gigDetails.matched to false
-        // const updatedFavouriteJob = await favouritesgigsmodel.updateMany(
-        //     { _id: job._id },
-        //     { 'gigDetails.matched': false,isFavourite:false },
-        //     { new: true } // Return the updated document
-        // );
+       
         // Update all favourite job documents that match gigId and talentId to set gigDetails.matched to false and isFavourite to false
         const updatedFavouriteJob = await favouritesgigsmodel.updateMany(
             { gigId, talentId, isActive: true },
@@ -2571,7 +2526,7 @@ const removeFavouritesJob = async (req, res, next) => {
         });
     } catch (error) {
         // If an error occurs, send error response
-        console.error("Error in removeFavouritesJob:", error);
+       
         res.status(500).json({
             status: false,
             message: 'An error occurred'
@@ -2614,7 +2569,7 @@ const updatePassword = async (req, res, next) => {
 
         res.json({ status: true, message: 'Password updated successfully' });
     } catch (error) {
-        console.error("Error in updating password:", error);
+      
         res.status(200).json({ status: false, message: 'An error occurred' });
     }
 };
@@ -2716,7 +2671,7 @@ const createJobAlert = async (req, res, next) => {
         let talent = await kidsmodel.findById(talentId) || await adultmodel.findById(talentId);
 
         if (!talent) {
-            return res.status(404).json({ status: false, msg: 'Talent or Brand not found' });
+            return res.status(200).json({ status: false, msg: 'Talent or Brand not found' });
         }
 
         // Update isSubscribed field to true
@@ -2750,8 +2705,6 @@ const createJobAlert = async (req, res, next) => {
                 lastDateForApply: { $gte: today }
             });
 
-            //console.log("jobs", jobs);
-
             // Send notifications for kids
             const kids = await kidsmodel.find({
                 _id: req.body.talentId,
@@ -2764,11 +2717,11 @@ const createJobAlert = async (req, res, next) => {
 
             for (const kid of kids) {
                 const relevantJobs = jobs.filter(job => kid.relevantCategories.includes(job.category));
-                console.log("relevantJobs", relevantJobs)
+            
                 if (relevantJobs.length > 0) {
                     const jobListings = relevantJobs.map(job => `
                         <div>
-                            <h3><a href="https://hybrid.sicsglobal.com/project/brandsandtalent/link?jobId=${job._id}">${job.jobTitle}</a></h3>
+                            <h3><a href="https://brandsandtalent.com/link?jobId=${job._id}">${job.jobTitle}</a></h3>
                             <p><strong>Active Job:</strong> ${job.jobTitle}</p>
                             <p><strong>Location:</strong> ${job.jobLocation}</p>
                             <p>${job.jobDescription.slice(0, 100)}...</p>
@@ -2819,7 +2772,7 @@ const createJobAlert = async (req, res, next) => {
                 if (relevantJobs.length > 0) {
                     const jobListings = relevantJobs.map(job => `
                         <div>
-                            <h3><a href="https://hybrid.sicsglobal.com/project/brandsandtalent/link?jobId=${job._id}">${job.jobTitle}</a></h3>
+                            <h3><a href="https://brandsandtalent.com/link?jobId=${job._id}">${job.jobTitle}</a></h3>
                             <p><strong>Active Job:</strong> ${job.jobTitle}</p>
                             <p><strong>Location:</strong> ${job.jobLocation}</p>
                             <p>${job.jobDescription.slice(0, 100)}...</p>
@@ -2859,11 +2812,6 @@ const createJobAlert = async (req, res, next) => {
         if (subscriptionType === 'weekly') {
             // Schedule cron job to run every minute
 
-
-            // cron.schedule('*/2 * * * * *', () => {
-            //     console.log('Running a check for job application deadlines every 2 sec...');
-            //     checkAndSendNotifications();
-            // });
             cron.schedule('0 0 * * 0', () => {
                 console.log('Running a weekly check for job application deadlines...');
                 checkAndSendNotifications();
@@ -2896,12 +2844,12 @@ const updateJobAlert = async (req, res, next) => {
         // Find talent and determine their type
         const talent = await findUserById(talentId);
         if (!talent) {
-            return res.status(404).json({ status: false, msg: 'Talent or Brand not found' });
+            return res.status(200).json({ status: false, msg: 'Talent or Brand not found' });
         }
 
         const talentType = await determineUserType(talentId);
         if (!talentType) {
-            return res.status(404).json({ status: false, msg: 'User type not found for talent' });
+            return res.status(200).json({ status: false, msg: 'User type not found for talent' });
         }
 
         // Determine the correct model based on the talent type
@@ -2913,7 +2861,7 @@ const updateJobAlert = async (req, res, next) => {
         }, { new: true });
 
         if (!updatedTalent) {
-            return res.status(404).json({ status: false, msg: 'Failed to update subscription status' });
+            return res.status(200).json({ status: false, msg: 'Failed to update subscription status' });
         }
 
         res.json({ status: true, msg: 'Subscription updated successfully' });
@@ -3056,10 +3004,10 @@ const inviteTalentToApply = async (req, res, next) => {
         const talent = await findUserById(talentId);
 
         if (!brand) {
-            return res.status(404).json({ status: false, msg: 'Brand not found' });
+            return res.status(200).json({ status: false, msg: 'Brand not found' });
         }
         if (!talent) {
-            return res.status(404).json({ status: false, msg: 'Talent not found' });
+            return res.status(200).json({ status: false, msg: 'Talent not found' });
         }
         console.log("talent", talent)
         console.log("talentdfdvg", talent.subscriptionType)
@@ -3073,7 +3021,7 @@ const inviteTalentToApply = async (req, res, next) => {
         //  if ((brandPlanName === 'Pro' || brandPlanName === 'Premium') && (talentPlanName === 'Pro' || talentPlanName === 'Premium')) {
         const talentType = await determineUserType(talentId);
         if (!talentType) {
-            return res.status(404).json({ status: false, msg: 'User type not found for talent' });
+            return res.status(200).json({ status: false, msg: 'User type not found for talent' });
         }
 
         // Determine the correct model based on the talent type
@@ -3093,7 +3041,7 @@ const inviteTalentToApply = async (req, res, next) => {
             <body>
             <p>Hi ${talent.parentFirstName || talent.firstName},</p>
             <p>We think you'd be a great fit for an exciting opportunity with us. We would love for you to apply for the ${jobTitle} role.</p>
-            <p>Please apply at <strong><a href="https://hybrid.sicsglobal.com/project/brandsandtalent/preview-job-talent?${gigId}">this link</a></strong>. Looking forward to your application! Should you need more info, please feel free to contact us at ${email}.</p>
+            <p>Please apply at <strong><a href="https://brandsandtalent.com/preview-job-talent?${gigId}">this link</a></strong>. Looking forward to your application! Should you need more info, please feel free to contact us at ${email}.</p>
             <p>Best regards,</p>
             <p>Brands and Talent</p>
             </body>
@@ -3115,7 +3063,7 @@ const inviteTalentToApply = async (req, res, next) => {
         res.json({ status: true, msg: 'Invitation sent successfully' });
        
     } catch (error) {
-        console.error("Error sending invitation", error);
+      
         res.status(500).json({ status: false, msg: error.message });
     }
 };
@@ -3136,14 +3084,14 @@ const isApprovedForjobByPlan = async (req, res, next) => {
             { new: true } // To return the updated document
         );
 
-        console.log("Success: Approved");
+     
         res.json({
             message: "Approved",
             status: true,
             data: updatedGig
         });
     } catch (error) {
-        console.error("Error:", error);
+      
         res.json({
             message: "An error occurred",
             status: false,
@@ -3192,7 +3140,7 @@ const getBrandJobs = async (req, res, next) => {
 
     } catch (error) {
         // Log the error and send a 500 internal server error response
-        console.error("Error fetching jobs:", error);
+       
         res.status(500).json({
             status: false,
             message: 'Server error'
@@ -3225,7 +3173,7 @@ const getAllNotification = async (req, res, next) => {
             data: notifications
         });
     } catch (error) {
-        console.error("Error fetching notifications:", error);
+     
         res.status(500).json({
             status: false,
             msg: 'Failed to fetch notifications',
