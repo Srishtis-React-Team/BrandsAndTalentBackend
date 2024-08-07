@@ -22,6 +22,61 @@ const featuresmodel = require('../models/featuresmodel');
  * @param {*} res return data
  * @param {*} next undefined
  */
+// const addFieldDatas = async (req, res, next) => {
+//   try {
+//     console.log(req.body);
+
+//     // Check if req.body.features is defined and is an array
+//     if (!Array.isArray(req.body.features)) {
+//       return res.status(400).json({
+//         message: "Features must be an array",
+//         status: false
+//       });
+//     }
+
+//     let featuresToSave;
+
+//     if (req.body.type === 'category' || req.body.type === 'profession') {
+//       // Add unique IDs to each feature for categories and professions
+//       featuresToSave = req.body.features.map(feature => ({
+//         id: uuidv4(), // Generate unique ID
+//         label: feature.label,
+//         value: feature.value,
+//         description: feature.description || '' // Include description if present, default to empty string
+//       }));
+//     } else {
+//       // For other types, assume features are provided directly
+//       featuresToSave = req.body.features;
+//     }
+
+//     // Create a new document with features and type
+//     const Add_Features = new featuresmodel({
+//       features: featuresToSave,
+//       type: req.body.type,
+//       isActive: true
+//     });
+
+//     // Save the document
+//     const response = await Add_Features.save();
+ 
+
+//     // Return success response
+//     return res.json({
+//       message: "Added Successfully",
+//       status: true,
+//       data: response,
+//     });
+//   } catch (error) {
+//     // Log and return error response
+//     console.log(error);
+//     return res.status(500).json({
+//       message: "An Error Occurred",
+//       status: false
+//     });
+//   }
+// };
+
+
 const addFieldDatas = async (req, res, next) => {
   try {
     console.log(req.body);
@@ -35,6 +90,7 @@ const addFieldDatas = async (req, res, next) => {
     }
 
     let featuresToSave;
+    let response;
 
     if (req.body.type === 'category' || req.body.type === 'profession') {
       // Add unique IDs to each feature for categories and professions
@@ -44,26 +100,50 @@ const addFieldDatas = async (req, res, next) => {
         value: feature.value,
         description: feature.description || '' // Include description if present, default to empty string
       }));
+
+      // Create a new document with features and type
+      const Add_Features = new featuresmodel({
+        features: featuresToSave,
+        type: req.body.type,
+        isActive: true
+      });
+
+      // Save the document
+      response = await Add_Features.save();
+
+    } else if (req.body.type === 'gender' || req.body.type === 'nationalities' || req.body.type === 'language') {
+      // Create new features entry
+      const newFeatures = new featuresmodel({
+        isActive: true,
+        value: req.body.value,
+        label: req.body.label,
+        features:req.body.features,
+        type: req.body.type
+      });
+
+      // Save new features entry to the database
+      response = await newFeatures.save();
+
     } else {
       // For other types, assume features are provided directly
       featuresToSave = req.body.features;
+
+      // Create a new document with features and type
+      const Add_Features = new featuresmodel({
+        features: featuresToSave,
+        type: req.body.type,
+        isActive: true
+      });
+
+      // Save the document
+      response = await Add_Features.save();
     }
-
-    // Create a new document with features and type
-    const Add_Features = new featuresmodel({
-      features: featuresToSave,
-      type: req.body.type,
-      isActive: true
-    });
-
-    // Save the document
-    const response = await Add_Features.save();
 
     // Return success response
     return res.json({
       message: "Added Successfully",
       status: true,
-      data: response,
+      data: response
     });
   } catch (error) {
     // Log and return error response
@@ -84,31 +164,75 @@ const addFieldDatas = async (req, res, next) => {
 */
 const getFieldDatas = async (req, res, next) => {
   try {
-    // Fetching all documents from the featuresmodel collection that are active and match the type
-    const firstresponse = await featuresmodel.find({ isActive: true, type: req.body.type }).sort({ created: -1 }).exec();
+    if (req.body.feature === 'ethnicities') {
+      // Fetch the document with type 'features' and isActive: true
+      const document = await featuresmodel.findOne({ isActive: true, type: 'features' });
 
-    // Sort the 'features' array within each document based on the 'label' field in alphabetical order
-    const sortedResponse = firstresponse.map(doc => {
-      return {
-        ...doc._doc,
-        features: doc.features.sort((a, b) => a.label.localeCompare(b.label))
-      };
-    });
+      if (!document) {
+        return res.status(200).json({
+          status: false,
+          message: 'Document not found'
+        });
+      }
 
-    // Reverse the sorted results
-    const response = sortedResponse.reverse();
+      // Find the ethnicity field
+      const ethnicityField = document.features.find(f => f.label === 'Ethnicity');
 
-    res.json({
-      status: true,
-      data: response
-    });
+      if (!ethnicityField) {
+        return res.status(200).json({
+          status: false,
+          message: 'Ethnicity field not found'
+        });
+      }
+
+      // Send the response with the ethnicity field data
+      return res.json({
+        status: true,
+        data: ethnicityField
+      });
+
+    } else {
+      // Fetch all documents with isActive: true and type matching req.body.type
+      const documents = await featuresmodel.find({ isActive: true, type: req.body.type }).sort({ createdAt: -1 }).exec();
+
+      if (!documents || documents.length === 0) {
+        return res.status(200).json({
+          status: false,
+          message: 'No documents found'
+        });
+      }
+
+      // Sort the 'features' array within each document based on the 'label' field in alphabetical order
+      const sortedResponse = documents.map(doc => {
+        return {
+          ...doc._doc,
+          features: doc.features.sort((a, b) => {
+            const labelA = a.label || ''; // Default to empty string if undefined
+            const labelB = b.label || ''; // Default to empty string if undefined
+            return labelA.localeCompare(labelB);
+          })
+        };
+      });
+
+      // Reverse the sorted results
+      const response = sortedResponse.reverse();
+
+      // Send the response with the sorted data
+      return res.json({
+        status: true,
+        data: response
+      });
+    }
   } catch (error) {
-    res.json({
+    // Send a 500 status code for any internal server error
+    return res.status(500).json({
       status: false,
       message: error.message
     });
   }
 };
+
+
 
 /**
  ******* FileUploadMultiple 

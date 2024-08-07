@@ -16,7 +16,8 @@ const authenticationSchema = new schema({
     },
     type:{
         type:String
-    }
+    },
+ 
     
 
    

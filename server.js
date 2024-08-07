@@ -6,6 +6,7 @@ var path = require('path');
 const cors = require('cors');
 const crypto = require('crypto');//otp
 const bodyParser = require('body-parser');
+const compression = require('compression');
 
 //26/3
 const passport=require("passport"); //google
@@ -287,6 +288,9 @@ app.use('/upload1', express.static(path.join(__dirname, 'upload1')));
 
 app.use(express.json()); // Middleware to parse JSON bodies
 
+
+
+app.use(compression());
 
 
 // Start HTTP server on port 4014

@@ -8,6 +8,7 @@ const crypto = require('crypto');
 const moment = require('moment');
 var loginData = require('../../emailCredentials.js');
 const { gmail: { host, pass } } = loginData;
+const { isValidPhoneNumber, parsePhoneNumberFromString } = require('libphonenumber-js');
 
 const nodemailer = require('nodemailer');
 const { getBusinessReviewEmailTemplate } = require('../../template.js');
@@ -974,6 +975,64 @@ async function findUserById(userId) {
 const postSupportMail = async (req, res, next) => {
   try {
     const { name, enquiry, phoneNo, email } = req.body;
+
+     // Check for required fields
+     if (!name || !enquiry || !phoneNo || !email) {
+      return res.json({
+        status: false,
+        message: 'Name, enquiry, phone number, and email are required.'
+      });
+    }
+
+    // Name validation
+    const validateName = (name) => {
+      const re = /^[A-Za-z\s]+$/;
+      return re.test(name);
+    };
+
+    if (!validateName(name)) {
+      return res.json({
+        status: false,
+        message: 'Invalid name format. Only alphabetic characters and spaces are allowed.'
+      });
+    }
+    // Email validation
+    const validateEmail = (email) => {
+      const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return re.test(email);
+    };
+
+    // // Phone number validation (basic example for international format)
+    // const validatePhoneNo = (phoneNo) => {
+    //   const re = /^\+?[1-9]\d{1,14}$/; // E.164 international format
+    //   return re.test(phoneNo);
+    // };
+     // Phone number validation based on country code
+     const validatePhoneNo = (phoneNo) => {
+      const phoneNumber = parsePhoneNumberFromString(phoneNo);
+      return phoneNumber && isValidPhoneNumber(phoneNo);
+    };
+
+    if (!validatePhoneNo(phoneNo)) {
+      return res.json({
+        status: false,
+        message: 'Invalid phone number format.'
+      });
+    }
+
+    if (!validateEmail(email)) {
+      return res.json({
+        status: false,
+        message: 'Invalid email format.'
+      });
+    }
+
+    if (!validatePhoneNo(phoneNo)) {
+      return res.json({
+        status: false,
+        message: 'Invalid phone number format.'
+      });
+    }
 
 
     // Search for the talentId in both kids and adult models
