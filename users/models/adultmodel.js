@@ -80,9 +80,9 @@ var authenticationSchema = new schema({
    photo: {
       type: Array
    },
-   videosAndAudios: {
-      type: Array
-   },
+   // videosAndAudios: {
+   //    type: Array
+   // },
    features:{
       type: Array
    },
@@ -286,8 +286,9 @@ var authenticationSchema = new schema({
    noOfJobsCompleted:{
       type:String
    },
-
-   videoAudioUrls: [String],
+videoList:[String],
+audioList:[String],
+  // videoAudioUrls: [String],
    publicUrl:{
       type:String
   },

@@ -974,13 +974,13 @@ async function findUserById(userId) {
 
 const postSupportMail = async (req, res, next) => {
   try {
-    const { name, enquiry, phoneNo, email } = req.body;
+    const { name, enquiry, phoneNo, email,subject } = req.body;
 
      // Check for required fields
-     if (!name || !enquiry || !phoneNo || !email) {
+     if (!name || !enquiry || !phoneNo || !email || !subject) {
       return res.json({
         status: false,
-        message: 'Name, enquiry, phone number, and email are required.'
+        message: 'Name, enquiry, phone number,subject, and email are required.'
       });
     }
 
@@ -1003,22 +1003,22 @@ const postSupportMail = async (req, res, next) => {
     };
 
     // // Phone number validation (basic example for international format)
-    // const validatePhoneNo = (phoneNo) => {
-    //   const re = /^\+?[1-9]\d{1,14}$/; // E.164 international format
-    //   return re.test(phoneNo);
-    // };
-     // Phone number validation based on country code
-     const validatePhoneNo = (phoneNo) => {
-      const phoneNumber = parsePhoneNumberFromString(phoneNo);
-      return phoneNumber && isValidPhoneNumber(phoneNo);
+    const validatePhoneNo = (phoneNo) => {
+      const re = /^\+?[1-9]\d{1,14}$/; // E.164 international format
+      return re.test(phoneNo);
     };
+     // Phone number validation based on country code
+    //  const validatePhoneNo = (phoneNo) => {
+    //   const phoneNumber = parsePhoneNumberFromString(phoneNo);
+    //   return phoneNumber && isValidPhoneNumber(phoneNo);
+    // };
 
-    if (!validatePhoneNo(phoneNo)) {
-      return res.json({
-        status: false,
-        message: 'Invalid phone number format.'
-      });
-    }
+    // if (!validatePhoneNo(phoneNo)) {
+    //   return res.json({
+    //     status: false,
+    //     message: 'Invalid phone number format.'
+    //   });
+    // }
 
     if (!validateEmail(email)) {
       return res.json({
@@ -1049,7 +1049,9 @@ const postSupportMail = async (req, res, next) => {
       enquiry: enquiry,
       phoneNo: phoneNo,
       email: email,
-      talentId: talentId
+      talentId: talentId,
+      subject:subject
+     
     });
 
     await newContact.save();
@@ -1065,7 +1067,7 @@ const postSupportMail = async (req, res, next) => {
     // Define the email options
     const mailOptions = {
       from: host,
-      to: 'admin@yopmail.com',
+      to: ['info@brandsandtalent.com', 'olin@brandsandtalent.com'],
       subject: 'Help And Support',
       html: `
         <p>Hello,</p>

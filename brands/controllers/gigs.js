@@ -1550,7 +1550,7 @@ async function saveNotifications(brandId, talentId, gigId, brandNotificationMess
                 childCity:talent.childCity,
                 childAboutYou:talent.childAboutYou,
                 cv:talent.cv,
-                videosAndAudios:talent.videosAndAudios,
+               // videosAndAudios:talent.videosAndAudios,
                 features:talent.features,
                 portfolio:talent.portfolio,
                 verificationId:talent.verificationId,
@@ -1567,10 +1567,12 @@ async function saveNotifications(brandId, talentId, gigId, brandNotificationMess
                 age:talent.age,
                 profileStatus:talent.profileStatus,
                 applications:talent.applications,
-                videoAudioUrls:talent.videoAudioUrls,
+              //  videoAudioUrls:talent.videoAudioUrls,
                 noOfJobsCompleted:talent.noOfJobsCompleted,
                 averageStarRatings:talent.averageStarRatings,
-                planName:talent.planName
+                planName:talent.planName,
+                videoList:talent.videoList,
+                audioList:talent.audioList
                 // Add other talent details as needed
             },
             gigDetails: {

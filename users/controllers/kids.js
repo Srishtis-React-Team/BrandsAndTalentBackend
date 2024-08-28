@@ -611,6 +611,7 @@ const talentLogin = async (req, res) => {
   try {
     let user, type, model;
 
+
     // Attempt to find the user in the adultmodel
     user = await adultmodel.findOne({ adultEmail: email });
     type = 'adult';
@@ -906,7 +907,7 @@ const updateAdults = async (req, res) => {
       childAboutYou: req.body.childAboutYou,
       cv: req.body.cv,
       photo: req.body.photo,
-      videosAndAudios: req.body.videosAndAudios,
+     // videosAndAudios: req.body.videosAndAudios,
       features: req.body.features,
       childLocation: req.body.childLocation,
       portfolio: req.body.portfolio,
@@ -934,7 +935,9 @@ const updateAdults = async (req, res) => {
       adultLegalLastName: req.body.adultLegalLastName,
       reviews: req.body.reviews,
       noOfJobsCompleted: req.body.noOfJobsCompleted,
-      videoAudioUrls: req.body.videoAudioUrls,
+    //  videoAudioUrls: req.body.videoAudioUrls,
+        videoList:req.body.videoList,
+         audioList:req.body.audioList,
       publicUrl: req.body.publicUrl
     };
 
@@ -1188,7 +1191,7 @@ const editKids = async (req, res) => {
       childCity: req.body.childCity,
       childAboutYou: req.body.childAboutYou,
       cv: req.body.cv,
-      videosAndAudios: req.body.videosAndAudios,
+     // videosAndAudios: req.body.videosAndAudios,
       features: req.body.features,
       portfolio: req.body.portfolio,
       instaFollowers: req.body.instaFollowers,
@@ -1207,7 +1210,9 @@ const editKids = async (req, res) => {
       age: req.body.age,
       inActive: true,
       noOfJobsCompleted: req.body.noOfJobsCompleted,
-      videoAudioUrls: req.body.videoAudioUrls,
+     // videoAudioUrls: req.body.videoAudioUrls,
+     videoList:req.body.videoList,
+     audioList:req.body.audioList,
       publicUrl: req.body.publicUrl
 
     };
@@ -1227,7 +1232,7 @@ const editKids = async (req, res) => {
       // Retrieve parentEmail and parentFirstName from the existing user document
       const parentEmail = user.parentEmail;
       const parentFirstName = user.parentFirstName;
-
+     // if (!req.body.skills || req.body.skills.length === 0) {
       const emailContent = `
     <p>Hello ${parentFirstName},</p>
     <p>You have been registered successfully. You will receive a team approval confirmation.</p>
@@ -1239,7 +1244,14 @@ const editKids = async (req, res) => {
 
       // Send notification and email
       await saveNotification(userId, notificationMessage);
-      await sendEmail(parentEmail, 'Approval', emailContent);
+      // Check if skills are present in req.body
+      if (req.body.portfolio && req.body.portfolio.length > 0) {
+        console.log("portfolio.....................................")
+        // Send email if skills are not present
+        await sendEmail(parentEmail, 'Approval', emailContent);
+      }
+   //   await sendEmail(parentEmail, 'Approval', emailContent);
+    //  }
     }
 
 
@@ -1319,23 +1331,43 @@ const unifiedDataFetch = async (req, res, next) => {
 
         return res.json({ status: true, data: responseData });
       }
+      // case 2: {
+      //   try {
+      //     // Find the document based on the given criteria
+      //     const document = await model.findOne({ _id: objectId, isActive: true, inActive: true })
+      //       .sort({ createdAt: -1 })
+      //       .select('videosAndAudios');
+
+      //     if (!document || !document.videosAndAudios || document.videosAndAudios.length === 0) {
+      //       return res.status(200).json({ status: false, msg: 'videosAndAudios data not found' });
+      //     }
+
+      //     // Directly map the URLs
+      //     const videosAndAudiosData = document.videosAndAudios.map(videosAndAudios => videosAndAudios);
+
+      //     return res.json({ status: true, videosAndAudios: videosAndAudiosData });
+      //   } catch (error) {
+      //     console.error('Error fetching videosAndAudios data:', error);
+      //     return res.status(500).json({ status: false, msg: 'Internal server error' });
+      //   }
+      // }
       case 2: {
         try {
           // Find the document based on the given criteria
           const document = await model.findOne({ _id: objectId, isActive: true, inActive: true })
             .sort({ createdAt: -1 })
-            .select('videosAndAudios');
+            .select('videoList');
 
-          if (!document || !document.videosAndAudios || document.videosAndAudios.length === 0) {
-            return res.status(200).json({ status: false, msg: 'videosAndAudios data not found' });
+          if (!document || !document.videoList || document.videoList.length === 0) {
+            return res.status(200).json({ status: false, msg: 'videoList data not found' });
           }
 
           // Directly map the URLs
-          const videosAndAudiosData = document.videosAndAudios.map(videosAndAudios => videosAndAudios);
+          const videosAndAudiosData = document.videoList.map(videoList => videoList);
 
-          return res.json({ status: true, videosAndAudios: videosAndAudiosData });
+          return res.json({ status: true, videoList: videosAndAudiosData });
         } catch (error) {
-          console.error('Error fetching videosAndAudios data:', error);
+          console.error('Error fetching videoList data:', error);
           return res.status(500).json({ status: false, msg: 'Internal server error' });
         }
       }
@@ -1413,22 +1445,36 @@ const unifiedDataFetch = async (req, res, next) => {
         }));
         return res.json({ status: true, data: formattedReviews });
       }
-    
       case 8: {
         // Find the document based on the given criteria
         const videoAudioUrlsData = await model.findOne({ _id: objectId, isActive: true, inActive: true })
           .sort({ createdAt: -1 })
-          .select('videoAudioUrls');
+          .select('audioList');
 
-        if (!videoAudioUrlsData || !videoAudioUrlsData.videoAudioUrls || videoAudioUrlsData.videoAudioUrls.length === 0) {
-          return res.status(200).json({ status: false, msg: 'videoAudioUrls data not found' });
+        if (!videoAudioUrlsData || !videoAudioUrlsData.audioList || videoAudioUrlsData.audioList.length === 0) {
+          return res.status(200).json({ status: false, msg: 'audioList data not found' });
         }
 
         // Directly map the URLs
-        const videoAudioUrlsDatas = videoAudioUrlsData.videoAudioUrls.map(videoAudioUrl => videoAudioUrl);
+        const videoAudioUrlsDatas = videoAudioUrlsData.audioList.map(audioList => audioList);
 
-        return res.json({ status: true, videoAudioUrls: videoAudioUrlsDatas });
+        return res.json({ status: true, audioList: videoAudioUrlsDatas });
       }
+      // case 8: {
+      //   // Find the document based on the given criteria
+      //   const videoAudioUrlsData = await model.findOne({ _id: objectId, isActive: true, inActive: true })
+      //     .sort({ createdAt: -1 })
+      //     .select('videoAudioUrls');
+
+      //   if (!videoAudioUrlsData || !videoAudioUrlsData.videoAudioUrls || videoAudioUrlsData.videoAudioUrls.length === 0) {
+      //     return res.status(200).json({ status: false, msg: 'videoAudioUrls data not found' });
+      //   }
+
+      //   // Directly map the URLs
+      //   const videoAudioUrlsDatas = videoAudioUrlsData.videoAudioUrls.map(videoAudioUrl => videoAudioUrl);
+
+      //   return res.json({ status: true, videoAudioUrls: videoAudioUrlsDatas });
+      // }
       default:
         return res.status(200).json({ status: false, msg: 'No Data' });
 
@@ -1638,10 +1684,12 @@ const talentList = async (req, res) => {
     const activeKids = await kidsmodel.find({ isActive: true, inActive: true });//adminApproved: true
 
     // Combine both lists
-    const reversedUsers = [...activeAdults, ...activeKids];
+   // const reversedUsers = [...activeAdults, ...activeKids];
+   // Combine both lists without reversing
+   const allActiveUsers = [...activeAdults, ...activeKids];
 
     // Reverse the array
-    const allActiveUsers = reversedUsers.reverse();
+    //const allActiveUsers = reversedUsers.reverse();
 
     if (allActiveUsers.length > 0) {
       return res.json({ status: true, data: allActiveUsers });
@@ -3074,6 +3122,60 @@ const reviewsPosting = async (req, res) => {
  * @param {*} res return data
  * @param {*} next undefined
  */
+//  const deleteVideoUrls = async (req, res) => {
+//   const { talentId, index } = req.body;
+
+//   try {
+//     // Validate input
+//     if (!talentId || index === undefined || index < 0) {
+//       return res.status(200).send({ message: "Invalid input" });
+//     }
+
+//     // Find the talent document in the kids model
+//     let talent = await kidsmodel.findById(talentId);
+//     let modelType = 'kids';
+
+//     // If not found, check in the adults model
+//     if (!talent) {
+//       talent = await adultmodel.findById(talentId);
+//       modelType = 'adults';
+//     }
+
+//     // If talent not found in both models
+//     if (!talent) {
+//       return res.status(200).send({ message: "Talent not found" });
+//     }
+
+//     // Validate index for both videoList and audioList
+//     const videoListLength = talent.videoList ? talent.videoList.length : 0;
+//     const audioListLength = talent.audioList ? talent.audioList.length : 0;
+
+//     if (index >= videoListLength && index >= audioListLength) {
+//       return res.status(400).send({ message: "Invalid index" });
+//     }
+
+//     // Remove the URL at the specified index from videoList and audioList if applicable
+//     if (index < videoListLength) {
+//       talent.videoList.splice(index, 1);
+//     }
+
+//     if (index < audioListLength) {
+//       talent.audioList.splice(index, 1);
+//     }
+
+//     // Save the updated document
+//     await talent.save();
+
+//     res.status(200).send({
+//       message: "URL deleted successfully",
+//       videoList: talent.videoList,
+//       audioList: talent.audioList,
+//     });
+//   } catch (error) {
+//     console.error("Error deleting URL:", error);
+//     res.status(500).send({ message: "An error occurred while deleting the URL" });
+//   }
+// };
 const deleteVideoUrls = async (req, res) => {
   const { talentId, index } = req.body;
 
@@ -3099,17 +3201,66 @@ const deleteVideoUrls = async (req, res) => {
     }
 
     // Check if the index is valid
-    if (index >= talent.videoAudioUrls.length) {
-      return res.status(400).send({ message: "Invalid index" });
+    if (index >= talent.videoList.length) {
+      return res.status(200).send({ message: "Invalid index" });
     }
 
     // Remove the URL at the specified index
-    talent.videoAudioUrls.splice(index, 1);
+    talent.videoList.splice(index, 1);
 
     // Save the updated document
     await talent.save();
 
-    res.status(200).send({ message: "URL deleted successfully", videoAudioUrls: talent.videoAudioUrls });
+    res.status(200).send({ message: "URL deleted successfully", videoList: talent.videoList });
+  } catch (error) {
+    console.error("Error deleting URL:", error);
+    res.status(500).send({ message: "An error occurred while deleting the URL" });
+  }
+};
+
+
+/**
+ *********deleteAudioUrls ******
+ * @param {*} req from user
+ * @param {*} res return data
+ * @param {*} next undefined
+ */
+const deleteAudioUrls = async (req, res) => {
+  const { talentId, index } = req.body;
+
+  try {
+    // Validate input
+    if (!talentId || index === undefined || index < 0) {
+      return res.status(400).send({ message: "Invalid input" });
+    }
+
+    // Find the talent document in the kids model
+    let talent = await kidsmodel.findById(talentId);
+    let modelType = 'kids';
+
+    // If not found, check in the adults model
+    if (!talent) {
+      talent = await adultmodel.findById(talentId);
+      modelType = 'adults';
+    }
+
+    // If talent not found in both models
+    if (!talent) {
+      return res.status(200).send({ message: "Talent not found" });
+    }
+
+    // Check if the index is valid
+    if (index >= talent.audioList.length) {
+      return res.status(200).send({ message: "Invalid index" });
+    }
+
+    // Remove the URL at the specified index
+    talent.audioList.splice(index, 1);
+
+    // Save the updated document
+    await talent.save();
+
+    res.status(200).send({ message: "URL deleted successfully", audioList: talent.audioList });
   } catch (error) {
     console.error("Error deleting URL:", error);
     res.status(500).send({ message: "An error occurred while deleting the URL" });
@@ -3173,6 +3324,6 @@ module.exports = {
   getTalentById, updateProfileStatus, subscriptionStatus, getByProfession, loginTemplate, getPlanByType,
   removeFavorite, checkUserStatus, socialSignup, updateAdultPassword, adultForgotPassword, adultResetPassword,
   fetchUserData, countUsers, activateUser, addServices, deleteService, applyJobUsersList, deleteIndividualService,
-  typeChecking, reviewsPosting, deleteVideoUrls,reportReview,getDataByPublicUrl
+  typeChecking, reviewsPosting, deleteVideoUrls,reportReview,getDataByPublicUrl,deleteAudioUrls
 
 };

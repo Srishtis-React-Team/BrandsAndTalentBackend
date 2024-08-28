@@ -87,9 +87,9 @@ var authenticationSchema = new schema({
       type: Array
    },
    
-   videosAndAudios: {
-      type: Array
-   },
+   // videosAndAudios: {
+   //    type: Array
+   // },
    features:{
       type: Array
    },
@@ -289,7 +289,9 @@ facebookId: {
    noOfJobsCompleted:{
       type:String
    },
-   videoAudioUrls: [String],
+   videoList:[String],
+audioList:[String],
+   //videoAudioUrls: [String],
    publicUrl:{
       type:String
   },

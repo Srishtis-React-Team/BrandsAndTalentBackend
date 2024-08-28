@@ -49,6 +49,8 @@ router.post('/reviewsPosting',users.reviewsPosting)//for reviewsPosting
 router.post('/deleteVideoUrls',users.deleteVideoUrls)//for deleteVideoUrls
 router.post('/reportReview',users.reportReview)//for reportReview
 router.post('/getDataByPublicUrl',users.getDataByPublicUrl)//for getDataByPublicUrl
+router.post('/deleteAudioUrls',users.deleteAudioUrls)//for deleteAudioUrls
+
 
 module.exports = router
 

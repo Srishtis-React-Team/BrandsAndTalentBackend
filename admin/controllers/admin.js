@@ -24,6 +24,7 @@ const { Country, State, City } = require('country-state-city');
 const axios = require('axios');
 const { v4: uuidv4 } = require('uuid');
 
+
 const draftmodel = require("../../brands/models/draftmodel.js");
 
 
@@ -40,6 +41,9 @@ const adminmodel = require('../models/adminmodel.js');
 const countrymodel = require('../models/countrymodel.js')
 const statemodel = require('../models/statemodel.js');
 const notificationmodel = require("../../brands/models/notificationmodel.js");
+const successStoryModel = require('../models/successStoriesmodel.js');
+const logomodel = require("../models/logomodel.js");
+const successStoriesmodel = require("../models/successStoriesmodel.js");
 
 
 /**
@@ -1377,11 +1381,11 @@ const jobApproval = async (req, res) => {
             <p>Reminder: A Job  <strong>${job.jobTitle}</strong> pending for approval in <strong>${job.jobLocation}</strong> Please approve them.</p>
           </body>
         </html>
-      `;
+      `
                   const admin = await adminmodel.find({
-
-                    email: 'admin@yopmail.com'
+                    email: { $in: ['info@brandsandtalent.com', 'olin@brandsandtalent.com'] }
                   });
+
                   await sendNotificationsToAdmin(admin.fcmToken, 'Reminder For Approve Job', jobalert);
                   await saveNotificationToAdmin(brandsUser._id, gigId._id, jobalert);
                 }
@@ -1801,13 +1805,13 @@ const jobApprovalByBrandsList = async (req, res) => {
         </html>
       `;
                   const admin = await adminmodel.find({
-
-                    email: 'admin@yopmail.com'
+                    email: { $in: ['info@brandsandtalent.com', 'olin@brandsandtalent.com'] }
                   });
+
                   await sendNotificationsToAdmin(admin.fcmToken, 'Reminder For Approve Job', jobalert);
                   await saveNotificationToAdmin(brandsUser._id, gigId._id, jobalert);
                 }
-                
+
               } catch (error) {
                 console.error('Error processing cron job:', error);
               }
@@ -2371,7 +2375,42 @@ const checkTransaction = async (req, res) => {
 
 
 //Review Approval
+const sendEmailUse = async (to, subject, text) => {
+  const mailOptions = {
+    from: host,
+    to,
+    subject,
+    text
+  };
 
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Email sent:', info.response);
+    return { success: true, message: 'Email sent successfully' };
+  } catch (error) {
+    console.error('Error sending email:', error);
+    return { success: false, message: 'Failed to send email' };
+  }
+};
+
+// Function to send email
+const sendEmailToUser = async (to, subject, text) => {
+  const mailOptions = {
+    from: host,
+    to,
+    subject,
+    text
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Email sent:', info.response);
+    return { success: true, message: 'Email sent successfully' };
+  } catch (error) {
+    console.error('Error sending email:', error);
+    return { success: false, message: 'Failed to send email' };
+  }
+};
 const reviewApproval = async (req, res) => {
   try {
     const { talentId, reviewApproved, reviewerId,comment,text} = req.body;
@@ -2399,7 +2438,7 @@ const reviewApproval = async (req, res) => {
       { $set: { reviewApproved: reviewApproved, status: reviewApproved,isReport:true } }
     );
    // Send email to adult
-   const emailResponse = await sendEmailToUser(adultUser.adultEmail, 'Review Approval Notification', text);
+   const emailResponse = await sendEmailUse(adultUser.adultEmail, 'Review Approval Notification', text);
    console.log(emailResponse.message);
   
     } else {
@@ -2450,32 +2489,220 @@ const reviewApproval = async (req, res) => {
   }
 };
 
-// Function to send email
-const sendEmailToUser = async (to, subject, text) => {
-  const mailOptions = {
-    from: host,
-    to,
-    subject,
-    text
-  };
+const addSuccessStories = async (req, res) =>{
+  console.log("inside add successstories")
+  try{
+    console.log('req.body',req.body)
+    const {name, content, category, link, image} = req.body;
+  const successData = new successStoryModel({
+    name:name,
+    content:content,
+    category:category,
+    link:link,
+    image:image,
+  });
 
+  const response = await successData.save();
+  console.log('response',response)
+  if(response){
+    res.json({
+      message: "Added Successfully",
+      status: true,
+    });
+  }
+  }catch(err){
+    res.json({
+      message: "failed to add data",
+      status: false,
+    });
+  }
+}
+
+const getSuccessStories = async (req, res) => {
+  console.log("Fetching all success stories");
   try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log('Email sent:', info.response);
-    return { success: true, message: 'Email sent successfully' };
-  } catch (error) {
-    console.error('Error sending email:', error);
-    return { success: false, message: 'Failed to send email' };
+    const successStories = await successStoriesmodel.find(); // Fetch all documents from the collection
+    console.log('successStories', successStories);
+    res.json({
+      message: "Fetched Successfully",
+      status: true,
+      data: successStories, // Send the fetched data in the response
+    });
+  } catch (err) {
+    console.error('Error fetching success stories:', err);
+    res.json({
+      message: "Failed to fetch data",
+      status: false,
+      data: [],
+    });
   }
 };
 
+
+
+
+
+/*
+*********getLogos*****
+* @param {*} req from user
+* @param {*} res return data
+* @param {*} next undefined
+*/
+
+const getLogos = async (req, res) => {
+  try {
+    // Fetch content items based on contentType
+    const logo = await logomodel.find({ isActive: true });
+
+    if (!logo) {
+      return res.status(200).json({
+        message: "logo not found",
+        status: false
+      });
+    }
+
+    return res.json({
+      message: "logo retrieved successfully",
+      status: true,
+      data: logo
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: "An Error Occurred",
+      status: false
+    });
+  }
+};
+
+/**
+ *********addLogo******
+ * @param {*} req from user
+ * @param {*} res return data
+ * @param {*} next undefined
+ */
+
+
+
+ const addLogo = async (req, res, next) => {
+  try {
+    console.log(req.body);
+
+    // Assuming req.body.image is an array of image URLs
+    const imagesWithId = req.body.image.map((imgUrl) => ({
+      _id: new mongoose.Types.ObjectId(), // Generate a unique ID for each image
+      url: imgUrl, // The image URL
+    }));
+
+    const add_Logo = new logomodel({
+      image: imagesWithId, // Add the array of images with unique IDs
+      isActive: true
+    });
+
+    const response = await add_Logo.save();
+
+    return res.json({
+      message: "Added Successfully",
+      status: true,
+      data: response,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.json({
+      message: "An Error Occurred",
+      status: false,
+    });
+  }
+};
+/**
+ *********addImageToLogo******
+ * @param {*} req from user
+ * @param {*} res return data
+ * @param {*} next undefined
+ */
+
+const addImageToLogo = async (req, res, next) => {
+  try {
+    const logoId = req.body.logoId; // Assuming the ID of the logo document is passed as a URL parameter
+
+    // Create the new image object with a unique ID
+    const newImage = {
+      _id: new mongoose.Types.ObjectId(), // Generate a unique ID for the new image
+      url: req.body.url, // The new image URL from the request body
+    };
+
+    // Find the document by ID and push the new image into the existing image array
+    const updatedLogo = await logomodel.findByIdAndUpdate(
+      logoId,
+      { $push: { image: newImage } }, // Push the new image into the array
+      { new: true } // Return the updated document
+    );
+
+    if (!updatedLogo) {
+      return res.status(200).json({
+        message: "Logo not found",
+        status: false,
+      });
+    }
+
+    return res.json({
+      message: "Image added successfully",
+      status: true,
+      data: updatedLogo,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: "An Error Occurred",
+      status: false,
+    });
+  }
+};
+
+/**
+ *********deleteImageFromLogo******
+ * @param {*} req from user
+ * @param {*} res return data
+ * @param {*} next undefined
+ */
+const deleteImageFromLogo = async (req, res, next) => {
+  try {
+    const logoId = req.body.logoId; // Assuming the ID of the logo document is passed as a URL parameter
+    const imageId = req.body.imageId; // Assuming the ID of the image to delete is passed as a URL parameter
+
+    // Find the document by ID and remove the specific image from the image array
+    const updatedLogo = await logomodel.findByIdAndUpdate(
+      logoId,
+      { $pull: { image: { _id: imageId } } }, // Pull the image with the specified _id from the array
+      { new: true } // Return the updated document
+    );
+
+    if (!updatedLogo) {
+      return res.status(200).json({
+        message: "Logo not found",
+        status: false,
+      });
+    }
+
+    return res.json({
+      message: "Image deleted successfully",
+      status: true,
+      data: updatedLogo,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: "An Error Occurred",
+      status: false,
+    });
+  }
+};
 
 
 module.exports = {
   addAdmin, adminLogin, adminProfile, forgotPassword, resetPassword, fileUpload, uploads, addCountry, listState, adminFetch, listLocation, listCountries,
   listCity, getAllStatesList, getAllCitiesList, chatbot, adminApproval, jobApproval, notApprovedMembers, ListBrandForJobPost,
   filterByStatus, jobApprovalByBrandsList, adminApprovalByList, profileApproval, bellIconCount, readNotification, giftMail,
- checkTransaction,payment,reviewApproval
-
+ checkTransaction,payment,reviewApproval,addSuccessStories,getLogos,addLogo,getSuccessStories,addImageToLogo,deleteImageFromLogo
 
 };
