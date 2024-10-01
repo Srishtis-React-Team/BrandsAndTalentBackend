@@ -5,7 +5,6 @@ const socialmedia = require('../controllers/socialmedia')
 router.get('/getUserIdByUsername',socialmedia.getUserIdByUsername)
 router.get('/getUserDetailsById',socialmedia.getUserDetailsById)
 router.get('/getUserDetails',socialmedia.getUserDetails)
-//router.get('/getInstagramCount/:username',socialmedia.getInstagramCount)
 router.get('/getInstagramaccount/:page',socialmedia.getInstagramaccount)
 
 module.exports = router

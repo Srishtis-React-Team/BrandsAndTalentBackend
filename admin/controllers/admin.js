@@ -155,6 +155,13 @@ const adminProfile = async (req, res) => {
   try {
     //for globally auth decalration use this 
     const userId = req.body.user_id || req.params.user_id;
+    //for globally auth decalration use this 
+    // /* Authentication */
+    // const authResult = await auth.CheckAuth(req.headers["x-access-token"], userId);
+    // if (!authResult) {
+    //   return res.json({ status: false, msg: 'Authentication failed' });
+    // }
+    // /* Authentication */
 
     const admin = await adminmodel.findOne({ _id: userId, isActive: true });
     if (admin) {
@@ -408,7 +415,21 @@ const listCountries = async (req, res, next) => {
 };
 
 
+// const listCountries = async (req, res, next) => {
+//   const { Country } = require('country-state-city');
 
+//   //const countries = Country.getAllCountries();
+
+//   const countryNames = countries.map(country => country.name);
+//   console.log("countryNames",countryNames)
+//   arr=["Aland Islands", "American Samoa", "Anguilla", "Antarctica", "Aruba", "Bermuda", "Bonaire, Sint Eustatius and Saba", "Bouvet Island", "British Indian Ocean Territory", "Cayman Islands", "Christmas Island", "Cocos (Keeling) Islands", "Cook Islands", "Cote D'Ivoire (Ivory Coast)", "Curaçao", "East Timor", "Falkland Islands", "Faroe Islands", "French Guiana", "French Polynesia", "French Southern Territories", "Gibraltar", "Greenland", "Guadeloupe", "Guam", "Heard Island and McDonald Islands", "Hong Kong S.A.R.", "Jersey", "Kosovo", "Macau S.A.R.", "Macedonia", "Man (Isle of)", "Martinique", "Mayotte", "Montserrat", "New Caledonia", "Niue", "Norfolk Island", "Northern Mariana Islands", "Palestinian Territory Occupied", "Puerto Rico", "Reunion", "Saint Pierre and Miquelon", "Saint-Barthelemy", "Saint-Martin (French part)", "Sint Maarten (Dutch part)", "South Georgia", "Tokelau", "Turks And Caicos Islands", "United States Minor Outlying Islands", "Virgin Islands (British)", "Virgin Islands (US)", "Wallis And Futuna Islands", "Western Sahara"]
+
+
+//   res.json({
+//     status: true,
+//     data: countryNames
+//   });
+// };
 /**
  *******listing country
 * @param {*} req from user
@@ -642,6 +663,15 @@ const adminFetch = async (req, res, next) => {
 * @param {*} res return data
 * @param {*} next undefined
 */
+
+
+
+
+
+
+// 26/3 correct full code
+
+
 
 function getCurrentTimeInCambodia() {
   const now = new Date(); // Current date and time
@@ -1046,7 +1076,136 @@ const adminApproval = async (req, res) => {
     return res.status(500).json({ status: false, msg: 'Internal server error' });
   }
 };
+// const adminApproval = async (req, res) => {
+//   try {
+//     const userId = req.body.user_id || req.params.user_id;
+//     const id = req.body.id;
+//     const { adminApproved, status } = req.body;
 
+//     let userType = '';
+//     let updateResult = null;
+//     let userEmail = '';
+
+//     // Function to remove verificationId
+//     const removeVerificationId = async (model, id) => {
+//       return await model.updateOne(
+//         { _id: new mongoose.Types.ObjectId(id) },
+//         { $unset: { verificationId: "" } }
+//       );
+//     };
+
+//     // Check in adultmodel
+//     const adultUser = await adultmodel.findOne({ _id: new mongoose.Types.ObjectId(userId), isActive: true, inActive: true });
+//     if (status==='Approved') {
+
+
+//       if (adultUser) {
+//         userType = 'adults';
+//         userEmail = adultUser.email; // Assuming email field exists in adultmodel
+//         updateResult = await adultmodel.updateOne(
+//           { _id: new mongoose.Types.ObjectId(userId) },
+//           { $set: { adminApproved: adminApproved, status: status } }
+//         );
+//         await notificationmodel.updateOne(
+//           { _id: new mongoose.Types.ObjectId(id) },
+//           { $set: { adminApproved: adminApproved, status: status } }
+//         );
+//         await removeVerificationId(adultmodel, userId);
+//       } else {
+//         // If not found in adultmodel, check in kidsmodel
+//         const kidUser = await kidsmodel.findOne({ _id: new mongoose.Types.ObjectId(userId), isActive: true, inActive: true });
+//         if (kidUser) {
+//           userType = 'kids';
+//           userEmail = kidUser.parentEmail; // Assuming parentEmail field exists in kidsmodel
+//           updateResult = await kidsmodel.updateOne(
+//             { _id: new mongoose.Types.ObjectId(userId) },
+//             { $set: { adminApproved: req.body.adminApproved, status: req.body.status } }
+//           );
+
+//           await notificationmodel.updateOne(
+//             { _id: new mongoose.Types.ObjectId(id) },
+//             { $set: { adminApproved: adminApproved, status: status } }
+//           );
+
+//           await removeVerificationId(kidsmodel, userId);
+//         }
+//         // else {
+//         //   // If not found in kidsmodel, check in brandsmodel
+//         //   const brandsUser = await brandsmodel.findOne({ _id: new mongoose.Types.ObjectId(userId),isActive:true,inActive:true });
+//         //   if (brandsUser) {
+//         //     userType = 'brands';
+//         //     userEmail = brandsUser.email; // Assuming email field exists in brandsmodel
+//         //     updateResult = await brandsmodel.updateOne(
+//         //       { _id: new mongoose.Types.ObjectId(userId) },
+//         //       { $set: { adminApproved: true } }
+//         //     );
+//         //   }
+//         // }
+//       }
+//     } else {
+//       if (adultUser) {
+//         userType = 'adults';
+//         userEmail = adultUser.email; // Assuming email field exists in adultmodel
+//         updateResult = await adultmodel.updateOne(
+//           { _id: new mongoose.Types.ObjectId(userId) },
+//           { $set: { adminApproved: false, status: req.body.status } }
+//         );
+
+//         await notificationmodel.updateOne(
+//           { _id: new mongoose.Types.ObjectId(id) },
+//           { $set: { adminApproved: false, status: status } }
+//         );
+
+//       } else {
+//         // If not found in adultmodel, check in kidsmodel
+//         const kidUser = await kidsmodel.findOne({ _id: new mongoose.Types.ObjectId(userId), isActive: true, inActive: true });
+//         if (kidUser) {
+//           userType = 'kids';
+//           userEmail = kidUser.parentEmail; // Assuming parentEmail field exists in kidsmodel
+//           updateResult = await kidsmodel.updateOne(
+//             { _id: new mongoose.Types.ObjectId(userId) },
+//             { $set: { adminApproved: false, status: req.body.status } }
+//           );
+
+//           await notificationmodel.updateOne(
+//             { _id: new mongoose.Types.ObjectId(id) },
+//             { $set: { adminApproved: false, status: status } }
+//           );
+
+
+//         }
+
+//       }
+
+//     }
+
+//     // If user type is still empty, user was not found in any model
+//     if (!userType) {
+//       return res.json({ status: false, msg: 'User not found' });
+//     }
+
+//     // If we have an update result, we successfully updated the profile status
+//     if (updateResult) {
+//       if (status === 'Approved') {
+//       // Send approval email
+//       if (userEmail) {
+//         sendApprovalEmail(userEmail);
+//       }
+//       return res.json({ status: true, msg: 'Approved successfully', type: userType });
+//     } else if (status === 'Rejected') {
+//       if (userEmail) {
+//         RejectedVerificationEmail(userEmail);
+//       }
+//       return res.json({ status: true, msg: 'Rejected successfully', type: userType });
+//     }
+//   } else {
+//     return res.json({ status: false, msg: status === 'Approved' ? 'Failed to approve' : 'Failed to reject' });
+//   }
+//   } catch (error) {
+//     console.error('Error in admin approval:', error);
+//     return res.status(500).json({ status: false, msg: 'Internal server error' });
+//   }
+// };
 /*
 *********jobApproval*****
 * @param {*} req from user
@@ -1259,7 +1418,15 @@ const jobApproval = async (req, res) => {
                   await sendNotificationsToAdmin(admin.fcmToken, 'Reminder For Approve Job', jobalert);
                   await saveNotificationToAdmin(brandsUser._id, gigId._id, jobalert);
                 }
-                
+                // for (const job of draftJobs) {
+                //   await draftmodel.updateOne({ _id: job._id }, { $set: { adminApproved: true ,status:'Approved'} });
+                //   await notificationmodel.updateOne({ _id: id }, { $set: { adminApproved: true ,status:'Approved'} });
+
+                //   const userEmail = getUserEmail(job.userId);
+                //   if (userEmail) {
+                //     sendJobApprovalEmail(userEmail);
+                //   }
+                // }
               } catch (error) {
                 console.error('Error processing cron job:', error);
               }
@@ -1300,6 +1467,14 @@ const jobApproval = async (req, res) => {
     return res.status(500).json({ status: false, msg: 'Error Occured' });
   }
 };
+
+
+
+
+
+// Schedule a cron job to run every hour
+
+
 
 
 /*
@@ -1416,7 +1591,7 @@ const filterByStatus = async (req, res) => {
           status: 'Rejected'
         });
       } else if (req.body.status === 'Pending') {
-      
+        console.log("vjdvjvbfbfjkbgfn",)
         users = await notificationmodel.find({
         //  notificationType: { $in: notificationTypes },
         notificationType: 'Talent Profile Approval',
@@ -1462,7 +1637,7 @@ const filterByStatus = async (req, res) => {
          // notificationType: { $in: notificationTypes },
          notificationType:'Talent Verification Approval',
           isActive: true,
-         
+         // adminApproved: false,
           profileApprove: false,
           status: 'Pending'
         });
@@ -1472,7 +1647,9 @@ const filterByStatus = async (req, res) => {
         users = await notificationmodel.find({
           notificationType:'Talent Verification Approval', //{ $in: notificationTypes },
           isActive: true,
-        
+         // adminApproved: true,
+         // profileApprove: false,
+         // status: 'Pending'
         });
       }
     } 
@@ -1512,7 +1689,9 @@ const filterByStatus = async (req, res) => {
          // notificationType: { $in: notificationTypes },
          notificationType:'Job Approval',
           isActive: true,
-        
+         // adminApproved: true,
+         // profileApprove: false,
+         // status: 'Pending'
         });
       }
     }else if (req.body.notificationType === 'Review Notification') {
@@ -2160,6 +2339,20 @@ const giftMail = async (req, res) => {
     // Make the POST request to initiate payment
     const response = await axios.post(ABA_PAYWAY_API_URL, requestData);
 
+    // Log success message or handle response data accordingly
+    //console.log('Payment initiation successful:', response.data);
+
+    // Example of handling successful payment initiation
+    // const formattedResponse = {
+    //   status: {
+    //     code: '00',
+    //     message: 'Success!'
+    //   },
+    //   description: 'Payment initiation successful',
+    //   transactionId: transactionId,
+    //   qrString: response.data.qrString, // Assuming qrString is part of the response data
+    //   req_time: response.data.req_time
+    // };
     
 
     //res.json({ formattedResponse });
@@ -2374,161 +2567,6 @@ const getSuccessStories = async (req, res) => {
   }
 };
 
-/*
-*********getLogos*****
-* @param {*} req from user
-* @param {*} res return data
-* @param {*} next undefined
-*/
-
-const getLogos = async (req, res) => {
-  try {
-    // Fetch content items based on contentType
-    const logo = await logomodel.find({ isActive: true });
-
-    if (!logo) {
-      return res.status(200).json({
-        message: "logo not found",
-        status: false
-      });
-    }
-
-    return res.json({
-      message: "logo retrieved successfully",
-      status: true,
-      data: logo
-    });
-  } catch (error) {
-    console.log(error);
-    return res.status(500).json({
-      message: "An Error Occurred",
-      status: false
-    });
-  }
-};
-
-/**
- *********addLogo******
- * @param {*} req from user
- * @param {*} res return data
- * @param {*} next undefined
- */
-
-
-
- const addLogo = async (req, res, next) => {
-  try {
-    console.log(req.body);
-
-    // Assuming req.body.image is an array of image URLs
-    const imagesWithId = req.body.image.map((imgUrl) => ({
-      _id: new mongoose.Types.ObjectId(), // Generate a unique ID for each image
-      url: imgUrl, // The image URL
-    }));
-
-    const add_Logo = new logomodel({
-      image: imagesWithId, // Add the array of images with unique IDs
-      isActive: true
-    });
-
-    const response = await add_Logo.save();
-
-    return res.json({
-      message: "Added Successfully",
-      status: true,
-      data: response,
-    });
-  } catch (error) {
-    console.log(error);
-    return res.json({
-      message: "An Error Occurred",
-      status: false,
-    });
-  }
-};
-/**
- *********addImageToLogo******
- * @param {*} req from user
- * @param {*} res return data
- * @param {*} next undefined
- */
-
-const addImageToLogo = async (req, res, next) => {
-  try {
-    const logoId = req.body.logoId; // Assuming the ID of the logo document is passed as a URL parameter
-
-    // Create the new image object with a unique ID
-    const newImage = {
-      _id: new mongoose.Types.ObjectId(), // Generate a unique ID for the new image
-      url: req.body.url, // The new image URL from the request body
-    };
-
-    // Find the document by ID and push the new image into the existing image array
-    const updatedLogo = await logomodel.findByIdAndUpdate(
-      logoId,
-      { $push: { image: newImage } }, // Push the new image into the array
-      { new: true } // Return the updated document
-    );
-
-    if (!updatedLogo) {
-      return res.status(200).json({
-        message: "Logo not found",
-        status: false,
-      });
-    }
-
-    return res.json({
-      message: "Image added successfully",
-      status: true,
-      data: updatedLogo,
-    });
-  } catch (error) {
-    console.log(error);
-    return res.status(500).json({
-      message: "An Error Occurred",
-      status: false,
-    });
-  }
-};
-
-/**
- *********deleteImageFromLogo******
- * @param {*} req from user
- * @param {*} res return data
- * @param {*} next undefined
- */
-const deleteImageFromLogo = async (req, res, next) => {
-  try {
-    const logoId = req.body.logoId; // Assuming the ID of the logo document is passed as a URL parameter
-    const imageId = req.body.imageId; // Assuming the ID of the image to delete is passed as a URL parameter
-
-    // Find the document by ID and remove the specific image from the image array
-    const updatedLogo = await logomodel.findByIdAndUpdate(
-      logoId,
-      { $pull: { image: { _id: imageId } } }, // Pull the image with the specified _id from the array
-      { new: true } // Return the updated document
-    );
-
-    if (!updatedLogo) {
-      return res.status(200).json({
-        message: "Logo not found",
-        status: false,
-      });
-    }
-
-    return res.json({
-      message: "Image deleted successfully",
-      status: true,
-      data: updatedLogo,
-    });
-  } catch (error) {
-    console.log(error);
-    return res.status(500).json({
-      message: "An Error Occurred",
-      status: false,
-    });
-  }
-};
 
 
 
