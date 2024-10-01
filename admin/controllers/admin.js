@@ -2531,6 +2531,165 @@ const deleteImageFromLogo = async (req, res, next) => {
 };
 
 
+
+
+/*
+*********getLogos*****
+* @param {*} req from user
+* @param {*} res return data
+* @param {*} next undefined
+*/
+
+const getLogos = async (req, res) => {
+  try {
+    // Fetch content items based on contentType
+    const logo = await logomodel.find({ isActive: true });
+
+    if (!logo) {
+      return res.status(200).json({
+        message: "logo not found",
+        status: false
+      });
+    }
+
+    return res.json({
+      message: "logo retrieved successfully",
+      status: true,
+      data: logo
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: "An Error Occurred",
+      status: false
+    });
+  }
+};
+
+/**
+ *********addLogo******
+ * @param {*} req from user
+ * @param {*} res return data
+ * @param {*} next undefined
+ */
+
+
+
+ const addLogo = async (req, res, next) => {
+  try {
+    console.log(req.body);
+
+    // Assuming req.body.image is an array of image URLs
+    const imagesWithId = req.body.image.map((imgUrl) => ({
+      _id: new mongoose.Types.ObjectId(), // Generate a unique ID for each image
+      url: imgUrl, // The image URL
+    }));
+
+    const add_Logo = new logomodel({
+      image: imagesWithId, // Add the array of images with unique IDs
+      isActive: true
+    });
+
+    const response = await add_Logo.save();
+
+    return res.json({
+      message: "Added Successfully",
+      status: true,
+      data: response,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.json({
+      message: "An Error Occurred",
+      status: false,
+    });
+  }
+};
+/**
+ *********addImageToLogo******
+ * @param {*} req from user
+ * @param {*} res return data
+ * @param {*} next undefined
+ */
+
+const addImageToLogo = async (req, res, next) => {
+  try {
+    const logoId = req.body.logoId; // Assuming the ID of the logo document is passed as a URL parameter
+
+    // Create the new image object with a unique ID
+    const newImage = {
+      _id: new mongoose.Types.ObjectId(), // Generate a unique ID for the new image
+      url: req.body.url, // The new image URL from the request body
+    };
+
+    // Find the document by ID and push the new image into the existing image array
+    const updatedLogo = await logomodel.findByIdAndUpdate(
+      logoId,
+      { $push: { image: newImage } }, // Push the new image into the array
+      { new: true } // Return the updated document
+    );
+
+    if (!updatedLogo) {
+      return res.status(200).json({
+        message: "Logo not found",
+        status: false,
+      });
+    }
+
+    return res.json({
+      message: "Image added successfully",
+      status: true,
+      data: updatedLogo,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: "An Error Occurred",
+      status: false,
+    });
+  }
+};
+
+/**
+ *********deleteImageFromLogo******
+ * @param {*} req from user
+ * @param {*} res return data
+ * @param {*} next undefined
+ */
+const deleteImageFromLogo = async (req, res, next) => {
+  try {
+    const logoId = req.body.logoId; // Assuming the ID of the logo document is passed as a URL parameter
+    const imageId = req.body.imageId; // Assuming the ID of the image to delete is passed as a URL parameter
+
+    // Find the document by ID and remove the specific image from the image array
+    const updatedLogo = await logomodel.findByIdAndUpdate(
+      logoId,
+      { $pull: { image: { _id: imageId } } }, // Pull the image with the specified _id from the array
+      { new: true } // Return the updated document
+    );
+
+    if (!updatedLogo) {
+      return res.status(200).json({
+        message: "Logo not found",
+        status: false,
+      });
+    }
+
+    return res.json({
+      message: "Image deleted successfully",
+      status: true,
+      data: updatedLogo,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: "An Error Occurred",
+      status: false,
+    });
+  }
+};
+
+
 module.exports = {
   addAdmin, adminLogin, adminProfile, forgotPassword, resetPassword, fileUpload, uploads, addCountry, listState, adminFetch, listLocation, listCountries,
   listCity, getAllStatesList, getAllCitiesList, chatbot, adminApproval, jobApproval, notApprovedMembers, ListBrandForJobPost,

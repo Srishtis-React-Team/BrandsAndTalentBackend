@@ -56,9 +56,6 @@ router.post('/directKidsLogin',users.directKidsLogin)//for directKidsLogin
 router.get('/talentLists',users.talentLists)//for talentLists
 
 
-
-
-
 module.exports = router
 
 

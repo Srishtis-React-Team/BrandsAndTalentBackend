@@ -985,6 +985,7 @@ const postSupportMail = async (req, res, next) => {
 
      // Check for required fields
      if (!name || !enquiry  || !email || !subject) {
+   
       return res.json({
         status: false,
         message: 'Name, enquiry, phone number,subject, and email are required.'
@@ -1010,6 +1011,13 @@ const postSupportMail = async (req, res, next) => {
     };
 
      
+    // // // Phone number validation (basic example for international format)
+    // const validatePhoneNo = (phoneNo) => {
+    //   const re = /^\+?[1-9]\d{1,14}$/; // E.164 international format
+    //   return re.test(phoneNo);
+    // };
+  
+
     if (!validateEmail(email)) {
       return res.json({
         status: false,
@@ -1052,6 +1060,7 @@ const postSupportMail = async (req, res, next) => {
     const mailOptions = {
       from: host,
       to:['info@brandsandtalent.com', 'olin@brandsandtalent.com'],
+    
       subject: 'Help And Support',
       html: `
         <p>Hello,</p>

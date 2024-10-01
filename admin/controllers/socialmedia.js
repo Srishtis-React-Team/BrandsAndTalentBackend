@@ -86,6 +86,31 @@ const instagramCount = async (req, res, next) => {
   }
 }
 
+// Function to get Instagram followers count
+async function getInstagramFollowers() {
+    const igBusinessAccountId = process.env.IG_BUSINESS_ACCOUNT_ID; // Fetch from .env
+    const userAccessToken = process.env.IG_USER_ACCESS_TOKEN; // Fetch from .env
+
+    try {
+        const response = await axios.get(`https://graph.facebook.com/v14.0/${igBusinessAccountId}`, {
+            params: {
+                fields: 'followers_count',
+                access_token: userAccessToken
+            }
+        });
+
+        const followersCount = response.data.followers_count;
+        console.log(`Instagram Followers count: ${followersCount}`);
+        return followersCount;
+    } catch (error) {
+        console.error('Error fetching Instagram followers count:', error.response ? error.response.data : error.message);
+        res.json(({
+            data:error
+        }))
+    }
+}
+getInstagramFollowers();
+
 
 /**
 *********twitterCount******
@@ -98,6 +123,7 @@ const twitterCount = async (req, res) => {
     const username = req.body.username; // Get the username from the request body
     const url = `https://api.twitter.com/2/users/by/username/${username}?user.fields=public_metrics`; // Add public_metrics to the request
     
+
     const token ='AAAAAAAAAAAAAAAAAAAAAAORvQEAAAAAoD3xmN%2FvzpfamS2RsolX66iW%2BuU%3D9F3yfTbWP5QRPUq4R9SojhT2Phwe9BF864L0idLgbLEjgciCWV'; // Replace with your actual Bearer Token
 
     try {
@@ -108,7 +134,7 @@ const twitterCount = async (req, res) => {
         });
 
         const userData = response.data.data;
-      
+
         // Send back the user data to the client, including the follower count from public_metrics
         res.json({
             status:true,
@@ -137,6 +163,7 @@ const twitterCount = async (req, res) => {
                
             });
          
+           
         }
     }
 };
@@ -151,9 +178,12 @@ const twitterCount = async (req, res) => {
 
 const youtubeCount = async (req, res) => {
     try {
-      const channelId = req.body.channelId ;//|| 'UC1Z9q-ThshlPuLn_1yQYGrw'; // Use provided channel ID or default
+      //const channelId = req.body.channelId ;//|| 'UC1Z9q-ThshlPuLn_1yQYGrw'; // Use provided channel ID or default
      // const apiKey = 'AIzaSyD6OT4cLAKZk76sh_XxsB7pSCpsbnyamg8';
-      const url = `https://www.googleapis.com/youtube/v3/channels?part=statistics&id=${channelId}&key=${process.env.UTUBE_API_KEY}`;
+    //  const url = `https://www.googleapis.com/youtube/v3/channels?part=statistics&id=${channelId}&key=${process.env.UTUBE_API_KEY}`;
+      const channelId = req.body.channelId || 'UC1Z9q-ThshlPuLn_1yQYGrw'; // Use provided channel ID or default
+      const apiKey = 'AIzaSyD6OT4cLAKZk76sh_XxsB7pSCpsbnyamg8';
+      const url = `https://www.googleapis.com/youtube/v3/channels?part=statistics&id=${channelId}&key=${apiKey}`;
   
       // Fetch data from the YouTube API
       const response = await axios.get(url);
@@ -173,6 +203,7 @@ const youtubeCount = async (req, res) => {
         });
       } else {
         res.status(200).json({ status: false, msg: 'Channel not found' });
+       
       }
     } catch (error) {
       console.error('Error fetching YouTube data:', error.message);
@@ -203,7 +234,8 @@ const redirectInstagram = async (req, res) => {
 
 module.exports ={
     facebookCount,instagramCount,twitterCount,youtubeCount,redirectInstagram
-
 }
+
+
 
 

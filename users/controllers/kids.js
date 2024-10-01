@@ -118,6 +118,17 @@ const kidsSignUp = async (req, res, next) => {
 
     if (emailSent) {
 
+      // // Generate a unique ID
+      // const uniqueId = new mongoose.Types.ObjectId().toString();
+
+      // // Use only the first 5 characters of the uniqueId
+      // const shortenedUniqueId = uniqueId.slice(0, 5);
+
+      // // Generate public URL by appending preferred child first name, last name, and shortened unique ID
+      // const publicUrl = `${req.body.preferredChildFirstname}-${req.body.preferredChildLastName}-${shortenedUniqueId}`.toLowerCase().replace(/\s+/g, '-');
+
+      // Generate public URL by appending first name, last name, and unique ID
+      // Create a new user document
       const newUser = new kidsmodel({
         parentFirstName: req.body.parentFirstName,
         parentLastName: req.body.parentLastName,
@@ -127,7 +138,7 @@ const kidsSignUp = async (req, res, next) => {
         parentState: req.body.parentState,
         parentAddress: req.body.parentAddress,
         talentPassword: hashedPass,
-        confirmPassword: hashedPass,
+        confirmPassword: hashedPass, //req.body.confirmPassword,
         profession: req.body.profession,
         relevantCategories: req.body.relevantCategories,
         childFirstName: req.body.childFirstName,
@@ -345,6 +356,12 @@ const otpVerificationAdult = async (req, res, next) => {
         }
       });
 
+      // console.log("Success: User verified and email sent");
+      // res.json({
+      //   message: "User verified",
+      //   status: true,
+      //   data: user._id
+      // });
     } else {
       console.log("Error: OTP does not match");
       res.json({
@@ -553,7 +570,8 @@ const subscriptionPlan = async (req, res, next) => {
           return res.status(500).json({ message: "Failed to update transaction ID" });
         }
         console.log("userbrandsss--------------------------", updatedUser)
-        
+        //20-9
+        // Save transaction
         const transaction = new transactionmodel({
           transId: transId,
           type: 'user',
@@ -565,6 +583,8 @@ const subscriptionPlan = async (req, res, next) => {
         });
 
         await transaction.save();
+
+        //20-9
 
         return res.json({
           message: "Success: Transaction ID updated",
@@ -579,7 +599,12 @@ const subscriptionPlan = async (req, res, next) => {
           {
             subscriptionPlan,
             planName,
-           
+            // transactionDate,
+            // paymentStatus,
+            // paymentCurreny,
+            // paymentAmount,
+            // paymentPeriod,
+            // paymentPlan,
             transId,
             accountBlock: false
           },
@@ -623,7 +648,36 @@ const subscriptionPlan = async (req, res, next) => {
 
 
 
-    }
+    }//today updated code
+    // } else {
+    //   // Send email to admin for approval
+    //   const mailOptions = {
+    //     from: host,
+    //     to: userEmail,
+    //     subject: 'Subscription Plan Updated',
+    //     html: `<p>Hi ${user.brandName || user.preferredChildFirstname},</p>
+    //            <p>Your subscription plan has updated <strong>${planName}</strong>.</p>
+    //            <p>Regards,</p>
+    //            <p>Brands and Talent Team</p>`
+    //   };
+
+    //   transporter.sendMail(mailOptions, (error, info) => {
+    //     if (error) {
+    //       console.error("Error sending email:", error);
+    //       return res.status(500).json({ message: "Failed to send email", status: false });
+    //     }
+    //     console.log("Email sent: " + info.response);
+    //   });
+
+    //   // Save notification for admin
+    //   const notificationMessage = `${isKid ? user.preferredChildFirstname : isBrand ? user.brandName : user.preferredChildFirstname} has updated their plan to ${planName}.`;
+    //   await saveNotificationPlanUpgrade(user_id, brand_id, planName, notificationMessage);
+
+    //   res.json({
+    //     message: "An email has been sent to admin for approval",
+    //     status: true
+    //   });
+    // }
   } catch (error) {
     res.status(500).json({
       message: "An error occurred",
@@ -669,6 +723,23 @@ const subscriptionReminder = async () => {
       } else if (user.adultEmail) {
         UserModel = adultmodel; // User is from the adult model
       }
+
+      //test
+      // if (subscriptionPlan === 'weekly') {
+      //   // Send email every time this function runs (every 5 minutes)
+      //   await sendReminderEmail(email, expirationDate, 'Your weekly subscription is active. Please renew to avoid service interruption.');
+      //    // Determine the correct model for account update
+
+
+      //   // Block the account right after sending the email
+      //   await UserModel.findByIdAndUpdate(user._id, { accountBlock: true });
+
+      //   console.log(`Reminder email sent and account blocked for user: ${user._id}`);
+      // }
+
+      //trst
+
+
 
       if (subscriptionPlan === 'annual') {
         expirationDate.setFullYear(expirationDate.getFullYear() + 1);
@@ -720,6 +791,205 @@ const sendReminderEmail = async (email, expirationDate, message) => {
   await transporter.sendMail(mailOptions);
 };
 
+// const subscriptionPlan = async (req, res, next) => {
+//   try {
+//     const { user_id, subscriptionPlan, planName, brand_id,transactionDate,paymentStatus,paymentCurreny,paymentAmount,paymentPeriod,paymentPlan} = req.body;
+
+//     let UserModel;
+//     let nameFields;
+
+//     // Check if user_id matches a kid
+//     const isKid = await kidsmodel.exists({ _id: user_id });
+//     if (isKid) {
+//       UserModel = kidsmodel;
+//       nameFields = 'childFirstName childLastName';
+//     }
+
+//     // Check if user_id matches a brand
+//     const isBrand = await brandsmodel.exists({ _id: brand_id || user_id });
+//     if (isBrand) {
+//       UserModel = brandsmodel;
+//       nameFields = 'brandName';
+//     }
+
+//     // If neither kid nor brand, default to adult model
+//     if (!UserModel) {
+//       UserModel = adultmodel;
+//       nameFields = 'firstName lastName';
+//     }
+
+//     console.log("UserModel", UserModel);
+
+//     // Update subscription plan for the user with the given user_id or brand_id
+//     const query = { _id: user_id || brand_id };
+
+//     // Define the selection to include email and additional fields based on conditions
+//     let selectFields = 'email ';
+//     if (isKid) {
+//       selectFields += 'childFirstName childLastName';
+//     } else if (isBrand) {
+//       selectFields += 'brandName';
+//     } else {
+//       selectFields += 'firstName lastName';
+//     }
+
+//     // Fetch the user to get their email and nameFields
+//     let user = await UserModel.findOne(query);
+//     console.log("user", user);
+//     // Check if user exists and has an email address
+//     if (!user) {
+//       return res.status(200).json({ message: "User not found or email not defined" });
+//     }
+
+//     // Determine the correct email field to use
+//     let userEmail;
+//     if (UserModel === kidsmodel) {
+//       // For kids model, use parentEmail if available, otherwise use adultEmail
+//       userEmail = user.parentEmail;
+//     } else if (UserModel === brandsmodel) {
+//       // For brands model, use brandEmail
+//       userEmail = user.brandEmail;
+//     } else {
+//       // For adult model, use adultEmail
+//       userEmail = user.adultEmail;
+//     }
+
+//     // If no valid email found, return appropriate response
+//     if (!userEmail) {
+//       return res.status(200).json({ message: "Email not defined for the user" });
+//     }
+
+//     if (user.profileApprove === true) {
+
+//       // Update the subscription plan and planName
+//       const updatedUser = await UserModel.findOneAndUpdate(
+//         query,
+//         { subscriptionPlan, planName,transactionDate,paymentStatus,paymentCurreny,paymentAmount,paymentPeriod,paymentPlan },
+//         { new: true } // Options to return the updated document
+//       );
+
+//       if (!updatedUser) {
+//         return res.status(200).json({ message: "Need Admin Approval" });
+//       }
+
+//       return res.json({
+//         message: "Success: Subscription plan updated",
+//         status: true,
+//         data: updatedUser._id // Return the updated user's ID
+//       });
+//        // Schedule the cron job to send subscription reminders daily at 1 PM
+//        const cron = require('node-cron');
+//        cron.schedule('0 13 * * *', async () => {
+//          console.log('Running subscription reminder cron job...');
+//          await subscriptionReminder();
+//        });
+//       }else {
+//       const mailOptions = {
+//         from: host,
+//         to: userEmail,
+//         subject: 'Subscription Plan Updated',
+//         html: `<p>Hi ${user.brandName || user.preferredChildFirstname},</p>
+//              <p>Thank you for being a part of our family. Your subscription plan is updation is pending needs admin approval forthis  <strong>${planName}</strong>.</p>
+//              <p>Regards,</p>
+//              <p>Brands and Talent Team</p>`
+//       };
+
+//       transporter.sendMail(mailOptions, (error, info) => {
+//         if (error) {
+//           console.error("Error sending email:", error);
+//         } else {
+//           console.log("Email sent: " + info.response);
+//         }
+//       });
+//       // Update the subscription plan and planName
+//       const notificationMessage = `${isKid ? user.preferredChildFirstname : isBrand ? user.brandName : user.preferredChildFirstname} has updated their plan to ${planName}.`;
+
+//       // Call saveNotificationPlanUpgrade to save the notification
+//       await saveNotificationPlanUpgrade(user_id, brand_id,planName, notificationMessage);
+
+
+//       res.json({
+//         message: "A email is send to admin need approval",
+//         status: true
+
+//       });
+//     }
+//   } catch (error) {
+
+//     res.status(500).json({
+//       message: "An error occurred",
+//       status: false,
+//       error: error.message
+//     });
+//   }
+// };
+// // Subscription reminder function (keep this outside of the main function)
+// const subscriptionReminder = async () => {
+//   try {
+//     const currentDate = new Date();
+
+//     // Find users with Pro or Premium plans
+//     const users = await Promise.all([
+//       kidsmodel.find({ planName: { $in: ['Pro', 'Premium'] } }),
+//       adultmodel.find({ planName: { $in: ['Pro', 'Premium'] } }),
+//       brandsmodel.find({ planName: { $in: ['Pro', 'Premium'] } }),
+//     ]);
+
+//     const allUsers = [...users[0], ...users[1], ...users[2]];
+
+//     for (const user of allUsers) {
+//       const { transactionDate, subscriptionPlan, email, planName } = user;
+//       const expirationDate = new Date(transactionDate);
+
+//       if (subscriptionPlan === 'annual') {
+//         expirationDate.setFullYear(expirationDate.getFullYear() + 1);
+//       } else if (subscriptionPlan === 'monthly') {
+//         expirationDate.setMonth(expirationDate.getMonth() + 1);
+//       }
+
+//       const oneWeekBefore = new Date(expirationDate);
+//       oneWeekBefore.setDate(oneWeekBefore.getDate() - 7);
+
+//       const threeDaysBefore = new Date(expirationDate);
+//       threeDaysBefore.setDate(threeDaysBefore.getDate() - 3);
+
+//       const oneDayBefore = new Date(expirationDate);
+//       oneDayBefore.setDate(oneDayBefore.getDate() - 1);
+
+//       if (currentDate >= oneWeekBefore && currentDate < threeDaysBefore) {
+//         await sendReminderEmail(email, expirationDate, 'Your account will expire in 1 week.');
+//       } else if (currentDate >= threeDaysBefore && currentDate < oneDayBefore) {
+//         await sendReminderEmail(email, expirationDate, 'Your account will expire in 3 days.');
+//       } else if (currentDate >= oneDayBefore && currentDate < expirationDate) {
+//         await sendReminderEmail(email, expirationDate, 'Your account will expire tomorrow.');
+//       } else if (currentDate >= expirationDate) {
+//         await sendReminderEmail(email, expirationDate, 'Your account has expired.');
+//       }
+//     }
+//     console.log('Reminder emails sent successfully.');
+//   } catch (error) {
+//     console.error('Error sending subscription reminders:', error);
+//   }
+// };
+
+// // Helper function to send reminder emails
+// const sendReminderEmail = async (email, expirationDate, message) => {
+//   const mailOptions = {
+//     from: host,
+//     to: email,
+//     subject: 'Subscription Reminder',
+//     html: `
+//       <p>${message}</p>
+//       <p>Your account will expire on: ${expirationDate.toDateString()}</p>
+//       <p>Please renew your subscription to continue enjoying our services.</p>
+//       <p>Best regards,<br/>Brands And Talent Team</p>
+//     `,
+//   };
+
+//   await transporter.sendMail(mailOptions);
+// };
+
+
 /**
 *********userLogin******
 * @param {*} req from user
@@ -769,7 +1039,13 @@ const talentLogin = async (req, res) => {
         message: 'User is not active'
       });
     }
-   
+    // else if (type === 'kids' && (!user.isActive || !user.adminApproved)) {
+    //   return res.json({
+    //     status: false,
+    //     message: 'Need Approval from Admin'
+    //   });
+    // }
+
     // Update the fcmToken for the found user
     if (fcmToken) {
       await model.updateOne({ _id: user._id }, { $set: { fcmToken: fcmToken } });
@@ -1002,7 +1278,14 @@ const updateAdults = async (req, res) => {
     /* Authentication */
 
     const user_id = req.body.user_id || req.params.user_id;
- 
+    // // Generate a unique ID
+    // const uniqueId = new mongoose.Types.ObjectId().toString();
+
+    // // Use only the first 5 characters of the uniqueId
+    // const shortenedUniqueId = uniqueId.slice(0, 5);
+
+    // // Generate public URL by appending preferred child first name, last name, and shortened unique ID
+    // const publicUrl = `${req.body.preferredChildFirstname}-${req.body.preferredChildLastName}-${shortenedUniqueId}`.toLowerCase().replace(/\s+/g, '-');
     const updateFields = {
       isActive: true, // Assuming isActive is always set to true
 
@@ -1025,6 +1308,7 @@ const updateAdults = async (req, res) => {
       childAboutYou: req.body.childAboutYou,
       cv: req.body.cv,
       photo: req.body.photo,
+      // videosAndAudios: req.body.videosAndAudios,
       features: req.body.features,
       childLocation: req.body.childLocation,
       portfolio: req.body.portfolio,
@@ -1052,6 +1336,7 @@ const updateAdults = async (req, res) => {
       adultLegalLastName: req.body.adultLegalLastName,
       reviews: req.body.reviews,
       noOfJobsCompleted: req.body.noOfJobsCompleted,
+      //  videoAudioUrls: req.body.videoAudioUrls,
       videoList: req.body.videoList,
       audioList: req.body.audioList,
       publicUrl: req.body.publicUrl,
@@ -1293,6 +1578,32 @@ const editKids = async (req, res) => {
       return res.status(200).json({ status: false, msg: 'User not found' });
     }
 
+    // // Generate a unique ID
+    // const uniqueId = new mongoose.Types.ObjectId().toString();
+
+    // // Use only the first 5 characters of the uniqueId
+    // const shortenedUniqueId = uniqueId.slice(0, 5);
+
+    // // Check if a custom publicUrl is provided in the request body
+    // let publicUrl;
+    // if (req.body.publicUrl) {
+    //   publicUrl = req.body.publicUrl.toLowerCase().replace(/\s+/g, '-');  // Sanitize custom publicUrl
+    // } else {
+    //   // Generate public URL by appending preferred child first name, last name, and shortened unique ID
+    //   publicUrl = `${req.body.preferredChildFirstname}-${req.body.preferredChildLastName}-${shortenedUniqueId}`
+    //     .toLowerCase()
+    //     .replace(/\s+/g, '-');
+    // }
+
+    // // Generate a unique ID
+    // const uniqueId = new mongoose.Types.ObjectId().toString();
+
+    // // Use only the first 5 characters of the uniqueId
+    // const shortenedUniqueId = uniqueId.slice(0, 5);
+
+    // // Generate public URL by appending preferred child first name, last name, and shortened unique ID
+    // const publicUrl = `${req.body.preferredChildFirstname}-${req.body.preferredChildLastName}-${shortenedUniqueId}`.toLowerCase().replace(/\s+/g, '-');
+    // Prepare the fields to be updated
     const updateFields = {
 
       parentFirstName: req.body.parentFirstName,
@@ -1302,6 +1613,7 @@ const editKids = async (req, res) => {
       parentCountry: req.body.parentCountry,
       parentState: req.body.parentState,
       parentAddress: req.body.parentAddress,
+      // confirmPassword: req.body.confirmPassword,
       profession: req.body.profession,
       relevantCategories: req.body.relevantCategories,
       childFirstName: req.body.childFirstName,
@@ -1320,6 +1632,7 @@ const editKids = async (req, res) => {
       childCity: req.body.childCity,
       childAboutYou: req.body.childAboutYou,
       cv: req.body.cv,
+      // videosAndAudios: req.body.videosAndAudios,
       features: req.body.features,
       portfolio: req.body.portfolio,
       instaFollowers: req.body.instaFollowers,
@@ -1338,6 +1651,7 @@ const editKids = async (req, res) => {
       age: req.body.age,
       inActive: true,
       noOfJobsCompleted: req.body.noOfJobsCompleted,
+      // videoAudioUrls: req.body.videoAudioUrls,
       videoList: req.body.videoList,
       audioList: req.body.audioList,
       publicUrl: req.body.publicUrl,
@@ -1584,12 +1898,589 @@ const editKids = async (req, res) => {
           return res.status(200).json({ status: false, msg: 'No Data' });
 
       }
-  
+    // } else {
+    //   let model;
+    //   const kidsUser = await kidsmodel.findOne({ _id: objectId, isActive: true, inActive: true });//adminApproved: true
+    //   const adultUser = await adultmodel.findOne({ _id: objectId, isActive: true, inActive: true });//adminApproved: true
+
+    //   if (kidsUser) {
+    //     model = kidsmodel;
+    //   } else if (adultUser) {
+    //     model = adultmodel;
+    //   } else {
+    //     return res.status(200).json({ status: false, msg: 'No data' });
+    //   }
+
+    //   switch (dataType) {
+    //     case 1: {
+    //       const user = await model.findOne({ _id: objectId, isActive: true, inActive: true }, 'portfolio').sort({ updatedAt: -1 });;
+
+    //       if (!user || !user.portfolio || user.portfolio.length === 0) {
+    //         return res.status(200).json({ status: false, msg: 'Portfolio not found' });
+    //       }
+    //       // Reverse the portfolio and then map it to get the fileData
+    //       //  const fileDataArray = user.portfolio.reverse().map(item => item.fileData);
+
+    //       // Transform the portfolio to the desired format
+    //       const fileDataArray = user.portfolio.map(item => item.fileData);
+    //       return res.json({ status: true, data: fileDataArray });
+    //     }
+
+    //     case 3: {
+    //       const selectField = {
+    //         3: 'cv',
+
+    //       }[dataType];
+
+    //       const documents = await model.findOne({ _id: objectId, isActive: true, inActive: true }).select(selectField + ' _id').sort({ updatedAt: -1 });;
+
+    //       if (!documents || documents.length === 0 || !documents[selectField]) {
+    //         return res.status(200).json({ status: false, msg: 'No data found' });
+    //       }
+
+    //       const responseData = documents[selectField].map(item => ({
+    //         _id: documents._id.toString(), // Convert ObjectId to String if necessary
+    //         id: item.id,
+    //         title: item.title,
+    //         fileData: item.fileData,
+    //         type: item.type
+    //       }));
+
+    //       return res.json({ status: true, data: responseData });
+    //     }
+       
+    //     case 2: {
+    //       try {
+    //         // Find the document based on the given criteria
+    //         const document = await model.findOne({ _id: objectId, isActive: true, inActive: true })
+    //           .sort({ updatedAt: -1 })
+    //           .select('videoList');
+
+    //         if (!document || !document.videoList || document.videoList.length === 0) {
+    //           return res.status(200).json({ status: false, msg: 'videoList data not found' });
+    //         }
+
+    //         // Directly map the URLs
+    //         const videosAndAudiosData = document.videoList.map(videoList => videoList);
+
+    //         return res.json({ status: true, videoList: videosAndAudiosData });
+    //       } catch (error) {
+    //         console.error('Error fetching videoList data:', error);
+    //         return res.status(500).json({ status: false, msg: 'Internal server error' });
+    //       }
+    //     }
+
+    //     case 4: {
+    //       const featuresData = await model.findOne({ _id: objectId, isActive: true, inActive: true }, 'features').sort({ updatedAt: -1 });;
+
+    //       if (!featuresData || !featuresData.features || featuresData.features.length === 0) {
+    //         return res.status(200).json({ status: false, msg: 'Features data not found' });
+    //       }
+
+    //       // Format the features as per requirement
+    //       const formattedFeatures = featuresData.features.map(feature => ({
+    //         label: feature.label,
+    //         value: feature.value
+    //       }));
+
+    //       return res.json({ status: true, data: formattedFeatures });
+    //     }
+
+    //     case 6: {
+    //       try {
+    //         const serviceData = await model.findOne({ _id: objectId, isActive: true, inActive: true }, 'services').sort({ updatedAt: -1 });
+
+    //         if (!serviceData || !serviceData.services || serviceData.services.length === 0) {
+    //           return res.status(200).json({ status: false, msg: 'Services data not found' });
+    //         }
+
+    //         const formattedServices = serviceData.services.map(service => {
+    //           let editorStateString = '';
+    //           if (Array.isArray(service.editorState)) {
+    //             editorStateString = service.editorState.join(' '); // Joining HTML strings if there are multiple
+    //           } else if (typeof service.editorState === 'string') {
+    //             editorStateString = service.editorState; // Use as is if it's a string
+    //           } else {
+    //             console.error('Unexpected type for service.editorState:', typeof service.editorState);
+    //           }
+
+    //           return {
+    //             serviceName: service.serviceName,
+    //             serviceAmount: service.serviceAmount,
+    //             serviceDuration: service.serviceDuration,
+    //             editorState: editorStateString,
+    //             files: service.files || [], // Ensure files array exists, handle if it's undefined
+    //           };
+    //         });
+
+    //         return res.json({ status: true, data: formattedServices });
+
+    //       } catch (error) {
+    //         console.error('Error retrieving services data:', error);
+    //         return res.status(500).json({ status: false, msg: 'Server error' });
+    //       }
+    //     }
+    //     case 7: {
+    //       console.log("dgsgkjfkgjfnkj")
+    //       const reviewsData = await model.findOne({ _id: objectId, isActive: true, inActive: true }, 'reviews').sort({ updatedAt: -1 });
+    //       if (!reviewsData || !reviewsData.reviews || reviewsData.reviews.length === 0) {
+    //         return res.status(200).json({ status: false, msg: 'Reviews data not found' });
+    //       }
+    //       console.log("reviewsData", reviewsData)
+
+    //       const approvedReviews = reviewsData.reviews.filter(review => review.reviewApproved === 'Approved');
+    //       if (approvedReviews.length === 0) {
+    //         return res.status(200).json({ status: false, msg: 'No approved reviews found' });
+    //       }
+    //       console.log("approvedReviews", approvedReviews)
+    //       const formattedReviews = approvedReviews.map(review => ({
+    //         comment: review.comment,
+    //         starRatings: review.starRatings,
+    //         reviewDate: review.reviewDate,
+    //         reviewerName: review.reviewerName,
+    //         reviewerId: review.reviewerId,
+    //         reviewApproved: review.reviewApproved
+    //       }));
+    //       return res.json({ status: true, data: formattedReviews });
+    //     }
+    //     case 8: {
+    //       // Find the document based on the given criteria
+    //       const videoAudioUrlsData = await model.findOne({ _id: objectId, isActive: true, inActive: true })
+    //         .sort({ updatedAt: -1 })
+    //         .select('audioList');
+
+    //       if (!videoAudioUrlsData || !videoAudioUrlsData.audioList || videoAudioUrlsData.audioList.length === 0) {
+    //         return res.status(200).json({ status: false, msg: 'audioList data not found' });
+    //       }
+
+    //       // Directly map the URLs
+    //       const videoAudioUrlsDatas = videoAudioUrlsData.audioList.map(audioList => audioList);
+
+    //       return res.json({ status: true, audioList: videoAudioUrlsDatas });
+    //     }
+       
+    //     default:
+    //       return res.status(200).json({ status: false, msg: 'No Data' });
+
+    //   }
+
+    // }
   } catch (error) {
     console.error(error);
     res.status(500).json({ status: false, msg: `Server error: ${error.message}` });
   }
 };
+
+// const unifiedDataFetch = async (req, res, next) => {
+//   try {
+
+//     const userId = req.params.user_id;
+//     const dataType = parseInt(req.params.dataType);
+//     const objectId = new mongoose.Types.ObjectId(userId);
+//     const user = req.body.user;
+
+//     if (!user || user.length === 'null') {
+//       let model;
+//       const kidsUser = await kidsmodel.findOne({ _id: objectId, isActive: true, inActive: true, adminApproved: true });//adminApproved: true
+//       const adultUser = await adultmodel.findOne({ _id: objectId, isActive: true, inActive: true, adminApproved: true });//adminApproved: true
+
+//       if (kidsUser) {
+//         model = kidsmodel;
+//       } else if (adultUser) {
+//         model = adultmodel;
+//       } else {
+//         return res.status(200).json({ status: false, msg: 'Need Admin Approval' });
+//       }
+
+//       switch (dataType) {
+//         case 1: {
+//           const user = await model.findOne({ _id: objectId, isActive: true, inActive: true }, 'portfolio').sort({ updatedAt: -1 });
+
+//           if (!user || !user.portfolio || user.portfolio.length === 0) {
+//             return res.status(200).json({ status: false, msg: 'Portfolio not found' });
+//           }
+//           // Reverse the portfolio and then map it to get the fileData
+//           // const fileDataArray = user.portfolio.reverse().map(item => item.fileData);
+//           // Transform the portfolio to the desired format
+//           const fileDataArray = user.portfolio.map(item => item.fileData);
+//           return res.json({ status: true, data: fileDataArray });
+//         }
+
+//         case 3: {
+//           const selectField = {
+//             3: 'cv',
+
+//           }[dataType];
+
+//           const documents = await model.findOne({ _id: objectId, isActive: true, inActive: true }).select(selectField + ' _id').sort({ updatedAt: -1 });;
+
+//           if (!documents || documents.length === 0 || !documents[selectField]) {
+//             return res.status(200).json({ status: false, msg: 'No data found' });
+//           }
+
+//           const responseData = documents[selectField].map(item => ({
+//             _id: documents._id.toString(), // Convert ObjectId to String if necessary
+//             id: item.id,
+//             title: item.title,
+//             fileData: item.fileData,
+//             type: item.type
+//           }));
+
+//           return res.json({ status: true, data: responseData });
+//         }
+//         // case 2: {
+//         //   try {
+//         //     // Find the document based on the given criteria
+//         //     const document = await model.findOne({ _id: objectId, isActive: true, inActive: true })
+//         //       .sort({ createdAt: -1 })
+//         //       .select('videosAndAudios');
+
+//         //     if (!document || !document.videosAndAudios || document.videosAndAudios.length === 0) {
+//         //       return res.status(200).json({ status: false, msg: 'videosAndAudios data not found' });
+//         //     }
+
+//         //     // Directly map the URLs
+//         //     const videosAndAudiosData = document.videosAndAudios.map(videosAndAudios => videosAndAudios);
+
+//         //     return res.json({ status: true, videosAndAudios: videosAndAudiosData });
+//         //   } catch (error) {
+//         //     console.error('Error fetching videosAndAudios data:', error);
+//         //     return res.status(500).json({ status: false, msg: 'Internal server error' });
+//         //   }
+//         // }
+//         case 2: {
+//           try {
+//             // Find the document based on the given criteria
+//             const document = await model.findOne({ _id: objectId, isActive: true, inActive: true })
+//               .sort({ updatedAt: -1 })
+//               .select('videoList');
+
+//             if (!document || !document.videoList || document.videoList.length === 0) {
+//               return res.status(200).json({ status: false, msg: 'videoList data not found' });
+//             }
+
+//             // Directly map the URLs
+//             const videosAndAudiosData = document.videoList.map(videoList => videoList);
+
+//             return res.json({ status: true, videoList: videosAndAudiosData });
+//           } catch (error) {
+//             console.error('Error fetching videoList data:', error);
+//             return res.status(500).json({ status: false, msg: 'Internal server error' });
+//           }
+//         }
+
+//         case 4: {
+//           const featuresData = await model.findOne({ _id: objectId, isActive: true, inActive: true }, 'features').sort({ updatedAt: -1 });;
+
+//           if (!featuresData || !featuresData.features || featuresData.features.length === 0) {
+//             return res.status(200).json({ status: false, msg: 'Features data not found' });
+//           }
+
+//           // Format the features as per requirement
+//           const formattedFeatures = featuresData.features.map(feature => ({
+//             label: feature.label,
+//             value: feature.value
+//           }));
+
+//           return res.json({ status: true, data: formattedFeatures });
+//         }
+
+//         case 6: {
+//           try {
+//             const serviceData = await model.findOne({ _id: objectId, isActive: true, inActive: true }, 'services').sort({ updatedAt: -1 });
+
+//             if (!serviceData || !serviceData.services || serviceData.services.length === 0) {
+//               return res.status(200).json({ status: false, msg: 'Services data not found' });
+//             }
+
+//             const formattedServices = serviceData.services.map(service => {
+//               let editorStateString = '';
+//               if (Array.isArray(service.editorState)) {
+//                 editorStateString = service.editorState.join(' '); // Joining HTML strings if there are multiple
+//               } else if (typeof service.editorState === 'string') {
+//                 editorStateString = service.editorState; // Use as is if it's a string
+//               } else {
+//                 console.error('Unexpected type for service.editorState:', typeof service.editorState);
+//               }
+
+//               return {
+//                 serviceName: service.serviceName,
+//                 serviceAmount: service.serviceAmount,
+//                 serviceDuration: service.serviceDuration,
+//                 editorState: editorStateString,
+//                 files: service.files || [], // Ensure files array exists, handle if it's undefined
+//               };
+//             });
+
+//             return res.json({ status: true, data: formattedServices });
+
+//           } catch (error) {
+//             console.error('Error retrieving services data:', error);
+//             return res.status(500).json({ status: false, msg: 'Server error' });
+//           }
+//         }
+//         case 7: {
+//           console.log("dgsgkjfkgjfnkj")
+//           const reviewsData = await model.findOne({ _id: objectId, isActive: true, inActive: true }, 'reviews').sort({ updatedAt: -1 });
+//           if (!reviewsData || !reviewsData.reviews || reviewsData.reviews.length === 0) {
+//             return res.status(200).json({ status: false, msg: 'Reviews data not found' });
+//           }
+//           console.log("reviewsData", reviewsData)
+
+//           const approvedReviews = reviewsData.reviews.filter(review => review.reviewApproved === 'Approved');
+//           if (approvedReviews.length === 0) {
+//             return res.status(200).json({ status: false, msg: 'No approved reviews found' });
+//           }
+//           console.log("approvedReviews", approvedReviews)
+//           const formattedReviews = approvedReviews.map(review => ({
+//             comment: review.comment,
+//             starRatings: review.starRatings,
+//             reviewDate: review.reviewDate,
+//             reviewerName: review.reviewerName,
+//             reviewerId: review.reviewerId,
+//             reviewApproved: review.reviewApproved
+//           }));
+//           return res.json({ status: true, data: formattedReviews });
+//         }
+//         case 8: {
+//           // Find the document based on the given criteria
+//           const videoAudioUrlsData = await model.findOne({ _id: objectId, isActive: true, inActive: true })
+//             .sort({ updatedAt: -1 })
+//             .select('audioList');
+
+//           if (!videoAudioUrlsData || !videoAudioUrlsData.audioList || videoAudioUrlsData.audioList.length === 0) {
+//             return res.status(200).json({ status: false, msg: 'audioList data not found' });
+//           }
+
+//           // Directly map the URLs
+//           const videoAudioUrlsDatas = videoAudioUrlsData.audioList.map(audioList => audioList);
+
+//           return res.json({ status: true, audioList: videoAudioUrlsDatas });
+//         }
+//         // case 8: {
+//         //   // Find the document based on the given criteria
+//         //   const videoAudioUrlsData = await model.findOne({ _id: objectId, isActive: true, inActive: true })
+//         //     .sort({ createdAt: -1 })
+//         //     .select('videoAudioUrls');
+
+//         //   if (!videoAudioUrlsData || !videoAudioUrlsData.videoAudioUrls || videoAudioUrlsData.videoAudioUrls.length === 0) {
+//         //     return res.status(200).json({ status: false, msg: 'videoAudioUrls data not found' });
+//         //   }
+
+//         //   // Directly map the URLs
+//         //   const videoAudioUrlsDatas = videoAudioUrlsData.videoAudioUrls.map(videoAudioUrl => videoAudioUrl);
+
+//         //   return res.json({ status: true, videoAudioUrls: videoAudioUrlsDatas });
+//         // }
+//         default:
+//           return res.status(200).json({ status: false, msg: 'No Data' });
+
+//       }
+//     } else {
+//       let model;
+//       const kidsUser = await kidsmodel.findOne({ _id: objectId, isActive: true, inActive: true });//adminApproved: true
+//       const adultUser = await adultmodel.findOne({ _id: objectId, isActive: true, inActive: true });//adminApproved: true
+
+//       if (kidsUser) {
+//         model = kidsmodel;
+//       } else if (adultUser) {
+//         model = adultmodel;
+//       } else {
+//         return res.status(200).json({ status: false, msg: 'No data' });
+//       }
+
+//       switch (dataType) {
+//         case 1: {
+//           const user = await model.findOne({ _id: objectId, isActive: true, inActive: true }, 'portfolio').sort({ updatedAt: -1 });;
+
+//           if (!user || !user.portfolio || user.portfolio.length === 0) {
+//             return res.status(200).json({ status: false, msg: 'Portfolio not found' });
+//           }
+//           // Reverse the portfolio and then map it to get the fileData
+//           //  const fileDataArray = user.portfolio.reverse().map(item => item.fileData);
+
+//           // Transform the portfolio to the desired format
+//           const fileDataArray = user.portfolio.map(item => item.fileData);
+//           return res.json({ status: true, data: fileDataArray });
+//         }
+
+//         case 3: {
+//           const selectField = {
+//             3: 'cv',
+
+//           }[dataType];
+
+//           const documents = await model.findOne({ _id: objectId, isActive: true, inActive: true }).select(selectField + ' _id').sort({ updatedAt: -1 });;
+
+//           if (!documents || documents.length === 0 || !documents[selectField]) {
+//             return res.status(200).json({ status: false, msg: 'No data found' });
+//           }
+
+//           const responseData = documents[selectField].map(item => ({
+//             _id: documents._id.toString(), // Convert ObjectId to String if necessary
+//             id: item.id,
+//             title: item.title,
+//             fileData: item.fileData,
+//             type: item.type
+//           }));
+
+//           return res.json({ status: true, data: responseData });
+//         }
+//         // case 2: {
+//         //   try {
+//         //     // Find the document based on the given criteria
+//         //     const document = await model.findOne({ _id: objectId, isActive: true, inActive: true })
+//         //       .sort({ createdAt: -1 })
+//         //       .select('videosAndAudios');
+
+//         //     if (!document || !document.videosAndAudios || document.videosAndAudios.length === 0) {
+//         //       return res.status(200).json({ status: false, msg: 'videosAndAudios data not found' });
+//         //     }
+
+//         //     // Directly map the URLs
+//         //     const videosAndAudiosData = document.videosAndAudios.map(videosAndAudios => videosAndAudios);
+
+//         //     return res.json({ status: true, videosAndAudios: videosAndAudiosData });
+//         //   } catch (error) {
+//         //     console.error('Error fetching videosAndAudios data:', error);
+//         //     return res.status(500).json({ status: false, msg: 'Internal server error' });
+//         //   }
+//         // }
+//         case 2: {
+//           try {
+//             // Find the document based on the given criteria
+//             const document = await model.findOne({ _id: objectId, isActive: true, inActive: true })
+//               .sort({ updatedAt: -1 })
+//               .select('videoList');
+
+//             if (!document || !document.videoList || document.videoList.length === 0) {
+//               return res.status(200).json({ status: false, msg: 'videoList data not found' });
+//             }
+
+//             // Directly map the URLs
+//             const videosAndAudiosData = document.videoList.map(videoList => videoList);
+
+//             return res.json({ status: true, videoList: videosAndAudiosData });
+//           } catch (error) {
+//             console.error('Error fetching videoList data:', error);
+//             return res.status(500).json({ status: false, msg: 'Internal server error' });
+//           }
+//         }
+
+//         case 4: {
+//           const featuresData = await model.findOne({ _id: objectId, isActive: true, inActive: true }, 'features').sort({ updatedAt: -1 });;
+
+//           if (!featuresData || !featuresData.features || featuresData.features.length === 0) {
+//             return res.status(200).json({ status: false, msg: 'Features data not found' });
+//           }
+
+//           // Format the features as per requirement
+//           const formattedFeatures = featuresData.features.map(feature => ({
+//             label: feature.label,
+//             value: feature.value
+//           }));
+
+//           return res.json({ status: true, data: formattedFeatures });
+//         }
+
+//         case 6: {
+//           try {
+//             const serviceData = await model.findOne({ _id: objectId, isActive: true, inActive: true }, 'services').sort({ updatedAt: -1 });
+
+//             if (!serviceData || !serviceData.services || serviceData.services.length === 0) {
+//               return res.status(200).json({ status: false, msg: 'Services data not found' });
+//             }
+
+//             const formattedServices = serviceData.services.map(service => {
+//               let editorStateString = '';
+//               if (Array.isArray(service.editorState)) {
+//                 editorStateString = service.editorState.join(' '); // Joining HTML strings if there are multiple
+//               } else if (typeof service.editorState === 'string') {
+//                 editorStateString = service.editorState; // Use as is if it's a string
+//               } else {
+//                 console.error('Unexpected type for service.editorState:', typeof service.editorState);
+//               }
+
+//               return {
+//                 serviceName: service.serviceName,
+//                 serviceAmount: service.serviceAmount,
+//                 serviceDuration: service.serviceDuration,
+//                 editorState: editorStateString,
+//                 files: service.files || [], // Ensure files array exists, handle if it's undefined
+//               };
+//             });
+
+//             return res.json({ status: true, data: formattedServices });
+
+//           } catch (error) {
+//             console.error('Error retrieving services data:', error);
+//             return res.status(500).json({ status: false, msg: 'Server error' });
+//           }
+//         }
+//         case 7: {
+//           console.log("dgsgkjfkgjfnkj")
+//           const reviewsData = await model.findOne({ _id: objectId, isActive: true, inActive: true }, 'reviews').sort({ updatedAt: -1 });
+//           if (!reviewsData || !reviewsData.reviews || reviewsData.reviews.length === 0) {
+//             return res.status(200).json({ status: false, msg: 'Reviews data not found' });
+//           }
+//           console.log("reviewsData", reviewsData)
+
+//           const approvedReviews = reviewsData.reviews.filter(review => review.reviewApproved === 'Approved');
+//           if (approvedReviews.length === 0) {
+//             return res.status(200).json({ status: false, msg: 'No approved reviews found' });
+//           }
+//           console.log("approvedReviews", approvedReviews)
+//           const formattedReviews = approvedReviews.map(review => ({
+//             comment: review.comment,
+//             starRatings: review.starRatings,
+//             reviewDate: review.reviewDate,
+//             reviewerName: review.reviewerName,
+//             reviewerId: review.reviewerId,
+//             reviewApproved: review.reviewApproved
+//           }));
+//           return res.json({ status: true, data: formattedReviews });
+//         }
+//         case 8: {
+//           // Find the document based on the given criteria
+//           const videoAudioUrlsData = await model.findOne({ _id: objectId, isActive: true, inActive: true })
+//             .sort({ updatedAt: -1 })
+//             .select('audioList');
+
+//           if (!videoAudioUrlsData || !videoAudioUrlsData.audioList || videoAudioUrlsData.audioList.length === 0) {
+//             return res.status(200).json({ status: false, msg: 'audioList data not found' });
+//           }
+
+//           // Directly map the URLs
+//           const videoAudioUrlsDatas = videoAudioUrlsData.audioList.map(audioList => audioList);
+
+//           return res.json({ status: true, audioList: videoAudioUrlsDatas });
+//         }
+//         // case 8: {
+//         //   // Find the document based on the given criteria
+//         //   const videoAudioUrlsData = await model.findOne({ _id: objectId, isActive: true, inActive: true })
+//         //     .sort({ createdAt: -1 })
+//         //     .select('videoAudioUrls');
+
+//         //   if (!videoAudioUrlsData || !videoAudioUrlsData.videoAudioUrls || videoAudioUrlsData.videoAudioUrls.length === 0) {
+//         //     return res.status(200).json({ status: false, msg: 'videoAudioUrls data not found' });
+//         //   }
+
+//         //   // Directly map the URLs
+//         //   const videoAudioUrlsDatas = videoAudioUrlsData.videoAudioUrls.map(videoAudioUrl => videoAudioUrl);
+
+//         //   return res.json({ status: true, videoAudioUrls: videoAudioUrlsDatas });
+//         // }
+//         default:
+//           return res.status(200).json({ status: false, msg: 'No Data' });
+
+//       }
+
+//     }
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ status: false, msg: `Server error: ${error.message}` });
+//   }
+// };
 
 /*
  *********file delete*****
@@ -1807,6 +2698,37 @@ const talentList = async (req, res) => {
   }
 };
 
+
+
+// const talentList = async (req, res) => {
+//   try {
+
+
+//     // Find all active adults
+//     const activeAdults = await adultmodel.find({ isActive: true });//adminApproved: true
+
+//     // Find all active kids
+//     const activeKids = await kidsmodel.find({ isActive: true, inActive: true });//adminApproved: true
+
+//     // Combine both lists
+//    // const reversedUsers = [...activeAdults, ...activeKids];
+//    // Combine both lists without reversing
+//    const allActiveUsers = [...activeAdults, ...activeKids];
+
+//     // Reverse the array
+//     //const allActiveUsers = reversedUsers.reverse();
+
+//     if (allActiveUsers.length > 0) {
+//       return res.json({ status: true, data: allActiveUsers });
+//     } else {
+//       return res.json({ status: false, msg: 'No active users found' });
+//     }
+//   } catch (error) {
+//     console.error('Error fetching users:', error);
+//     return res.json({ status: false, msg: 'An error occurred' });
+//   }
+// };
+
 /**
  *********talentFilterList*****
  * @param {*} req from user
@@ -1842,7 +2764,10 @@ const talentFilterData = async (req, res) => {
         orConditions.push(condition);
       });
     }
-  
+   
+    //height
+    // Height filter within features
+    
     if (req.body.height) {
       orConditions.push({ features: { $elemMatch: { label: "Height", value: req.body.height } } });
      
@@ -1869,7 +2794,15 @@ const talentFilterData = async (req, res) => {
     fields.forEach(field => {
       addRegexCondition(field, req.body[field]);
     });
-   
+    // // Generic string fields handling (case insensitive)
+    // const fields = ['adultEmail', 'contactEmail', 'country', 'parentFirstName', 'parentLastName', 'parentEmail', 'parentMobileNo', 'parentCountry', 'parentState', 'parentAddress', 'profession.value', 'profession.label', 'relevantCategories', 'industry', 'childFirstName', 'childLastName', 'preferredChildFirstname', 'preferredChildLastName', 'childEthnicity', 'childPhone', 'childEmail', 'childLocation', 'childCity', 'childAboutYou', 'services', 'portfolio', 'features.label', 'features.value', 'maritalStatus']//['childCity', 'parentCountry','childNationality', 'gender', 'childEthnicity', 'languages', 'childFirstName', 'parentFirstName', 'industry','preferredChildFirstname', 'preferredChildLastName'];
+    // fields.forEach(field => {
+    //   if (req.body[field]) {
+    //     let condition = {};
+    //     condition[field] = { $regex: new RegExp(req.body[field], 'i') }; // Case-insensitive search
+    //     orConditions.push(condition);
+    //   }
+    // });
 
     // Search term filter
     if (req.body.searchTerm) {
@@ -1905,7 +2838,10 @@ const talentFilterData = async (req, res) => {
     if (req.body.languages && req.body.languages.length > 0) {
       orConditions.push({ languages: { $in: req.body.languages } });
     }
-   
+    //newly 
+    // Social media filter
+ // Social media filter
+  // Social media filter
   if (req.body.socialmedia) {
     const socialMediaPlatforms = req.body.socialmedia || [];
     const minfollowerscount = parseInt(req.body.minfollowerscount, 10) || 0;
@@ -2001,6 +2937,11 @@ if (req.body.name) {
     console.log("orConditions", orConditions)
     // Add conditions for isActive: true and inActive: true
     orConditions.push({ isActive: true }, { inActive: true });//,{adminApproved: true}
+
+    // Constructing the final query with all conditions
+     // Construct the final query
+     
+    //let query = orConditions.length ? { $and: orConditions || socailquery } : {};
 
     let query = {};
    
@@ -2243,6 +3184,10 @@ const updateProfileStatus = async (req, res) => {
       return res.json({ status: false, msg: 'User not found' });
     }
 
+    // // If we have an update result, we successfully updated the profile status
+    // if (updateResult) {
+    //   return res.json({ status: true, msg: 'Set profile status successfully', type: userType,data:updateResult });
+    // } 
     if (updateResult && updatedUserData) {
       return res.json({
         status: true,
@@ -2483,7 +3428,9 @@ const removeFavorite = async (req, res) => {
     } catch (err) {
       res.json({ status: false, msg: err.message });
     }
-    
+    // } catch (error) {
+    //   res.json({ status: false, msg: 'Invalid Token' });
+    // }
   } catch (error) {
     res.json({ status: false, msg: error.message });
   }
@@ -3301,7 +4248,60 @@ const reviewsPosting = async (req, res) => {
  * @param {*} res return data
  * @param {*} next undefined
  */
+//  const deleteVideoUrls = async (req, res) => {
+//   const { talentId, index } = req.body;
 
+//   try {
+//     // Validate input
+//     if (!talentId || index === undefined || index < 0) {
+//       return res.status(200).send({ message: "Invalid input" });
+//     }
+
+//     // Find the talent document in the kids model
+//     let talent = await kidsmodel.findById(talentId);
+//     let modelType = 'kids';
+
+//     // If not found, check in the adults model
+//     if (!talent) {
+//       talent = await adultmodel.findById(talentId);
+//       modelType = 'adults';
+//     }
+
+//     // If talent not found in both models
+//     if (!talent) {
+//       return res.status(200).send({ message: "Talent not found" });
+//     }
+
+//     // Validate index for both videoList and audioList
+//     const videoListLength = talent.videoList ? talent.videoList.length : 0;
+//     const audioListLength = talent.audioList ? talent.audioList.length : 0;
+
+//     if (index >= videoListLength && index >= audioListLength) {
+//       return res.status(400).send({ message: "Invalid index" });
+//     }
+
+//     // Remove the URL at the specified index from videoList and audioList if applicable
+//     if (index < videoListLength) {
+//       talent.videoList.splice(index, 1);
+//     }
+
+//     if (index < audioListLength) {
+//       talent.audioList.splice(index, 1);
+//     }
+
+//     // Save the updated document
+//     await talent.save();
+
+//     res.status(200).send({
+//       message: "URL deleted successfully",
+//       videoList: talent.videoList,
+//       audioList: talent.audioList,
+//     });
+//   } catch (error) {
+//     console.error("Error deleting URL:", error);
+//     res.status(500).send({ message: "An error occurred while deleting the URL" });
+//   }
+// };
 const deleteVideoUrls = async (req, res) => {
   const { talentId, index } = req.body;
 
@@ -3486,6 +4486,139 @@ const deleteAudioUrls = async (req, res) => {
   }
 };
 
+
+
+
+//  const getDataByPublicUrl = async (req, res) => {
+//   try {
+//     // Extract and normalize publicUrl and userId
+//     const publicUrl = req.body.publicUrl.trim().toLowerCase();
+//     const { userId } = req.body;
+
+//   // Function to check for user in models
+// const checkUserInModels = async (publicUrl, userId) => {
+//   const models = [adultmodel, kidsmodel, brandsmodel];
+
+//   for (const model of models) {
+//       try {
+//           // Log model being queried
+//           console.log("Querying model:", model.modelName);
+
+//           console.log("model",model)
+
+//           // Query the model
+//           const user = await model.findOne({
+//               publicUrl: publicUrl, // Ensure this matches exactly
+//               _id: new mongoose.Types.ObjectId(userId) // Ensure it's an ObjectId
+//           });
+
+//           // Log user data and query parameters
+//           console.log("User found:", user);
+//           console.log("Query parameters - publicUrl:", publicUrl, "userId:", userId);
+
+//           // Check if user is found
+//           if (user) return { status: true, data: user, currentStatus: "own-talent" };
+//       } catch (error) {
+//           // Log any errors encountered during the query
+//           console.error("Error querying model:", model.modelName, error);
+//       }
+//   }
+  
+//   // Return null if no user is found in any model
+//   return { status: false, message: "User not found in any model." };
+// };
+
+  
+//     // First, search for the user in all models with userId
+//     const userWithId = await checkUserInModels(publicUrl, userId);
+//     if (userWithId) return res.json(userWithId);
+
+//     // Second, search for the user in all models without userId
+//     const checkAdminApproval = async (publicUrl) => {
+//       console.log("check1111111")
+//       console.log("publicUrl",publicUrl)
+//       const models = [adultmodel, kidsmodel, brandsmodel];
+//       for (const model of models) {
+//         console.log("check22222222222222222")
+//         const user = await model.find({ publicUrl });
+//         console.log("user",user)
+//         if (user) {
+//           console.log("check33333333333333333333")
+//           // Check for admin approval
+//           if (user.adminApproved === false) {
+//             return { status: true, data: [], currentStatus: "not-approved" };
+//           }
+//           if (user.adminApproved === true) {
+//             console.log("check4444444444444444444444")
+//             return { status: true, data: user, currentStatus: "approved" };
+//           }
+//         }
+//       }
+//       return null;
+//     };
+ 
+//     // Check admin approval status
+//     const adminApprovalStatus = await checkAdminApproval(publicUrl);
+//     if (adminApprovalStatus) return res.json(adminApprovalStatus);
+
+//     // If no user found
+//     return res.json({ status: false, msg: "User not found" });
+
+//   } catch (error) {
+//     console.error('Error occurred while fetching data:', error);
+//     return res.status(500).json({ status: false, msg: 'Error occurred while fetching data' });
+//   }
+// };
+
+
+
+
+
+
+
+// const getDataByPublicUrl = async (req, res) => {
+//   try {
+//     // Extract publicUrl from req.body and trim any extra spaces
+//     const publicUrl = req.body.publicUrl.trim().toLowerCase(); // Normalize to lowercase
+    
+
+//     // Check if the user with the given publicUrl exists in adultmodel
+//     const adultUser = await adultmodel.findOne({
+//       publicUrl: { $regex: new RegExp(`^${publicUrl}$`, 'i') }, // Case-insensitive regex
+//       isActive: true,
+//       inActive: true
+//     });
+//     if (adultUser) {
+//       return res.json({ status: true, data: adultUser });
+//     }
+
+//     // Check if the user with the given publicUrl exists in kidsmodel
+//     const kidsUser = await kidsmodel.findOne({
+//       publicUrl: { $regex: new RegExp(`^${publicUrl}$`, 'i') }, // Case-insensitive regex
+//       isActive: true,
+//       inActive: true
+//     });
+//     if (kidsUser) {
+//       return res.json({ status: true, data: kidsUser });
+//     }
+
+//     // Check if the user with the given publicUrl exists in brandsmodel
+//     const brandUser = await brandsmodel.findOne({
+//       publicUrl: { $regex: new RegExp(`^${publicUrl}$`, 'i') }, // Case-insensitive regex
+//       isActive: true,
+//       inActive: true
+//     });
+//     if (brandUser) {
+//       return res.json({ status: true, data: brandUser });
+//     }
+
+//     // If no user is found in any model, return an appropriate response
+//     return res.json({ status: false, msg: 'No user found' });
+//   } catch (error) {
+//     console.error('Error occurred while fetching data:', error);
+//     return res.status(500).json({ status: false, msg: 'Error occurred while fetching data' });
+//   }
+// };
 
 /**
  *********fetchPaymentDetails ******

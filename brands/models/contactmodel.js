@@ -27,7 +27,8 @@ var authenticationSchema = new schema({
         default:true
         
     },
-    talentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Talent' },
+
+    talentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Talent' },// required: false
     isRespond:{
         type:Boolean,
         default:false

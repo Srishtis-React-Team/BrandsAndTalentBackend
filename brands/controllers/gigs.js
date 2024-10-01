@@ -1569,7 +1569,6 @@ async function saveNotifications(brandId, talentId, gigId, brandNotificationMess
                 planName: talent.planName,
                 videoList: talent.videoList,
                 audioList: talent.audioList
-                // Add other talent details as needed
             },
             gigDetails: {
                 jobTitle: gig.jobTitle,
