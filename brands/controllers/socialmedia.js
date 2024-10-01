@@ -104,6 +104,6 @@ getFollowerCount();
     
 module.exports = {
    getUserIdByUsername,getUserDetails,getUserDetailsById,getInstagramaccount,
-   getFollowerCount//getInstagramCount
+   getFollowerCount
 
 };

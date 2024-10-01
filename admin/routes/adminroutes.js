@@ -23,6 +23,7 @@ router.post('/adminApproval',admin.adminApproval)//for adminApproval
 router.post('/jobApproval',admin.jobApproval)//for jobApproval
 router.get('/notApprovedMembers',admin.notApprovedMembers)//for notApprovedMembers
 router.get('/ListBrandForJobPost',admin.ListBrandForJobPost)//for ListBrandForJobPost
+//router.post('/filterByApprovalType',admin.filterByApprovalType)//for filterByApprovalType
 router.post('/filterByStatus',admin.filterByStatus)//for filterByStatus
 router.post('/jobApprovalByBrandsList',admin.jobApprovalByBrandsList)//for jobApprovalByBrandsList
 router.post('/adminApprovalByList',admin.adminApprovalByList)//for adminApprovalByList
@@ -33,6 +34,12 @@ router.post('/giftMail',admin.giftMail)//for giftMail
 router.post('/payment',admin.payment)//for createTransaction
 router.post('/checkTransaction',admin.checkTransaction)//for checkTransaction
 router.post('/reviewApproval',admin.reviewApproval)//for reviewApproval
+router.post('/addSuccessStories',admin.addSuccessStories)//for addsuccessstories  
+router.get('/getSuccessStories',admin.getSuccessStories)//for getSuccessStories                        
+router.get('/getLogos',admin.getLogos)//for getLogos  
+router.post('/addLogo',admin.addLogo)//for addLogo  
+router.post('/addImageToLogo',admin.addImageToLogo)//for addImageToLogo  
+router.post('/deleteImageFromLogo',admin.deleteImageFromLogo)//for deleteImageFromLogo 
 
 
 module.exports = router

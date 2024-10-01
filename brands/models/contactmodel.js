@@ -18,16 +18,16 @@ var authenticationSchema = new schema({
     answer : {
         type: String
     },
-   
-    
+    subject:{
+        type:String
+    },
     isActive:
     {
         type: Boolean,
         default:true
         
     },
-   
-    talentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Talent', required: false },
+    talentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Talent' },
     isRespond:{
         type:Boolean,
         default:false

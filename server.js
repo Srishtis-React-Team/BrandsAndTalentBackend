@@ -154,7 +154,7 @@ let onlineUsers =[];
       if (!userStillOnline) {
         // Update the user in each of the models
         await Promise.all([
-          adultmodel.updateOne({ _id: userId }, { $set: { isOnline: false } }),
+          adultmodel.updateOne({ _id: userId }, { $set: { isOnline: false } }),  //    adultmodel.findOneAndUpdate({ _id: userId }, { $set: { isOnline: false } }, { new: true }),
           brandsmodel.updateOne({ _id: userId }, { $set: { isOnline: false } }),
           kidsmodel.updateOne({ _id: userId }, { $set: { isOnline: false } })
         ]);
@@ -240,7 +240,6 @@ app.use((err, req, res, next) => {
 
 
 
-
 //user panel
 const users = require('./users/routes/kidsroutes');
 
@@ -252,6 +251,9 @@ const features = require('./admin/routes/featuresroutes');
 const keyword = require('./admin/routes/keywordroutes.js');
 const content = require('./admin/routes/contentroutes.js');
 const blog = require('./admin/routes/blogroutes.js');
+const socialmedia = require('./admin/routes/socialmediaroutes.js');
+const coupon = require('./admin/routes/couponroutes.js');
+const giftsub = require('./admin/routes/giftsubroutes.js');
 
 //brands
 const brands = require('./brands/routes/brandroutes');
@@ -261,6 +263,8 @@ const notification = require('./brands/routes/notification.js');
 const conversation = require('./brands/routes/conversationroutes.js');
 const message = require('./brands/routes/messageroutes.js');
 const chat = require('./brands/routes/chatroutes.js');
+
+
 
 
 
@@ -281,6 +285,9 @@ app.use('/api/message',message);
 app.use('/api/chat',chat);
 app.use('/api/content',content);
 app.use('/api/blog',blog);
+app.use('/api/socialmedia',socialmedia);
+app.use('/api/coupon',coupon);
+app.use('/api/giftsub',giftsub);
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/upload1', express.static(path.join(__dirname, 'upload1')));

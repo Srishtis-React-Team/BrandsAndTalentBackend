@@ -25,6 +25,7 @@ const adultmodel = require("../../users/models/adultmodel");
 const notificationmodel = require("../models/notificationmodel");
 const applymodel = require("../models/applymodel.js");
 const favouritesgigsmodel = require("../models/favouritesgigsmodel.js");
+const userdatamodel = require("../models/userdatamodel.js");
 
 /**
  *********brandsRegister******
@@ -42,9 +43,9 @@ const createJob = async (req, res, next) => {
             jobCurrency, paymentType, minPay, maxPay, hiringCompany,
             whyWorkWithUs, product, valueOfProduct, productDescription, hiringCompanyDescription, howLikeToApply,
             workSamples, jobImage, country, state, city, jobPostedDate, category, lastDateForApply,
-            minAge,maxAge,instaMin,instaMax,tikTokMin,tikTokMax,linkedInMin,linkedInMax,fbMin,fbMax,twitterMin,twitterMax,
-            youTubeMin,youTubeMax
-// isActive: true
+            minAge, maxAge, instaMin, instaMax, tikTokMin, tikTokMax, linkedInMin, linkedInMax, fbMin, fbMax, twitterMin, twitterMax,
+            youTubeMin, youTubeMax
+            // isActive: true
         } = req.body);
 
         const response = await add_gigs.save();
@@ -55,7 +56,7 @@ const createJob = async (req, res, next) => {
             data: add_gigs,
         });
     } catch (error) {
-      
+
         return res.json({
             message: "An Error Occurred"
         });
@@ -76,16 +77,21 @@ const getPostedJobs = async (req, res, next) => {
     try {
         const today = new Date();
         // Fetching all active gigs and sorting them by creation date in descending order
-       // const gigs = await gigsmodel.find({ isActive: true, lastDateForApply: { $gte: today },adminApproved:true}).sort({ created: -1 }).exec();//adminApproved:true 
-        const gigs = await gigsmodel.find({ isActive: true, lastDateForApply: { $gte: today },adminApproved:true}).sort({ created: -1 }).exec();//adminApproved:true 
+        // const gigs = await gigsmodel.find({ isActive: true, lastDateForApply: { $gte: today },adminApproved:true}).sort({ created: -1 }).exec();//adminApproved:true 
+        const gigs = await gigsmodel.find({ isActive: true, lastDateForApply: { $gte: today }, adminApproved: true }).sort({ created: -1 }).exec();//adminApproved:true 
         const favoriteGigs = await favouritesgigsmodel.find({ isActive: true, talentId: talentId, isFavourite: true }).sort({ created: -1 }).exec();
 
         // Matching gigId details fetch from favoriteGigs
         const favoriteGigIds = favoriteGigs.map(favGig => favGig.gigId.toString());
 
+        console.log("favoriteGigIds", favoriteGigIds)
+        console.log("gigs", gigs)
+
         // Create modified data with an "isApplied" status
         const modifiedData = await Promise.all(gigs.map(async (gig) => {
+
             const application = await notificationmodel.findOne({ gigId: gig._id, talentId: talentId });
+            console.log("application", application)
             return {
                 ...gig._doc,
                 isFavorite: favoriteGigIds.includes(gig._id.toString()),
@@ -102,7 +108,7 @@ const getPostedJobs = async (req, res, next) => {
             data: modifiedData
         });
     } catch (error) {
-      
+
         res.status(500).json({
             status: false,
             message: 'Error fetching posted jobs',
@@ -124,7 +130,7 @@ const getJobsByID = async (req, res, next) => {
 
 
         // Since we're using async/await, there's no need to use .then() and .catch() here.
-        const gig = await gigsmodel.findOne({ _id: gigId, isActive: true,adminApproved:true }).sort({ created: -1 });//adminApproved:true
+        const gig = await gigsmodel.findOne({ _id: gigId, isActive: true, adminApproved: true }).sort({ created: -1 });//adminApproved:true
 
         if (!gig) {
             // If no gig is found, send a 404 not found response
@@ -142,7 +148,7 @@ const getJobsByID = async (req, res, next) => {
 
     } catch (error) {
         // Log the error and send a 500 internal server error response
-    
+
         res.status(500).json({
             status: false,
             message: 'Server error'
@@ -158,92 +164,92 @@ const getJobsByID = async (req, res, next) => {
  */
 
 // Function to save notifications to the database
-// Function to save notifications to the database
-const notificationsave = async (brandId,gigId,adminApproved, notificationMessage,lastDateForApply) => {
-    try {
-  
-      const brand = await findUserById(brandId);
-     
-      const notification = new notificationmodel({
-        notificationType: 'Job Approval',
-        notificationMessage: notificationMessage,
-        brandId: brandId,
-        gigId:gigId,
-        adminApproved:adminApproved,
-        brandDetails: {
-            _id: brand._id,
-            brandName: brand.brandName,
-            brandEmail: brand.brandEmail,
-            logo: brand.logo,
-            brandImage: brand.brandImage
-        },
-        gigDetails:{
-            lastDateForApply: lastDateForApply
 
-        },
-        
-       
-      });
-  
-      const savedNotification = await notification.save();
-   
+const notificationsave = async (brandId, gigId, adminApproved, notificationMessage, lastDateForApply) => {
+    try {
+
+        const brand = await findUserById(brandId);
+
+        const notification = new notificationmodel({
+            notificationType: 'Job Approval',
+            notificationMessage: notificationMessage,
+            brandId: brandId,
+            gigId: gigId,
+            adminApproved: adminApproved,
+            brandDetails: {
+                _id: brand._id,
+                brandName: brand.brandName,
+                brandEmail: brand.brandEmail,
+                logo: brand.logo,
+                brandImage: brand.brandImage
+            },
+            gigDetails: {
+                lastDateForApply: lastDateForApply
+
+            },
+
+
+        });
+
+        const savedNotification = await notification.save();
+
     } catch (error) {
-      console.error("Error saving notification:", error);
+        console.error("Error saving notification:", error);
     }
-  };
-  // Helper function to find a user by their ID
-  async function findUserById(userId) {
+};
+// Helper function to find a user by their ID
+async function findUserById(userId) {
     try {
         const brand = await brandsmodel.findOne({ _id: userId, isActive: true, inActive: true });
         if (brand) return brand;
-  
+
         const kidTalent = await kidsmodel.findOne({ _id: userId, inActive: true, isActive: true });
         if (kidTalent) return kidTalent;
-  
+
         const adultTalent = await adultmodel.findOne({ _id: userId, inActive: true, isActive: true });
         if (adultTalent) return adultTalent;
-  
+
         return null;
     } catch (error) {
-       
+
         return null;
     }
-  }
-  
-  // Helper function to determine the user type based on their ID
-  async function determineUserType(userId) {
+}
+
+// Helper function to determine the user type based on their ID
+async function determineUserType(userId) {
     const isBrand = await brandsmodel.exists({ _id: userId });
     if (isBrand) return 'brand';
-  
+
     const isKid = await kidsmodel.exists({ _id: userId });
     if (isKid) return 'kids';
-  
+
     const isAdult = await adultmodel.exists({ _id: userId });
     if (isAdult) return 'adult';
-  
+
     return null;
-  }
-  
-  // Configure Nodemailer
-  
-  
-  
-  const emailSend = async (to, subject, html) => {
+}
+
+// Configure Nodemailer
+
+
+
+const emailSend = async (to, subject, html) => {
     const mailOptions = {
         from: host,
         to: to,
         subject: subject,
         html: html
     };
-  
+
     await transporter.sendMail(mailOptions);
-  };
+};
 
 
 
 const draftJob = async (req, res, next) => {
     try {
-     
+
         const { brandId } = req.body;
 
         // Fetch brand details to check the plan
@@ -281,33 +287,31 @@ const draftJob = async (req, res, next) => {
             createdAt: { $gte: firstDayOfMonth, $lte: currentDate }
         });
 
-      
+
 
         if (jobCount >= jobLimitPerMonth) {
             return res.status(200).json({
-              status: false,
-              statusInfo: "limit-reached",
-              message: `Job posting limit for this month (${jobLimitPerMonth}) reached. Upgrade to Pro or Premium to post more.`
+                status: false,
+                statusInfo: "limit-reached",
+                message: "This month's job posting limit has been reached."
+                //`Job posting limit for this month (${jobLimitPerMonth}) reached. Upgrade to Pro or Premium to post more.`
             });
-          }
+        }
         // Create a new draft job
-         // Check if plan is Pro or Premium to set isApproved and adminApproved
-         const isProOrPremium = brand.planName === 'Pro' || brand.planName === 'Premium';
-         const isAdminApproved = isProOrPremium ? true : false;
+        // Check if plan is Pro or Premium to set isApproved and adminApproved
+        const isProOrPremium = brand.planName === 'Pro' || brand.planName === 'Premium';
+        const isAdminApproved = isProOrPremium ? true : false;
 
-        
- 
-        
 
         if (brand.planName === 'Pro' || brand.planName === 'Premium') {
             // If the plan is Pro or Premium, set isApproved field to true
             req.body.isApproved = true;
-           
+
             //adminApproved=true;
-           
+
         }
         const add_gigs = new draftmodel({
-            brandId:req.body.brandId,
+            brandId: req.body.brandId,
             jobTitle: req.body.jobTitle,
             jobLocation: req.body.jobLocation,
             streetAddress: req.body.streetAddress,
@@ -363,48 +367,47 @@ const draftJob = async (req, res, next) => {
 
         const response = await add_gigs.save();
 
-      
-        if(brand.planName=='Basic'){
-           
+
+        if (brand.planName == 'Basic') {
+
             // Check in the notification model if a notification for this talent already exists
-                const notificationExists = await notificationmodel.findOne({
+            const notificationExists = await notificationmodel.findOne({
                 notificationType: "Job Approval",
                 brandId: brandId
             });
-  
-      //if (!notificationExists) {
-        // Retrieve parentEmail and parentFirstName from the existing user document
+
+            //if (!notificationExists) {
+            // Retrieve parentEmail and parentFirstName from the existing user document
             const brandEmail = brand.brandEmail;
             const brandName = brand.brandName;
-  
+
             const emailContent = `
             <p>Hello ${brandName},</p>
             <p>Your job Approved by admin within 2 business days. You will receive a team approval confirmation.</p>
             <p>Best regards</p>
             <p>Brands and Talent Team</p>
             `;
-  
+
             const notificationMessage = `The brand ${brandName}, posted a job.Please approve them.`;
-  
+
             // Send notification and email
-           
-            await notificationsave(brandId,response._id,response.adminApproved,notificationMessage);
+
+            await notificationsave(brandId, response._id, response.adminApproved, notificationMessage);
             await emailSend(brandEmail, 'Approval', emailContent);
-        // }
 
         }
-        
-        
 
-   
+
+
+
         return res.json({
             message: "Draft Added Successfully",
             status: true,
             data: response,
-          //  planName:brand.planName
+
         });
     } catch (error) {
-     
+
         return res.status(500).json({ message: "An Error Occurred" });
     }
 };
@@ -448,7 +451,7 @@ const getDraftJobsByID = async (req, res, next) => {
 
     } catch (error) {
         // Log the error and send a 500 internal server error response
-    
+
         res.status(500).json({
             status: false,
             message: 'Server error'
@@ -549,8 +552,8 @@ const saveNotification = async (brandId, talentId, gigId, brandNotificationMessa
                 fbMax: gig.fbMax,
                 twitterMin: gig.twitterMin,
                 twitterMax: gig.twitterMax,
-                youTubeMin:gig.youTubeMin,
-                youTubeMax:gig.youTubeMax
+                youTubeMin: gig.youTubeMin,
+                youTubeMax: gig.youTubeMax
             }
         });
 
@@ -597,7 +600,7 @@ const postJobByDraft = async (req, res, next) => {
         }
 
         // Find the draft gig with the provided gigId
-        const draftGig = await draftmodel.findOne({ _id: gigId, isActive: true,adminApproved:true });
+        const draftGig = await draftmodel.findOne({ _id: gigId, isActive: true, adminApproved: true });
 
 
         // Check if draft gig exists
@@ -660,11 +663,11 @@ const postJobByDraft = async (req, res, next) => {
             fbMax: draftGig.fbMax,
             twitterMin: draftGig.twitterMin,
             twitterMax: draftGig.twitterMax,
-            youTubeMin:draftGig.youTubeMin,
-            youTubeMax:draftGig.youTubeMax,
-            status:draftGig.status,
+            youTubeMin: draftGig.youTubeMin,
+            youTubeMax: draftGig.youTubeMax,
+            status: draftGig.status,
             isActive: true,
-            adminApproved:true,
+            adminApproved: true,
             type: "Posted"
         });
 
@@ -673,27 +676,6 @@ const postJobByDraft = async (req, res, next) => {
 
         // Update the draft gig's isActive field to false
         await draftmodel.findOneAndUpdate({ _id: gigId }, { isActive: false });
-
-        // // Step 3: Find draft count by brandId and decrease it
-        // const draftCountDoc = await draftmodel.find({ brandId: brandId, isActive: true }).countDocuments();
-        // const draftCountforAdmin = draftCountDoc - 1;
-
-        // // Step 4: Increase the count in gigsmodel by brandId
-        // const postCountDoc = await gigsmodel.find({ brandId: brandId }).countDocuments();
-        // const postCountforAdmin = postCountDoc + 1;
-
-        // // Step 5: Update the brandmodel with new counts
-        // await brandsmodel.findOneAndUpdate(
-        //     { _id: brandId },
-        //     {
-        //         $set: {
-        //             draftjobcountforAdmin: draftCountforAdmin,
-        //             postjobcountforAdmin: postCountforAdmin,
-        //         },
-        //     }
-        // );
-
-        //thursday
         // Find active jobs by brandId
         const jobs = await gigsmodel.find({ brandId: draftGig.brandId, isActive: true });
 
@@ -707,7 +689,7 @@ const postJobByDraft = async (req, res, next) => {
           <p>${job.jobDescription.slice(0, 100)}...</p>
       </div>
   `).join('<hr>');
-      
+
         // Create email content
         const emailContent = `
       <html>
@@ -718,9 +700,6 @@ const postJobByDraft = async (req, res, next) => {
       </html>
   `;
 
-
-
-
         //thusrday
         // Send notifications and save them to the notification table
         const jobalert = `
@@ -730,7 +709,7 @@ const postJobByDraft = async (req, res, next) => {
           </body>
         </html>
       `;
-        //const jobalert = `Reminder: The application deadline for "${savedGig.jobTitle}" in "${savedGig.jobLocation}" is approaching.`;
+      
         const kids = await kidsmodel.find({
             isActive: true,
             inActive: true,
@@ -770,7 +749,7 @@ const postJobByDraft = async (req, res, next) => {
 
     } catch (error) {
         // Log the error and send a 500 internal server error response
-       
+
         return res.status(500).json({
             status: false,
             message: 'Server error'
@@ -797,8 +776,8 @@ const editDraft = async (req, res) => {
             jobCurrency, paymentType, minPay, maxPay, hiringCompany,
             whyWorkWithUs, product, valueOfProduct, productDescription, hiringCompanyDescription, howLikeToApply,
             workSamples, jobImage, brandImage, country, state, city, jobPostedDate, lastDateForApply, category,
-            minAge,maxAge,instaMin,instaMax,tikTokMin,tikTokMax,linkedInMin,linkedInMax,fbMin,fbMax,twitterMin,twitterMax,
-            youTubeMin,youTubeMax
+            minAge, maxAge, instaMin, instaMax, tikTokMin, tikTokMax, linkedInMin, linkedInMax, fbMin, fbMax, twitterMin, twitterMax,
+            youTubeMin, youTubeMax
 
         } = req.body;
 
@@ -810,8 +789,8 @@ const editDraft = async (req, res) => {
             jobCurrency, paymentType, minPay, maxPay, hiringCompany,
             whyWorkWithUs, product, valueOfProduct, productDescription, hiringCompanyDescription, howLikeToApply,
             workSamples, jobImage, brandImage, country, state, city, jobPostedDate, lastDateForApply, category,
-            minAge,maxAge,instaMin,instaMax,tikTokMin,tikTokMax,linkedInMin,linkedInMax,fbMin,fbMax,twitterMin,twitterMax,
-            youTubeMin,youTubeMax
+            minAge, maxAge, instaMin, instaMax, tikTokMin, tikTokMax, linkedInMin, linkedInMax, fbMin, fbMax, twitterMin, twitterMax,
+            youTubeMin, youTubeMax
 
         };
 
@@ -836,7 +815,7 @@ const editDraft = async (req, res) => {
             data: updatedDraft
         });
     } catch (error) {
-      
+
         res.status(500).json({
             status: false,
             message: 'Server error'
@@ -864,9 +843,9 @@ const editJob = async (req, res) => {
             jobCurrency, paymentType, minPay, maxPay, hiringCompany,
             whyWorkWithUs, product, valueOfProduct, productDescription, hiringCompanyDescription, howLikeToApply,
             workSamples, jobImage, brandImage, country, state, city, jobPostedDate, lastDateForApply, category,
-            minAge,maxAge,instaMin,instaMax,tikTokMin,tikTokMax,linkedInMin,linkedInMax,fbMin,fbMax,twitterMin,twitterMax,
-            youTubeMin,youTubeMax
-// isActive: true if needed
+            minAge, maxAge, instaMin, instaMax, tikTokMin, tikTokMax, linkedInMin, linkedInMax, fbMin, fbMax, twitterMin, twitterMax,
+            youTubeMin, youTubeMax
+            // isActive: true if needed
         } = req.body;
 
         // Use a plain object for the fields to be updated
@@ -877,9 +856,9 @@ const editJob = async (req, res) => {
             jobCurrency, paymentType, minPay, maxPay, hiringCompany,
             whyWorkWithUs, product, valueOfProduct, productDescription, hiringCompanyDescription, howLikeToApply,
             workSamples, jobImage, brandImage, country, state, city, jobPostedDate, lastDateForApply, category,
-            minAge,maxAge,instaMin,instaMax,tikTokMin,tikTokMax,linkedInMin,linkedInMax,fbMin,fbMax,twitterMin,twitterMax,
-            youTubeMin,youTubeMax
- // Include isActive: true if updating this field as well
+            minAge, maxAge, instaMin, instaMax, tikTokMin, tikTokMax, linkedInMin, linkedInMax, fbMin, fbMax, twitterMin, twitterMax,
+            youTubeMin, youTubeMax
+            // Include isActive: true if updating this field as well
         };
 
         // Perform the update
@@ -902,7 +881,7 @@ const editJob = async (req, res) => {
             data: updatedJob // Return the updated document
         });
     } catch (err) {
-   
+
         res.status(500).json({ status: false, message: 'Error Occurred' });
     }
 };
@@ -944,7 +923,7 @@ const getBrandDraftJobsByID = async (req, res, next) => {
 
     } catch (error) {
         // Log the error and send a 500 internal server error response
-       
+
         res.status(500).json({
             status: false,
             message: 'Server error'
@@ -971,7 +950,7 @@ const getBrandPostedJobsByID = async (req, res, next) => {
         const today = new Date();
 
         // Since we're using async/await, there's no need to use .then() and .catch() here.
-        const gigs = await gigsmodel.find({ brandId: new mongoose.Types.ObjectId(brandId), isActive: true, lastDateForApply: { $gte: today },adminApproved:true }).sort({ created: -1 });
+        const gigs = await gigsmodel.find({ brandId: new mongoose.Types.ObjectId(brandId), isActive: true, lastDateForApply: { $gte: today }, adminApproved: true }).sort({ created: -1 });
 
         if (gigs.length === 0) {
             // If no gigs are found, send an empty array in the response
@@ -989,7 +968,7 @@ const getBrandPostedJobsByID = async (req, res, next) => {
 
     } catch (error) {
         // Log the error and send a 500 internal server error response
-     
+
         res.status(500).json({
             status: false,
             message: 'Server error'
@@ -1008,26 +987,27 @@ const getBrandPostedJobsByID = async (req, res, next) => {
 const getAllJobs = async (req, res, next) => {
     try {
         const userId = req.body.userId || req.params.userId;
-    
+
 
         const today = new Date();
 
-       
 
         const gigs = await gigsmodel.find({
             brandId: new mongoose.Types.ObjectId(userId),
             isActive: true,
             lastDateForApply: { $gte: today },
-            adminApproved:true,
+            adminApproved: true,
         }).sort({ createdAt: -1 });
-     
+        console.log("gigs", gigs)
+
 
         const drafts = await draftmodel.find({
             brandId: new mongoose.Types.ObjectId(userId),
             isActive: true,
-            adminApproved:true,
+            //  adminApproved:true,
             lastDateForApply: { $gte: today }
         }).sort({ createdAt: -1 });
+        console.log("drafts", drafts)
 
         // Combine gigs and drafts into a single array and sort them by creation date, newest first
         const jobs = [...gigs, ...drafts].sort((a, b) => b.createdAt - a.createdAt);
@@ -1037,7 +1017,7 @@ const getAllJobs = async (req, res, next) => {
             data: jobs
         });
     } catch (error) {
-    
+
         res.status(500).json({
             status: false,
             error: error.message
@@ -1090,8 +1070,8 @@ const deleteJob = async (req, res, next) => {
             { new: true } // Return the updated document
         );
 
-         // Also update gigDetails.isActive to false in favouritemodel
-         await favouritesgigsmodel.updateMany(
+        // Also update gigDetails.isActive to false in favouritemodel
+        await favouritesgigsmodel.updateMany(
             { gigId: gigId },
             { 'gigDetails.isActive': false }
         );
@@ -1105,7 +1085,7 @@ const deleteJob = async (req, res, next) => {
         });
     } catch (error) {
         // If an error occurs, send error response
-      
+
         res.status(500).json({
             status: false,
             message: 'An error occurred'
@@ -1129,7 +1109,7 @@ const getAnyJobById = async (req, res, next) => {
         }
 
         // First, try to find the job in gigsmodel
-        let job = await gigsmodel.findById({ _id: gigId, isActive: true,adminApproved:true }).sort({ createdAt: -1 });
+        let job = await gigsmodel.findById({ _id: gigId, isActive: true, adminApproved: true }).sort({ createdAt: -1 });
 
         // If not found in gigsmodel, try to find it in draftmodel
         if (!job) {
@@ -1141,12 +1121,15 @@ const getAnyJobById = async (req, res, next) => {
             return res.status(200).json({ status: false, msg: 'Job not found' });
         }
 
+        console.log("gigId", gigId)
         // Check if the job is applied by the user
         const application = await applymodel.findOne({ gigId: gigId });
+        console.log("application", application)
         if (application) {
             job = job.toObject(); // Convert to plain object to modify
             job.isApplied = "Applied"; // Add isApplied field to indicate the job is applied by the user
         } else {
+            console.log("tsetjsjkcfkvb")
             job.isApplied = 'Apply Now'; // Add isApplied field to indicate the job is not applied by the user
         }
 
@@ -1182,14 +1165,14 @@ const jobCount = async (req, res, next) => {
         // Use countDocuments for a more direct and efficient counting
         const draftCount = await draftmodel.countDocuments({
             brandId: new mongoose.Types.ObjectId(brandId),
-            adminApproved:true,
+            adminApproved: true,
             isActive: true
         });
 
         const postJobCount = await gigsmodel.countDocuments({
             brandId: new mongoose.Types.ObjectId(brandId),
             isActive: true,
-            adminApproved:true
+            adminApproved: true
         });
 
         // Calculate the total count of drafts and post jobs
@@ -1223,7 +1206,7 @@ const jobCount = async (req, res, next) => {
             data: countsArray
         });
     } catch (error) {
-      
+
         res.json({
             status: false,
             message: "Error updating counts"
@@ -1240,7 +1223,7 @@ const jobCount = async (req, res, next) => {
 const searchJobs = async (req, res, next) => {
     try {
         // Extract search parameters from request body
-        const { jobTitle,country, jobLocation, age, skills, keyword, jobType, employmentType, talentId, category,state,city } = req.body;
+        const { jobTitle, country, jobLocation, compensation, skills, keyword, jobType, employmentType, talentId, category, state, city } = req.body;
         // Define the fields to search in
         const searchableFields = [
             'jobTitle',
@@ -1252,7 +1235,7 @@ const searchJobs = async (req, res, next) => {
             'jobDescription',
             'skills',
             'additionalRequirements',
-            'age',
+            'compensation',
             'gender',
             'nationality',
             'languages',
@@ -1268,7 +1251,7 @@ const searchJobs = async (req, res, next) => {
             'hiringCompanyDescription',
             'howLikeToApply',
             'category',
-            
+
         ];
 
         // Build query criteria using the $or operator
@@ -1302,16 +1285,29 @@ const searchJobs = async (req, res, next) => {
         if (jobLocation) {
             queryConditions.push({ jobLocation: { $regex: new RegExp(jobLocation, 'i') } }); // Case-insensitive search for jobLocation
         }
-        if (age) {
-            const ageStr = String(age);  // Convert age to string to handle non-string inputs safely
-            if (ageStr.includes('-')) {
-                const ageRange = ageStr.split('-');
-                queryConditions.push({ age: { $gte: parseInt(ageRange[0], 10), $lte: parseInt(ageRange[1], 10) } });
-            } else if (ageStr.endsWith('+')) {
-                const minAge = parseInt(ageStr.slice(0, -1), 10);
-                queryConditions.push({ age: { $gte: minAge } });
+
+       
+        const compensationConditions = [];
+
+        if (compensation) {
+            if (compensation === 'Paid Collaboration') {
+                compensationConditions.push({ 'compensation.paid_collaboration': { $exists: true } });
+            }
+            if (compensation === 'Paid Collaboration + Product/Gift') {
+                compensationConditions.push({ 'compensation.paid_collaboration_and_gift': { $exists: true } });
+            }
+            if (compensation === 'Product/ Gift') {
+                compensationConditions.push({ 'compensation.product_gift': { $exists: true } });
+            }
+
+            if (compensationConditions.length > 0) {
+                queryConditions.push({ $or: compensationConditions });
             }
         }
+
+        //neww
+
+
         if (skills && skills.length > 0) {
             // Convert each skill to a case-insensitive regex pattern
             const skillRegexPatterns = skills.map(skill => new RegExp(skill, 'i'));
@@ -1320,15 +1316,18 @@ const searchJobs = async (req, res, next) => {
 
         let queryCriteria = { isActive: true };
         if (queryConditions.length > 0) {
-            queryCriteria.$or = queryConditions;
+            queryCriteria.$and = queryConditions;
+
         }
 
         // Find matching gigs
         const gigs = await gigsmodel.find(queryCriteria).sort({ created: -1 });
+        console.log("gigis", gigs)
 
         // Create modified data with an "isApplied" status
         const modifiedData = await Promise.all(gigs.map(async (gig) => {
             const application = await notificationmodel.findOne({ gigId: gig._id, talentId: talentId });
+            console.log("applicationtestimggggg", application)
             return {
                 ...gig._doc,
                 isApplied: application ? "Applied" : "Apply Now"
@@ -1342,7 +1341,7 @@ const searchJobs = async (req, res, next) => {
         });
     } catch (error) {
         // Handle errors
-     
+
         res.status(500).json({
             status: false,
             msg: 'Failed to search jobs'
@@ -1423,13 +1422,10 @@ const applyJobs = async (req, res, next) => {
         // Save a single notification in the database for both brand and talent
         await saveNotifications(brandId, talentId, gigId, brandNotificationMessage, talentNotificationMessage);
         await saveApplyJobs(brandId, talentId, gigId);
-        // Send notifications
-        await sendNotification(brand.fcmToken, 'New Job Application', brandNotificationMessage);
-        await sendNotification(talent.fcmToken, 'Application Successful', talentNotificationMessage);
-
+       
         res.json({ status: true, msg: 'Application processed' });
     } catch (error) {
-      
+
         res.status(500).json({ status: false, msg: error.message });
     }
 };
@@ -1447,7 +1443,7 @@ async function findUserById(userId) {
 
         return null;
     } catch (error) {
-      
+
         return null;
     }
 }
@@ -1469,7 +1465,7 @@ async function determineUserType(userId) {
 // Helper function to send a notification
 const sendNotification = async (fcmToken, title, text) => {
     if (!fcmToken) {
-        
+
         return;
     }
 
@@ -1523,8 +1519,8 @@ async function saveNotifications(brandId, talentId, gigId, brandNotificationMess
                 brandName: brand.brandName,
                 brandEmail: brand.brandEmail,
                 logo: brand.logo,
-                brandImage: brand.brandImage,  
-                brandPhone:brand.brandPhone,
+                brandImage: brand.brandImage,
+                brandPhone: brand.brandPhone,
                 // Add other brand details as needed
             },
             talentDetails: {
@@ -1537,40 +1533,42 @@ async function saveNotifications(brandId, talentId, gigId, brandNotificationMess
                 preferredChildFirstname: talent.preferredChildFirstname,
                 preferredChildLastName: talent.preferredChildLastName,
                 image: talent.image,
-                publicUrl:talent.publicUrl,
-                profession:talent.profession,
-                relevantCategories:talent.relevantCategories,
-                childGender:talent.childGender,
-                maritalStatus:talent.maritalStatus,
-                childNationality:talent.childNationality,
-                childEthnicity:talent.childEthnicity,
-                languages:talent.languages,
-                childDob:talent.childDob,
-                childLocation:talent.childLocation,
-                childCity:talent.childCity,
-                childAboutYou:talent.childAboutYou,
-                cv:talent.cv,
-                videosAndAudios:talent.videosAndAudios,
-                features:talent.features,
-                portfolio:talent.portfolio,
-                verificationId:talent.verificationId,
-                idType:talent.idType,
-                bodyType:talent.bodyType,
-                industry:talent.industry,
-                isFavorite:talent.isFavorite,
-                bookJob:talent.bookJob,
-                rating:talent.rating,
-                image:talent.image,
-                services:talent.services,
-                reviews:talent.reviews,
-                maritalStatus:talent.maritalStatus,
-                age:talent.age,
-                profileStatus:talent.profileStatus,
-                applications:talent.applications,
-                videoAudioUrls:talent.videoAudioUrls,
-                noOfJobsCompleted:talent.noOfJobsCompleted,
-                averageStarRatings:talent.averageStarRatings,
-                planName:talent.planName
+                publicUrl: talent.publicUrl,
+                profession: talent.profession,
+                relevantCategories: talent.relevantCategories,
+                childGender: talent.childGender,
+                maritalStatus: talent.maritalStatus,
+                childNationality: talent.childNationality,
+                childEthnicity: talent.childEthnicity,
+                languages: talent.languages,
+                childDob: talent.childDob,
+                childLocation: talent.childLocation,
+                childCity: talent.childCity,
+                childAboutYou: talent.childAboutYou,
+                cv: talent.cv,
+            
+                features: talent.features,
+                portfolio: talent.portfolio,
+                verificationId: talent.verificationId,
+                idType: talent.idType,
+                bodyType: talent.bodyType,
+                industry: talent.industry,
+                isFavorite: talent.isFavorite,
+                bookJob: talent.bookJob,
+                rating: talent.rating,
+                image: talent.image,
+                services: talent.services,
+                reviews: talent.reviews,
+                maritalStatus: talent.maritalStatus,
+                age: talent.age,
+                profileStatus: talent.profileStatus,
+                applications: talent.applications,
+            
+                noOfJobsCompleted: talent.noOfJobsCompleted,
+                averageStarRatings: talent.averageStarRatings,
+                planName: talent.planName,
+                videoList: talent.videoList,
+                audioList: talent.audioList
                 // Add other talent details as needed
             },
             gigDetails: {
@@ -1588,24 +1586,22 @@ async function saveNotifications(brandId, talentId, gigId, brandNotificationMess
                 fbMax: gig.fbMax,
                 twitterMin: gig.twitterMin,
                 twitterMax: gig.twitterMax,
-                youTubeMin:gig.youTubeMin,
-                youTubeMax:gig.youTubeMax
-                
-                // matched:gig.matched // Assuming gig has a field named jobTitle
-                // Add other gig details as needed
+                youTubeMin: gig.youTubeMin,
+                youTubeMax: gig.youTubeMax
+
             }
         });
 
         // Save the notification document
         const savedNotification = await notification.save();
-       
+
     } catch (error) {
         console.error("Error saving notification:", error);
     }
 }
 async function saveApplyJobs(brandId, talentId, gigId) {
     try {
-     
+
         // Fetch details of brand, talent, and gig
         const brand = await findUserById(brandId);
         const talent = await findUserById(talentId);
@@ -1614,7 +1610,7 @@ async function saveApplyJobs(brandId, talentId, gigId) {
         // Determine user types for brand and talent
         const brandType = await determineUserType(brandId);
         const talentType = await determineUserType(talentId);
-     
+
         // Create the notification document
         const apply = new applymodel({
 
@@ -1629,7 +1625,7 @@ async function saveApplyJobs(brandId, talentId, gigId) {
                 brandEmail: brand.brandEmail,
                 logo: brand.logo,
                 brandImage: brand.brandImage,
-                brandPhone:brand.brandPhone,
+                brandPhone: brand.brandPhone,
                 // Add other brand details as needed
             },
             talentDetails: {
@@ -1669,17 +1665,13 @@ async function saveApplyJobs(brandId, talentId, gigId) {
                 hiringCompany: gig.hiringCompany,
                 jobImage: gig.jobImage,
                 category: gig.category
-                //  matched:gig.matched
-
-                // Assuming gig has a field named jobTitle
-                // Assuming gig has a field named jobTitle
-                // Add other gig details as needed
+                
             }
         });
 
         // Save the notification document
         const savedjobs = await apply.save();
-      
+
     } catch (error) {
         console.error("Error saving notification:", error);
     }
@@ -1749,7 +1741,7 @@ const getBrandNotification = async (req, res, next) => {
             data: notifications
         });
     } catch (error) {
-       
+
         res.status(500).json({
             status: false,
             msg: 'Failed to fetch notifications',
@@ -1789,7 +1781,7 @@ const getTalentNotification = async (req, res, next) => {
             data: notifications
         });
     } catch (error) {
-       
+
         res.status(500).json({
             status: false,
             msg: 'Failed to fetch notifications',
@@ -1838,7 +1830,7 @@ const getCountNotification = async (req, res, next) => {
             unreadCount: unreadCount
         });
     } catch (error) {
-      
+
         res.status(500).json({
             status: false,
             msg: 'Failed to fetch notifications',
@@ -1898,7 +1890,7 @@ const getAppliedjobs = async (req, res, next) => {
         });
 
     } catch (error) {
-       
+
         res.status(500).json({
             status: false,
             message: 'Server error'
@@ -1962,7 +1954,7 @@ const selectedLevelRange = async (req, res, next) => {
         }
 
     } catch (error) {
-       
+
         return res.status(500).json({
             status: false,
             message: 'Internal server error'
@@ -2035,12 +2027,7 @@ const informSelectedLevel = async (req, res) => {
 
         });
 
-        // const mailOptions = {
-        //     from: host,
-        //     to: emails.join(', '), // Sends to all collected emails
-        //     subject: 'Talent Notification',
-        //     text: 'Hai,'||req.body.text
-        // };
+       
         const mailOptions = {
             from: host,
             to: emails.join(', '), // Sends to all collected emails
@@ -2072,13 +2059,13 @@ const informSelectedLevel = async (req, res) => {
                 notificationTitle = 'Application Update';
                 notificationMessage = 'We regret to inform you that you were not selected.';
                 break;
-          
+
             case 'interviewInvitations':
-                    mailOptions.subject = 'Interview Invitation';
-                    mailOptions.text = req.body.officeAddress || ''; 
-                    notificationTitle = 'Interview Invitation';
-                    notificationMessage = `You have been invited to a interview.`;
-                
+                mailOptions.subject = 'Interview Invitation';
+                mailOptions.text = req.body.officeAddress || '';
+                notificationTitle = 'Interview Invitation';
+                notificationMessage = `You have been invited to a interview.`;
+
                 break;
             default:
                 return res.status(400).json({
@@ -2113,7 +2100,7 @@ const informSelectedLevel = async (req, res) => {
         });
 
     } catch (error) {
-    
+
         res.status(500).json({
             status: false,
             message: 'Internal server error'
@@ -2155,7 +2142,7 @@ const newCandidates = async (req, res) => {
 
     } catch (error) {
         // Handle errors that occur during the fetch operation
-       
+
         return res.status(500).json({
             status: false,
             message: 'Failed to retrieve data',
@@ -2186,7 +2173,7 @@ const getSelectionList = async (req, res) => {
         const talents = await applymodel.find({
             brandId: new mongoose.Types.ObjectId(brandId),
             selectedLevel: selectedLevel.trim(),
-          });
+        });
 
 
         if (!talents || talents.length === 0) {
@@ -2206,7 +2193,7 @@ const getSelectionList = async (req, res) => {
 
     } catch (error) {
         // Handle errors that occur during the fetch operation
-     
+
         return res.status(500).json({
             status: false,
             message: 'Failed to retrieve data',
@@ -2243,7 +2230,7 @@ const updateFavouriteJobs = async (req, res, next) => {
 
         res.json({ status: true, msg: 'Favourites Update Successfully' });
     } catch (error) {
-      
+
         res.status(500).json({ status: false, msg: error.message });
     }
 };
@@ -2262,7 +2249,7 @@ async function findUserById(userId) {
 
         return null;
     } catch (error) {
-      
+
         return null;
     }
 }
@@ -2294,7 +2281,7 @@ async function savematchedJobs(gigId) {
             throw new Error('Gig not found');
         }
 
-      
+
     } catch (error) {
         console.error('Error updating the gig:', error.message);
     }
@@ -2346,7 +2333,7 @@ async function saveFavouritesJobs(brandId, talentId, gigId) {
                 parentMobileNo: talent.parentMobileNo,
             },
             gigDetails: {
-                
+
                 jobTitle: gig.jobTitle,
                 jobLocation: gig.jobLocation,
                 streetAddress: gig.streetAddress,
@@ -2395,9 +2382,9 @@ async function saveFavouritesJobs(brandId, talentId, gigId) {
                 fbMax: gig.fbMax,
                 twitterMin: gig.twitterMin,
                 twitterMax: gig.twitterMax,
-                youTubeMin:gig.youTubeMin,
-                youTubeMax:gig.youTubeMax,
-                isActive:gig.isActive
+                youTubeMin: gig.youTubeMin,
+                youTubeMax: gig.youTubeMax,
+                isActive: gig.isActive
 
 
             }
@@ -2405,7 +2392,7 @@ async function saveFavouritesJobs(brandId, talentId, gigId) {
 
         // Save the notification document
         await favouritejob.save();
-       
+
     } catch (error) {
         console.error("Error saving favourite job:", error);
     }
@@ -2419,8 +2406,8 @@ async function saveFavouritesJobs(brandId, talentId, gigId) {
 const getSavedJobsByTalentId = async (req, res) => {
     try {
         // Find documents in favouritesgigsmodel where talentId matches the provided value
-        const favourites = await favouritesgigsmodel.find({ talentId: req.body.talentId, isActive: true, isFavourite: true,'gigDetails.isActive': true });
-
+        const favourites = await favouritesgigsmodel.find({ talentId: req.body.talentId, isActive: true, isFavourite: true, 'gigDetails.isActive': true }).sort({ created: -1 }).exec();;
+        favourites.reverse();
         // Return the found favourites
         return res.json({
             status: true,
@@ -2428,7 +2415,7 @@ const getSavedJobsByTalentId = async (req, res) => {
             data: favourites
         });
     } catch (error) {
-     
+
         return null;
     }
 };
@@ -2442,7 +2429,7 @@ const getSkills = async (req, res) => {
     try {
         // Use the aggregation pipeline to find all unique skills from active job listings and format them
         const uniqueSkills = await gigsmodel.aggregate([
-           // { $match: { isActive: true } },  // Filter to include only active jobs
+            // { $match: { isActive: true } },  // Filter to include only active jobs
             { $unwind: '$skills' },         // Deconstruct the skills array
             { $group: { _id: null, skills: { $addToSet: '$skills' } } },  // Group to collect all unique skills
             { $project: { _id: 0, skills: 1 } },  // Remove '_id', just keep the skills array
@@ -2473,7 +2460,7 @@ const getSkills = async (req, res) => {
             });
         }
     } catch (error) {
-       
+
         res.status(500).json({
             status: false,
             message: 'Failed to retrieve skills'
@@ -2503,7 +2490,7 @@ const removeFavouritesJob = async (req, res, next) => {
                 message: 'Job not found'
             });
         }
-       
+
         // Update all favourite job documents that match gigId and talentId to set gigDetails.matched to false and isFavourite to false
         const updatedFavouriteJob = await favouritesgigsmodel.updateMany(
             { gigId, talentId, isActive: true },
@@ -2526,7 +2513,7 @@ const removeFavouritesJob = async (req, res, next) => {
         });
     } catch (error) {
         // If an error occurs, send error response
-       
+
         res.status(500).json({
             status: false,
             message: 'An error occurred'
@@ -2569,7 +2556,7 @@ const updatePassword = async (req, res, next) => {
 
         res.json({ status: true, message: 'Password updated successfully' });
     } catch (error) {
-      
+
         res.status(200).json({ status: false, message: 'An error occurred' });
     }
 };
@@ -2717,7 +2704,7 @@ const createJobAlert = async (req, res, next) => {
 
             for (const kid of kids) {
                 const relevantJobs = jobs.filter(job => kid.relevantCategories.includes(job.category));
-            
+
                 if (relevantJobs.length > 0) {
                     const jobListings = relevantJobs.map(job => `
                         <div>
@@ -2981,8 +2968,8 @@ const saveNotificatio = async (talentId, brandId, gigId, talentNotificationMessa
                 fbMax: gig.fbMax,
                 twitterMin: gig.twitterMin,
                 twitterMax: gig.twitterMax,
-                youTubeMin:gig.youTubeMin,
-                youTubeMax:gig.youTubeMax
+                youTubeMin: gig.youTubeMin,
+                youTubeMax: gig.youTubeMax
             }
 
 
@@ -3057,13 +3044,13 @@ const inviteTalentToApply = async (req, res, next) => {
         const jobalert = `You have been invited to apply for ${jobTitle}`;
         await saveNotificatio(talent._id, brandId, gigId, jobalert);
 
-       
+
         await sendNotificatio(talent.fcmToken, 'Exciting Job Opportunity Awaits!', jobalert);
 
         res.json({ status: true, msg: 'Invitation sent successfully' });
-       
+
     } catch (error) {
-      
+
         res.status(500).json({ status: false, msg: error.message });
     }
 };
@@ -3084,14 +3071,14 @@ const isApprovedForjobByPlan = async (req, res, next) => {
             { new: true } // To return the updated document
         );
 
-     
+
         res.json({
             message: "Approved",
             status: true,
             data: updatedGig
         });
     } catch (error) {
-      
+
         res.json({
             message: "An error occurred",
             status: false,
@@ -3111,9 +3098,9 @@ const getBrandJobs = async (req, res, next) => {
         // Extracting brandId from request body or parameters
         const brandId = req.body.brandId || req.params.brandId;
         const today = new Date();
-     
+
         // Finding active gigs sorted by creation date in descending order
-        const gigs = await gigsmodel.find({ brandId: new mongoose.Types.ObjectId(brandId), isActive: true,adminApproved:true, lastDateForApply: { $gte: today } }).sort({ created: -1 });
+        const gigs = await gigsmodel.find({ brandId: new mongoose.Types.ObjectId(brandId), isActive: true, adminApproved: true, lastDateForApply: { $gte: today } }).sort({ created: -1 });
 
         // Finding active draft gigs sorted by creation date in descending order
         const draft = await draftmodel.find({ brandId: new mongoose.Types.ObjectId(brandId), isActive: true, lastDateForApply: { $gte: today } }).sort({ created: -1 });
@@ -3140,7 +3127,7 @@ const getBrandJobs = async (req, res, next) => {
 
     } catch (error) {
         // Log the error and send a 500 internal server error response
-       
+
         res.status(500).json({
             status: false,
             message: 'Server error'
@@ -3155,12 +3142,12 @@ const getBrandJobs = async (req, res, next) => {
 */
 const getAllNotification = async (req, res, next) => {
     try {
-      
+
 
 
         // Fetch all active notifications for the specified brandId
         const notifications = await notificationmodel.find({
-            notificationType: { $in: ['Registration Approval for talent', 'Job Approval','Help And Support','Talent Verification Approval','Talent Profile Approval','Review Notification'] },
+            notificationType: { $in: ['Registration Approval for talent', 'Job Approval', 'Help And Support', 'Talent Verification Approval', 'Talent Profile Approval', 'Review Notification'] },
             isActive: true,
         }).sort({ createdAt: -1 });
 
@@ -3173,7 +3160,7 @@ const getAllNotification = async (req, res, next) => {
             data: notifications
         });
     } catch (error) {
-     
+
         res.status(500).json({
             status: false,
             msg: 'Failed to fetch notifications',
@@ -3182,13 +3169,212 @@ const getAllNotification = async (req, res, next) => {
     }
 };
 
+/**
+********saveUser***
+* @param {*} req from user
+* @param {*} res return data
+* @param {*} next undefined
+*/
+const saveUser = async (req, res, next) => {
+    try {
+        const { tempId } = req.body;
+
+        // Ensure tempId exists in the request body
+        if (!tempId) {
+            return res.status(400).json({ message: 'tempId is required' });
+        }
+
+        // Check if a user with the given tempId already exists
+        let user = await userdatamodel.findOne({ isActive: true });
+
+        if (user) {
+            // If the user exists, update the user
+            user.tempId = tempId; // Update with the new tempId if needed
+            await user.save();
+        } else {
+            // If the user doesn't exist, create a new one
+            user = await userdatamodel.create({ tempId });
+        }
+
+        return res.status(200).json({ message: 'tempId saved successfully', user });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: 'Server error', error });
+    }
+};
+
+/**
+********fetchUser***
+* @param {*} req from user
+* @param {*} res return data
+* @param {*} next undefined
+*/
+const fetchUser = async (req, res, next) => {
+    try {
+
+        // Find user by tempId in userdatamodel
+        const user = await userdatamodel.findOne({ isActive: true });
+
+        // If no user is found
+        if (!user) {
+            return res.status(200).json({ message: 'User not found' });
+        }
+
+        return res.status(200).json({ message: 'User found', user });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: 'Server error', error });
+    }
+};
+
+
+/**
+********get  notifications***
+* @param {*} req from user
+* @param {*} res return data
+* @param {*} next undefined
+*/
+const getNotification = async (req, res, next) => {
+    try {
+        const userId = req.body.talentId || req.body.brandId;
+
+        if (!userId) {
+            return res.status(200).json({
+                status: false,
+                msg: 'User ID (Talent/Brand) is required'
+            });
+        }
+
+        // Fetch all active notifications for the specified user (talentId or brandId), excluding certain notification types
+        const notifications = await notificationmodel.find({
+            $or: [
+                { talentId: new mongoose.Types.ObjectId(userId) },
+                { brandId: new mongoose.Types.ObjectId(userId) }
+            ],
+            notificationType: {
+                $nin: [
+                    'Registration Approval for talent',
+                    'Job Approval',
+                    'Help And Support',
+                    'Talent Verification Approval',
+                    'Talent Profile Approval',
+                    'Review Notification'
+                ]
+            },
+            isActive: true
+        }).sort({ createdAt: -1 });
+
+        // Send the remaining notifications in the response
+        res.json({
+            status: true,
+            data: notifications
+        });
+    } catch (error) {
+        res.status(500).json({
+            status: false,
+            msg: 'Failed to fetch notifications',
+            error: error.message
+        });
+    }
+};
+
+/**
+********inviteTalentNotification***
+* @param {*} req from user
+* @param {*} res return data
+* @param {*} next undefined
+*/
+
+const inviteTalentNotification = async (req, res, next) => {
+    try {
+        const { talentId } = req.body;
+
+        // Check in adultmodel
+        let talent = await adultmodel.findById(talentId);
+
+        // If not found in adultmodel, check in kidsmodel
+        let modelType = 'adult'; // Default to adultmodel
+        if (!talent) {
+            talent = await kidsmodel.findById(talentId);
+            modelType = 'kid'; // Switch to kidsmodel
+        }
+
+        if (!talent) {
+            return res.status(200).json({ message: 'Talent not found' });
+        }
+
+        const { planName } = talent;
+
+        // Check the plan name
+        if (planName === 'Basic') {
+            // Determine the email based on whether it's from adultmodel or kidsmodel
+            let email;
+            if (modelType === 'adult') {
+                email = talent.adultEmail; // Email for adultmodel
+            } else if (modelType === 'kid') {
+                email = talent.parentEmail; // Email for kidsmodel
+            }
+
+            // Log the email to ensure it's being set correctly
+            console.log("Recipient email:", email);
+
+            // Ensure the email is valid before proceeding
+            if (!email || email.trim() === '') {
+                return res.status(200).json({ message: 'No valid email found for the talent.' });
+            }
+
+            // Send the email logic
+
+
+            await sendMails(email, 'Invitation', `
+                    <h1>A new job for you!</h1>
+                    <p> An invitation from a brand is available only after upgrading to a Pro or Premium membership. </p>
+                    <p>An invitation from a brand has been extended to you, but you can only access this invitation by upgrading to a Pro or Premium membership.</p>
+                    <p>To access the invitation from the brand, an upgrade to a Pro or Premium membership is required.</p>
+                <p>Best regards,</p>
+                <p>Brands and Talent</p>
+                </body>
+                </html>
+                `);
+
+            return res.status(200).json({ message: 'Invitation email sent successfully' });
+        } else {
+            return res.status(200).json({ message: 'Talent is not on the Basic plan' });
+        }
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// Email sending function
+const sendMails = async (to, subject, html) => {
+    try {
+        const mailOptions = {
+            from: host,  // Replace with your host email address
+            to: to,
+            subject: subject,
+            html: html
+        };
+
+        await transporter.sendMail(mailOptions);
+        console.log(`Email sent to: ${to}`);
+    } catch (error) {
+        console.error('Error sending email:', error);
+        throw new Error('Email sending failed');
+    }
+};
+
+
+
+
 module.exports = {
     createJob, getAllJobs, getJobsByID, draftJob, getDraftJobsByID, getDraftJobs, postJobByDraft,
     editJob, editDraft, getBrandPostedJobsByID, getBrandDraftJobsByID, getPostedJobs,
     deleteJob, getAnyJobById, jobCount, searchJobs, applyJobs, readNotification, getBrandNotification,
-    getTalentNotification, getCountNotification, getAppliedjobs, selectedLevelRange,
+    getTalentNotification, getCountNotification, saveUser, fetchUser, getAppliedjobs, selectedLevelRange,
     informSelectedLevel, newCandidates, getSelectionList, updateFavouriteJobs,
     getSavedJobsByTalentId, getSkills, removeFavouritesJob, updatePassword, createJobAlert,
-    updateJobAlert, inviteTalentToApply, isApprovedForjobByPlan,getBrandJobs,getAllNotification
+    updateJobAlert, inviteTalentToApply, isApprovedForjobByPlan, getBrandJobs, getAllNotification, getNotification, inviteTalentNotification
 
 };

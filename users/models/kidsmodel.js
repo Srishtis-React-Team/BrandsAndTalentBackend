@@ -1,7 +1,15 @@
 const mongoose = require("mongoose")
 var schema = mongoose.Schema;
 
-
+const couponSchema = new mongoose.Schema({
+   code: String,
+   currency: String,
+   discountAmount: Number,
+   isActive: Boolean,
+   expiry: Date,
+   type: String,
+   couponId: { type: mongoose.Schema.Types.ObjectId, ref: 'Coupon' }
+});
 var authenticationSchema = new schema({
    parentFirstName: {
       type: String
@@ -12,150 +20,153 @@ var authenticationSchema = new schema({
    parentEmail: {
       type: String
    },
-   parentMobileNo:{
+   parentMobileNo: {
       type: String
 
    },
-   parentCountry:{
+   parentCountry: {
       type: String
    },
-   parentState:{
+   parentState: {
       type: String
    },
-   parentAddress:{
+   parentAddress: {
       type: String
    },
    talentPassword: {
       type: String
    },
-   confirmPassword:{
-      type:String
+   confirmPassword: {
+      type: String
    },
    profession: {
       type: Array
    },
-  
+
    relevantCategories: {
       type: Array
    },
-   childFirstName:{
-      type:String
+   childFirstName: {
+      type: String
    },
-   childLastName:{
-      type:String
+   childLastName: {
+      type: String
    },
-  
+
    preferredChildFirstname: {
       type: String
    },
    preferredChildLastName: {
       type: String
    },
-   childGender:{
-      type:String
+   childGender: {
+      type: String
    },
-   childNationality:{
-      type:Array
+   childNationality: {
+      type: Array
    },
-   childEthnicity:{
-      type:String
+   childEthnicity: {
+      type: String
    },
-   languages:{
-      type:Array
+   languages: {
+      type: Array
    },
-   childDob:{
-      type:String
+   childDob: {
+      type: String
    },
-   childPhone:{
-      type:String
+   childPhone: {
+      type: String
    },
-   childEmail:{
-      type:String
+   childEmail: {
+      type: String
    },
-   childLocation:{
-      type:String
+   childLocation: {
+      type: String
    },
-   childCity:{
-      type:String
+   childCity: {
+      type: String
    },
-   childAboutYou:{
-      type:Array
+   childAboutYou: {
+      type: String
    },
-   
-   
+
+
    cv: {
       type: Array
    },
-   
-   videosAndAudios: {
+
+   // videosAndAudios: {
+   //    type: Array
+   // },
+   features: {
       type: Array
    },
-   features:{
-      type: Array
-   },
-   
+
    subscriptionPlan: {
       type: String
    },
    userType: {
       type: String
    },
- 
-   
+
+
    portfolio: {
       type: Array
 
+   },
+   preferredChildFullName:{
+      type:String
    },
 
 
    isActive:
    {
       type: Boolean,
-      
+
    },
    resetPasswordToken:
    {
       type: String,
 
    },
-   isVerified:{
+   isVerified: {
       type: Boolean,
 
    },
-   type:{
-      type:String
+   type: {
+      type: String
 
    },
-   instaFollowers:{
-      type:String
+   instaFollowers: {
+      type: String
 
    },
-   tiktokFollowers:{
-      type:String
+   tiktokFollowers: {
+      type: String
    },
-   twitterFollowers:{
-      type:String
+   twitterFollowers: {
+      type: String
    },
-   youtubeFollowers:{
-      type:String
+   youtubeFollowers: {
+      type: String
 
    },
-   facebookFollowers:{
-      type:String
+   facebookFollowers: {
+      type: String
 
    },
-   linkedinFollowers:{
-      type:String
+   linkedinFollowers: {
+      type: String
    },
-   threadsFollowers:{
-      type:String
+   threadsFollowers: {
+      type: String
    },
-   idType:{
-      type:String
+   idType: {
+      type: String
 
    },
-   verificationId:{
-      type:Array
+   verificationId: {
+      type: Array
    },
 
    // token:{
@@ -163,96 +174,96 @@ var authenticationSchema = new schema({
    // },
    resetPasswordExpires: Date,
    created: { type: Date, default: Date.now },
-   
-   otp:{
-      type:String
+
+   otp: {
+      type: String
    },
-   bodyType:{
-      type:String
+   bodyType: {
+      type: String
    },
-   industry:{
-      type:String
+   industry: {
+      type: String
    },
-   isFavorite:{
-      type:Boolean
+   isFavorite: {
+      type: Boolean
    },
-   bookJob:{
-      type:String
+   bookJob: {
+      type: String
    },
-   rating:{
-      type:String
+   rating: {
+      type: String
    },
-   image:{
-      type:Object,
-      default:null
+   image: {
+      type: Object,
+      default: null
    },
-   services:{
-      type:Array
+   services: {
+      type: Array
    },
    reviews: {
       type: Array//String
    },
    maritalStatus: {
-      type:String
+      type: String
    },
    age: {
-      type:Number
+      type: Number
    },
-   isSubscribed:{
-      type:Boolean,
-      default:false
+   isSubscribed: {
+      type: Boolean,
+      default: false
    },
-   subscriptionId:{
+   subscriptionId: {
       type: schema.ObjectId,
-    ref: 'Subscription'
-  },
-  profileStatus: {
-   type: Boolean
-},
-googleId:{
-   type: String,
-},
-
-facebookId: {
-   type: String,
- },
- name: {
-   type: String,
-   trim: true,
- },
- photoURL: {
-   type: String,
- },
- provider: {
-   type: String,
- },
-
- applications: [{
-   gigId: mongoose.Schema.Types.ObjectId,
-   isApplied: Boolean,
-   brandId: mongoose.Schema.Types.ObjectId,
-   appliedDate: { type: Date, default: Date.now },
-   selectedLevel: {
-      type: String,
-      default:'new'
+      ref: 'Subscription'
    },
-  
-}],
- isApplied:{
-   type: String,
-   default:'false'
- },
- brandId:{
-   type: mongoose.Schema.Types.ObjectId,
-   ref: 'brands'
- },
- gigId:{
-   type: mongoose.Schema.Types.ObjectId,
-   ref: 'Gigs'
- },
+   profileStatus: {
+      type: Boolean
+   },
+   googleId: {
+      type: String,
+   },
+
+   facebookId: {
+      type: String,
+   },
+   name: {
+      type: String,
+      trim: true,
+   },
+   photoURL: {
+      type: String,
+   },
+   provider: {
+      type: String,
+   },
+
+   applications: [{
+      gigId: mongoose.Schema.Types.ObjectId,
+      isApplied: Boolean,
+      brandId: mongoose.Schema.Types.ObjectId,
+      appliedDate: { type: Date, default: Date.now },
+      selectedLevel: {
+         type: String,
+         default: 'new'
+      },
+
+   }],
+   isApplied: {
+      type: String,
+      default: 'false'
+   },
+   brandId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'brands'
+   },
+   gigId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Gigs'
+   },
    fcmToken: {
       type: String,
-      default:''
+      default: ''
    },
    isOnline: {
       type: Boolean,
@@ -260,49 +271,118 @@ facebookId: {
    },
    selectedLevel: {
       type: String,
-      default:'new'
+      default: 'new'
    },
    inActive:
    {
       type: Boolean,
-      default:true
-      
-   },
-   subscriptionType:{
-      type:String
-   },
-   planName:{
-      type:String,
-      default:'Basic'
-   },
-   adminApproved:{
-      type:Boolean,
-      default:false
-   },
-   averageStarRatings:{
-      type:String,
-      default:'0'
-   },
-   totalReviews:{
-      type:String
-   },
-   noOfJobsCompleted:{
-      type:String
-   },
-   videoAudioUrls: [String],
-   publicUrl:{
-      type:String
-  },
-  status:{
-   type:String,
-   default:'Pending'
-  },
-  profileApprove:{
-   type:Boolean,
-   default:false
-  },
+      default: true
 
-
+   },
+   subscriptionType: {
+      type: String
+   },
+   planName: {
+      type: String,
+      default: 'Basic'
+   },
+   adminApproved: {
+      type: Boolean,
+      default: false
+   },
+   averageStarRatings: {
+      type: String,
+      default: '0'
+   },
+   totalReviews: {
+      type: String
+   },
+   noOfJobsCompleted: {
+      type: String
+   },
+   videoList: [String],
+   audioList: [String],
+   //videoAudioUrls: [String],
+   publicUrl: {
+      type: String
+   },
+   status: {
+      type: String,
+      default: 'Pending'
+   },
+   profileApprove: {
+      type: Boolean,
+      default: true
+   },
+   instagramUrl: {
+      type: String
+   },
+   tikTokUrl: {
+      type: String
+   },
+   youTubeUrl: {
+      type: String
+   },
+   linkedinUrl: {
+      type: String
+   },
+   facebookUrl: {
+      type: String
+   },
+   threadsUrl: {
+      type: String
+   },
+   twitterUrl: {
+      type: String
+   },
+   coupon: [couponSchema], // Array of coupon objects
+   paid: {
+      type: Boolean,
+      default: false
+   },
+   transactionDate: {
+      type: Date
+   },
+   paymentStatus: {
+      type: String
+   },
+   paymentCurreny: {
+      type: String
+   },
+   paymentAmount: {
+      type: Number
+   },
+   paymentPeriod: {
+      type: String
+   },
+   paymentPlan: {
+      type: String
+   },
+   transId:{
+      type:String
+   },
+   accountBlock:{
+      type:Boolean
+   },
+   gift:[{
+      receiversFirstName: String,
+      receiverEmail: String,
+      announceDate: Date,
+      message:String,
+      subscriptionPlan:String,
+      planName:String,
+      expiry:Date,
+      transId:String,
+      transactionDate:Date, 
+      paymentStatus:String, 
+      paymentCurreny:String, 
+      paymentAmount:Number, 
+      paymentPeriod:String, 
+      paymentPlan:String,
+      coupon:String,
+      code:String
+     
+  }],
 
 },
    {

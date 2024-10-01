@@ -24,22 +24,25 @@ router.get('/getBrandNotification/:brandId',gigs.getBrandNotification)//for getB
 router.get('/getTalentNotification/:talentId',gigs.getTalentNotification)//for getBrandNotification
 router.post('/getCountNotification',gigs.getCountNotification)//for getCountNotification
 router.post('/getAppliedjobs',gigs.getAppliedjobs)//for getAppliedjobs
-//router.post('/removeJobsAfterLastDate',gigs.removeJobsAfterLastDate)//for removeJobsAfterLastDate
 router.post('/selectedLevelRange',gigs.selectedLevelRange)//for selectedLevelRange
 router.post('/informSelectedLevel',gigs.informSelectedLevel)//for informSelectedLevel
 router.post('/newCandidates',gigs.newCandidates)//for newCandidates
+router.post('/saveUser',gigs.saveUser)//for saveUser
+router.get('/fetchUser',gigs.fetchUser)//for fetchUser
 router.post('/getSelectionList',gigs.getSelectionList)//for getSelectionList
 router.post('/updateFavouriteJobs',gigs.updateFavouriteJobs)//for updateFavouriteJobs
 router.post('/getSavedJobsByTalentId',gigs.getSavedJobsByTalentId)//for getSavedJobsByTalentId
 router.get('/getSkills',gigs.getSkills)//for getSkills
 router.post('/removeFavouritesJob',gigs.removeFavouritesJob)//for removeFavouritesJob
 router.post('/updatePassword',gigs.updatePassword)//for updatePassword
+router.post('/getNotification',gigs.getNotification)//for getNotification
 router.post('/createJobAlert',gigs.createJobAlert)//for createJobAlert
 router.post('/updateJobAlert',gigs.updateJobAlert)//for updateJobAlert
 router.post('/inviteTalentToApply',gigs.inviteTalentToApply)//for inviteTalentToApply
 router.post('/isApprovedForjobByPlan',gigs.isApprovedForjobByPlan)//for isApprovedForjobByPlan
 router.get('/getBrandJobs/:brandId',gigs.getBrandJobs)//for getBrandJobs
 router.get('/getAllNotification',gigs.getAllNotification)//for getAllNotification
+router.post('/inviteTalentNotification',gigs.inviteTalentNotification)//for inviteTalentNotification
 
 
 

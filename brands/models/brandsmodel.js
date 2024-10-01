@@ -1,7 +1,15 @@
 const mongoose = require("mongoose")
 var schema = mongoose.Schema;
 
-
+const couponSchema = new mongoose.Schema({
+    code: String,
+    currency: String,
+    discountAmount: Number,
+    isActive: Boolean,
+    expiry: Date,
+    type: String,
+    couponId: { type: mongoose.Schema.Types.ObjectId, ref: 'Coupon' }
+ });
 var authenticationSchema = new schema({
     position: {
         type: String
@@ -141,25 +149,81 @@ var authenticationSchema = new schema({
         type: String
     },
     aboutBrand: {
-        type: Array
+        type: String
     },
     whyWorkWithUs: {
-        type: Array
+        type: String
     },
     profileApprove: {
         type: Boolean,
-        default: false
+        default: true
     },
     isSubscribed:{
         type:Boolean,
         default:false
      },
-
-
-
+     coupon: [couponSchema], // Array of coupon objects
+     paid:{
+        type:Boolean,
+        default:false
+       },
 
     resetPasswordExpires: Date,
     created: { type: Date, default: Date.now },
+    transactionDate: {
+        type: Date
+     },
+     paymentStatus: {
+        type: String
+     },
+     paymentCurreny: {
+        type: String
+     },
+     paymentAmount: {
+        type: Number
+     },
+     paymentPeriod: {
+        type: String
+     },
+     paymentPlan: {
+        type: String
+     },
+     subscriptionType: {
+        type: String
+     },
+     planName: {
+        type: String,
+        default: 'Basic'
+     },
+     transId:{
+        type:String
+     },
+     subscriptionPlan:{
+        type:String
+     },
+     accountBlock:{
+        type:Boolean
+     },
+     gift:[{
+        receiversFirstName: String,
+        receiverEmail: String,
+        announceDate: Date,
+        message:String,
+        subscriptionPlan:String,
+        planName:String,
+        expiry:Date,
+        transId:String,
+        transactionDate:Date, 
+        paymentStatus:String, 
+        paymentCurreny:String, 
+        paymentAmount:Number, 
+        paymentPeriod:String, 
+        paymentPlan:String,
+        coupon:String,
+        code:String
+       
+    }],
+  
 
 
 },

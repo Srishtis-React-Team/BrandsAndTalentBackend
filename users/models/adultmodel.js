@@ -1,7 +1,16 @@
+
 const mongoose = require("mongoose")
 var schema = mongoose.Schema;
 
-
+const couponSchema = new mongoose.Schema({
+   code: String,
+   currency: String,
+   discountAmount: Number,
+   isActive: Boolean,
+   expiry: Date,
+   type: String,
+   couponId: { type: mongoose.Schema.Types.ObjectId, ref: 'Coupon' }
+});
 var authenticationSchema = new schema({
 
    adultEmail: {
@@ -32,6 +41,9 @@ var authenticationSchema = new schema({
    },
    preferredChildLastName: {
       type: String
+   },
+   preferredChildFullName:{
+      type:String
    },
 
 
@@ -66,7 +78,7 @@ var authenticationSchema = new schema({
       type: String
    },
    childAboutYou: {
-      type: Array
+      type: String
    },
    childLocation: {
       type: String
@@ -80,13 +92,13 @@ var authenticationSchema = new schema({
    photo: {
       type: Array
    },
-   videosAndAudios: {
+   // videosAndAudios: {
+   //    type: Array
+   // },
+   features: {
       type: Array
    },
-   features:{
-      type: Array
-   },
-  
+
    subscriptionPlan: {
       type: String
    },
@@ -99,7 +111,7 @@ var authenticationSchema = new schema({
       type: Array
 
    },
-  
+
 
 
    isActive:
@@ -180,27 +192,27 @@ var authenticationSchema = new schema({
    rating: {
       type: String
    },
-   image:{
-      type:Object,
-      default:null
+   image: {
+      type: Object,
+      default: null
    },
    profileStatus: {
       type: Boolean
    },
-   ratingDescription:{
+   ratingDescription: {
       type: String
    },
    age: {
-      type:Number
+      type: Number
    },
-   isSubscribed:{
-      type:Boolean,
-      default:false
+   isSubscribed: {
+      type: Boolean,
+      default: false
    },
-   subscriptionId:{
+   subscriptionId: {
       type: schema.ObjectId,
-    ref: 'Subscription'
-  },
+      ref: 'Subscription'
+   },
    googleId: {
       type: String,
    },
@@ -209,32 +221,32 @@ var authenticationSchema = new schema({
    },
    facebookId: {
       type: String,
-    },
-    applications: [{
+   },
+   applications: [{
       gigId: mongoose.Schema.Types.ObjectId,
       isApplied: Boolean,
       brandId: mongoose.Schema.Types.ObjectId,
       appliedDate: { type: Date, default: Date.now },
       selectedLevel: {
          type: String,
-         default:'new'
+         default: 'new'
       },
-  }],
-    isApplied:{
+   }],
+   isApplied: {
       type: String,
-      default:'false'
-    },
-    brandId:{
+      default: 'false'
+   },
+   brandId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'brands'
-    },
-    gigId:{
+   },
+   gigId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Gigs'
-    },
-    fcmToken :{
+   },
+   fcmToken: {
       type: String,
-      default:''
+      default: ''
    },
    isOnline: {
       type: Boolean,
@@ -242,63 +254,137 @@ var authenticationSchema = new schema({
    },
    selectedLevel: {
       type: String,
-      default:'new'
+      default: 'new'
    },
    inActive:
    {
       type: Boolean,
-      default:true
-      
-   },
-   subscriptionType:{
-      type:String
-   },
-   planName:{
-      type:String,
-      default:'Basic'
-   },
-   parentState:{
-      type:String
-   },
-   parentAddress:{
-      type:String
-   },
-   parentCountry:{
-      type:String
-   },
-   adultLegalFirstName:{
-      type:String
-   },
-   adultLegalLastName:{
-      type:String
-   },
-   adminApproved:{
-      type:Boolean,
-      default:false
-   },
-   averageStarRatings:{
-      type:String,
-      default:'0'
-   },
-   totalReviews:{
-      type:String
-   },
-   noOfJobsCompleted:{
-      type:String
-   },
+      default: true
 
-   videoAudioUrls: [String],
-   publicUrl:{
+   },
+   subscriptionType: {
+      type: String
+   },
+   planName: {
+      type: String,
+      default: 'Basic'
+   },
+   parentState: {
+      type: String
+   },
+   parentAddress: {
+      type: String
+   },
+   parentCountry: {
+      type: String
+   },
+   adultLegalFirstName: {
+      type: String
+   },
+   adultLegalLastName: {
+      type: String
+   },
+   adminApproved: {
+      type: Boolean,
+      default: false
+   },
+   averageStarRatings: {
+      type: String,
+      default: '0'
+   },
+   totalReviews: {
+      type: String
+   },
+   noOfJobsCompleted: {
+      type: String
+   },
+   videoList: [String],
+   audioList: [String],
+   // videoAudioUrls: [String],
+   publicUrl: {
+      type: String
+   },
+   status: {
+      type: String,
+      default: 'Pending'
+   },
+   profileApprove: {
+      type: Boolean,
+      default: true
+   },
+   instagramUrl: {
+      type: String
+   },
+   tikTokUrl: {
+      type: String
+   },
+   youTubeUrl: {
+      type: String
+   },
+   linkedinUrl: {
+      type: String
+   },
+   facebookUrl: {
+      type: String
+   },
+   threadsUrl: {
+      type: String
+   },
+   twitterUrl: {
+      type: String
+   },
+   coupon: [couponSchema], // Array of coupon objects
+   paid: {
+      type: Boolean,
+      default: false
+   },
+   transactionDate: {
+      type: Date
+   },
+   paymentStatus: {
+      type: String
+   },
+   paymentCurreny: {
+      type: String
+   },
+   paymentAmount: {
+      type: Number
+   },
+   paymentPeriod: {
+      type: String
+   },
+   paymentPlan: {
+      type: String
+   },
+   accountBlock:{
+      type:Boolean
+   },
+   transId:{
       type:String
-  },
-  status:{
-   type:String,
-   default:'Pending'
-  },
-  profileApprove:{
-   type:Boolean,
-   default:false
-  } ,
+   },
+   adultName:{
+      type:String
+   },
+   gift:[{
+      receiversFirstName: String,
+      receiverEmail: String,
+      announceDate: Date,
+      message:String,
+      subscriptionPlan:String,
+      planName:String,
+      expiry:Date,
+      transId:String,
+      transactionDate:Date, 
+      paymentStatus:String, 
+      paymentCurreny:String, 
+      paymentAmount:Number, 
+      paymentPeriod:String, 
+      paymentPlan:String,
+      coupon:String,
+      code:String
+     
+  }],
+
 
 },
    {
@@ -306,4 +392,6 @@ var authenticationSchema = new schema({
 
 
    });
+
 module.exports = mongoose.model('Adult', authenticationSchema);
+

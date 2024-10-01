@@ -8,6 +8,7 @@ router.post('/addContent',content.addContent)//for admin register
 router.post('/fetchContentByType',content.fetchContentByType)//for fetchContentByType
 router.post('/editContent',content.editContent)//for editContent
 router.post('/deleteContent',content.deleteContent)//for deleteContent
+router.get('/fetchAllContent',content.fetchAllContent)//for fetchAllContent
 
 
 

@@ -1,3 +1,5 @@
+
+
 const mongoose = require("mongoose");
 const bcrypt = require('bcryptjs');
 const jwt = require("jsonwebtoken");
@@ -114,8 +116,9 @@ const brandsRegister = async (req, res, next) => {
       });
     }
 
-
     const newBrandData = {
+      
+      
       position: req.body.position,
       brandName: req.body.brandName,
       brandEmail: req.body.brandEmail,
@@ -123,6 +126,7 @@ const brandsRegister = async (req, res, next) => {
       confirmPassword: hashedPass,
       planName: 'Basic',
       isActive: true,
+      inActive:true,
       userType: 'brand',
       isVerified: false,
       fcmToken: req.body.fcmToken,
@@ -138,8 +142,8 @@ const brandsRegister = async (req, res, next) => {
       userName: req.body.userName,
       profileImage: req.body.profileImage,
       websiteLink: req.body.websiteLink,
-      publicUrl: req.body.publicUrl
-
+      publicUrl:req.body.publicUrl,
+     
     };
 
 
@@ -160,7 +164,8 @@ const brandsRegister = async (req, res, next) => {
     return res.status(200).json({
       status: true,
       message: 'An e-mail has been sent to ' + req.body.brandEmail + ' with further instructions.',
-      data: req.body.brandEmail
+      data: req.body.brandEmail,
+      user_id:newBrand._id
     });
 
   } catch (error) {
@@ -246,7 +251,7 @@ const brandsLogin = async (req, res, next) => {
   const { brandEmail, brandPassword, fcmToken } = req.body;
 
   try {
-    const brand = await brandsmodel.findOne({ brandEmail: brandEmail, isActive: true });
+    const brand = await brandsmodel.findOne({brandEmail :{ $regex: new RegExp(`^${brandEmail}$`, 'i') } , isActive: true });
     console.log("Brand", brand);
     if (brand) {
       const passwordMatch = await bcrypt.compare(brandPassword, brand.brandPassword);
@@ -314,6 +319,7 @@ const editBrands = async (req, res) => {
     /* Authentication */
 
     const brand_id = req.body.user_id || req.params.user_id;
+
     const updateFields = {
       isActive: true, // Assuming isActive is always set to true
       brandName: req.body.brandName,
@@ -326,6 +332,7 @@ const editBrands = async (req, res) => {
       address: req.body.address,
       brandImage: req.body.brandImage,
       position: req.body.position,
+      publicUrl:req.body.publicUrl,
       inActive: true,
       userName: req.body.userName,
       profileImage: req.body.profileImage,
@@ -672,7 +679,7 @@ const brandsForgotPassword = async (req, res, next) => {
   try {
     const token = crypto.randomBytes(20).toString('hex');
 
-    const user = await brandsmodel.findOne({ brandEmail: req.body.brandEmail, isActive: true, inActive: true });
+    const user = await brandsmodel.findOne({ brandEmail: { $regex: new RegExp(`^${req.body.brandEmail}$`, 'i') }, isActive: true });
 
     if (!user) {
       return res.json({
@@ -974,13 +981,13 @@ async function findUserById(userId) {
 
 const postSupportMail = async (req, res, next) => {
   try {
-    const { name, enquiry, phoneNo, email } = req.body;
+    const { name, enquiry, phoneNo, email,subject } = req.body;
 
      // Check for required fields
-     if (!name || !enquiry || !phoneNo || !email) {
+     if (!name || !enquiry  || !email || !subject) {
       return res.json({
         status: false,
-        message: 'Name, enquiry, phone number, and email are required.'
+        message: 'Name, enquiry, phone number,subject, and email are required.'
       });
     }
 
@@ -1002,38 +1009,13 @@ const postSupportMail = async (req, res, next) => {
       return re.test(email);
     };
 
-    // // Phone number validation (basic example for international format)
-    // const validatePhoneNo = (phoneNo) => {
-    //   const re = /^\+?[1-9]\d{1,14}$/; // E.164 international format
-    //   return re.test(phoneNo);
-    // };
-     // Phone number validation based on country code
-     const validatePhoneNo = (phoneNo) => {
-      const phoneNumber = parsePhoneNumberFromString(phoneNo);
-      return phoneNumber && isValidPhoneNumber(phoneNo);
-    };
-
-    if (!validatePhoneNo(phoneNo)) {
-      return res.json({
-        status: false,
-        message: 'Invalid phone number format.'
-      });
-    }
-
+     
     if (!validateEmail(email)) {
       return res.json({
         status: false,
         message: 'Invalid email format.'
       });
     }
-
-    if (!validatePhoneNo(phoneNo)) {
-      return res.json({
-        status: false,
-        message: 'Invalid phone number format.'
-      });
-    }
-
 
     // Search for the talentId in both kids and adult models
     let talent = await kidsmodel.findOne({ parentEmail: email });
@@ -1043,13 +1025,17 @@ const postSupportMail = async (req, res, next) => {
 
     const talentId = talent ? talent._id : null;
 
+
+
     // Save the support request details in the contact model
     const newContact = new contactmodel({
       name: name,
       enquiry: enquiry,
       phoneNo: phoneNo,
       email: email,
-      talentId: talentId
+      talentId: talentId,
+      subject:subject
+     
     });
 
     await newContact.save();
@@ -1065,7 +1051,7 @@ const postSupportMail = async (req, res, next) => {
     // Define the email options
     const mailOptions = {
       from: host,
-      to: 'admin@yopmail.com',
+      to:['info@brandsandtalent.com', 'olin@brandsandtalent.com'],
       subject: 'Help And Support',
       html: `
         <p>Hello,</p>
@@ -1245,10 +1231,73 @@ const contactUsById = async (req, res) => {
     return res.json({ status: false, msg: 'Error fetching user profile' });
   }
 };
+/**
+ *********otpResend*****
+ * @param {*} req from user
+ * @param {*} res return data
+ * @param {*} next undefined
+ */
+ const otpResendBrands = async (req, res, next) => {
+  try {
+    const email = req.body.brandEmail;
+
+    // Generate and hash new OTP
+    const { otp, hashedOTP } = await generateAndHashOTP();
+
+    // Compose email options
+    const mailOptions = {
+      from: host,
+      to: email,
+      subject: "Use this code to verify your account",
+      html: `<p>Welcome to the Brands & Talent Community!</p>
+      <p>Please enter the following OTP to start creating your profile:</p>
+      <p><strong>${otp}</strong></p>
+      <p>For more information and helpful tips, refer to our "How it Works" and FAQs sections. If you have any questions or need further assistance, please follow and contact us through our social media handles:</p>
+      <p>Facebook: <a href="https://fb.com/brandsandtalent">fb.com/brandsandtalent</a></p>
+      <p>Instagram: <a href="https://instagram.com/brandsandtalent">instagram.com/brandsandtalent</a></p>
+      <p>Telegram: <a href="https://t.me/brandsandtalent">https://t.me/brandsandtalent</a></p>
+      <p>Email: <a href="mailto:brandsntalent@gmail.com">brandsntalent@gmail.com</a></p>
+      <p>Thank you and best regards,</p>
+      <p>The Brands & Talent (BT) Team</p>`
+      // text: `Your One-Time Password (OTP) is ${otp}. Please use this code to complete your verification process. Do not share this code with anyone. Thank you for using our services.\n \nKind regards,\nTeam`,
+    };
+
+    // Send email with OTP
+    transporter.sendMail(mailOptions, async function (error, info) {
+      if (error) {
+        console.log(error);
+        return res.json({
+          message: "Error sending OTP",
+          status: false,
+          error: error
+        });
+      } else {
+   
+        // Update the OTP in the database for the user
+        try {
+          const filter = { brandEmail: email };
+          const update = { otp: hashedOTP };
+          await brandsmodel.findOneAndUpdate(filter, update);
+          console.log("OTP updated successfully in the database");
+        } catch (updateError) {
+          console.error("Error updating OTP in the database:", updateError);
+        }
+
+        res.json({
+          message: "OTP has been sent successfully",
+          status: true
+        });
+      }
+    });
+  } catch (error) {
+    console.error("Error occurred:", error);
+    res.json({ status: false, msg: "Error Occurred" });
+  }
+};
 module.exports = {
   brandsRegister, otpVerificationBrands, brandsLogin, editBrands, deleteBrands, getBrandById, topBrands,
   favouritesList, searchDatas, socailSignUpBrands, updateBrandPassword, brandsForgotPassword, brandsResetPassword,
   getBrands, deleteNotification, updatePasswordInSettings, activateBrandUser, postSupportMail, contactUsReply,
-  contactUsList, deleteContact, contactUsById, checkPublicUrl
+  contactUsList, deleteContact, contactUsById, checkPublicUrl,otpResendBrands
 
 };

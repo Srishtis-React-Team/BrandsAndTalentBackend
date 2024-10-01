@@ -125,9 +125,7 @@ var authenticationSchema = new schema({
     city:{
         type:String
     },
-    // jobPostedDate:{
-    //     type:Date
-    // },
+   
     lastDateForApply:{
         type:Date
     },
@@ -141,6 +139,10 @@ var authenticationSchema = new schema({
     isApproved:{
         type:Boolean,
         default:false
+    },
+    isApplied:{
+        type:String,
+       
     },
     minAge:{
         type:String

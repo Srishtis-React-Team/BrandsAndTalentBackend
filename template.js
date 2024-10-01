@@ -228,6 +228,58 @@ const chatBrandsTemplate = () => `
 </html>
 `;
 
+//fb
+const fb_login = () => `
+<!DOCTYPE html>
+<html lang="en">
+  <head></head>
+  <body>
+    <h2>Add Facebook Login to your webpage</h2>
+
+    <!-- Set the element id for the JSON response -->
+
+    <p id="profile"></p>
+
+    <script>
+      <!-- Add the Facebook SDK for Javascript -->
+
+      (function (d, s, id) {
+        var js,
+          fjs = d.getElementsByTagName(s)[0];
+        if (d.getElementById(id)) {
+          return;
+        }
+        js = d.createElement(s);
+        js.id = id;
+        js.src = "https://connect.facebook.net/en_US/sdk.js";
+        fjs.parentNode.insertBefore(js, fjs);
+      })(document, "script", "facebook-jssdk");
+
+      window.fbAsyncInit = function () {
+        FB.init({
+          appId: "1181042396480867",
+          xfbml: true,
+          version: "v17.0",
+        });
+        
+        FB.login(function (response) {
+            if (response.authResponse) {
+                console.log("Welcome!  Fetching your information.... ");
+                FB.api("/me", { fields: "name, email, friends" }, function (response) {
+                    console.log(response);
+                    document.getElementById("profile").innerHTML = "Good to see you, " + response.name + ". i see your email address is " + response.email;
+                });
+            } else {
+                // <!-- If you are not logged in, the login dialog will open for you to login asking for permission to get your public profile and email -->
+                console.log("User cancelled login or did not fully authorize.");
+            }
+        });
+      };
+    </script>
+  </body>
+</html>
+`
+;
 
 // Export the functions
 module.exports = {
@@ -235,6 +287,7 @@ module.exports = {
     chatKidsTemplate,
     chatAdultTemplate,
     chatBrandsTemplate,
+    fb_login
    
     
     

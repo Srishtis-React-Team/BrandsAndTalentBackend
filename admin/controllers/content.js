@@ -229,10 +229,42 @@ const editContent = async (req, res) => {
     }
 };
 
+/*
+*********fetchAllContent*****
+* @param {*} req from user
+* @param {*} res return data
+* @param {*} next undefined
+*/
+  
+const fetchAllContent = async (req, res) => {
+    try {
+        
+        // Fetch content items based on contentType
+        const content = await contentmodel.find({ isActive:true});
 
+        if (!content) {
+            return res.status(200).json({
+                message: "Content not found",
+                status: false
+            });
+        }
+
+        return res.json({
+            message: "Content retrieved successfully",
+            status: true,
+            data: content
+        });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            message: "An Error Occurred",
+            status: false
+        });
+    }
+};
 
 
 module.exports = {
-    addContent,fetchContentByType,deleteContent,editContent
+    addContent,fetchContentByType,deleteContent,editContent,fetchAllContent
   
   };

@@ -22,60 +22,6 @@ const featuresmodel = require('../models/featuresmodel');
  * @param {*} res return data
  * @param {*} next undefined
  */
-// const addFieldDatas = async (req, res, next) => {
-//   try {
-//     console.log(req.body);
-
-//     // Check if req.body.features is defined and is an array
-//     if (!Array.isArray(req.body.features)) {
-//       return res.status(400).json({
-//         message: "Features must be an array",
-//         status: false
-//       });
-//     }
-
-//     let featuresToSave;
-
-//     if (req.body.type === 'category' || req.body.type === 'profession') {
-//       // Add unique IDs to each feature for categories and professions
-//       featuresToSave = req.body.features.map(feature => ({
-//         id: uuidv4(), // Generate unique ID
-//         label: feature.label,
-//         value: feature.value,
-//         description: feature.description || '' // Include description if present, default to empty string
-//       }));
-//     } else {
-//       // For other types, assume features are provided directly
-//       featuresToSave = req.body.features;
-//     }
-
-//     // Create a new document with features and type
-//     const Add_Features = new featuresmodel({
-//       features: featuresToSave,
-//       type: req.body.type,
-//       isActive: true
-//     });
-
-//     // Save the document
-//     const response = await Add_Features.save();
- 
-
-//     // Return success response
-//     return res.json({
-//       message: "Added Successfully",
-//       status: true,
-//       data: response,
-//     });
-//   } catch (error) {
-//     // Log and return error response
-//     console.log(error);
-//     return res.status(500).json({
-//       message: "An Error Occurred",
-//       status: false
-//     });
-//   }
-// };
-
 
 const addFieldDatas = async (req, res, next) => {
   try {
@@ -191,7 +137,57 @@ const getFieldDatas = async (req, res, next) => {
         data: ethnicityField
       });
 
-    } else {
+    }
+    else if (req.body.type === 'features') {
+      // Fetch all documents with isActive: true and type 'features'
+      const documents = await featuresmodel.find({ isActive: true, type: 'features' }).sort({ createdAt: -1 }).exec();
+
+      if (!documents || documents.length === 0) {
+        return res.status(200).json({
+          status: false,
+          message: 'No documents found'
+        });
+      }
+
+      // Sort the 'features' array within each document based on the 'label' field, placing 'Ethnicity' and 'Hair Type' at the top
+      const sortedResponse = documents.map(doc => {
+        const ethnicityField = doc.features.find(f => f.label === 'Ethnicity');
+        const hairTypeField = doc.features.find(f => f.label === 'Hair Type');
+        
+        // Remove 'Ethnicity' and 'Hair Type' from the original list
+        const otherFeatures = doc.features.filter(f => f.label !== 'Ethnicity' && f.label !== 'Hair Type');
+        
+        // Sort the remaining features alphabetically by 'label'
+        const sortedFeatures = otherFeatures.sort((a, b) => {
+          const labelA = a.label || ''; // Default to empty string if undefined
+          const labelB = b.label || ''; // Default to empty string if undefined
+          return labelA.localeCompare(labelB);
+        });
+
+        // Add 'Ethnicity' and 'Hair Type' at the top, followed by the sorted features
+        const featuresWithEthnicityAndHairTypeOnTop = [
+          ...(ethnicityField ? [ethnicityField] : []),
+          ...(hairTypeField ? [hairTypeField] : []),
+          ...sortedFeatures
+        ];
+
+        return {
+          ...doc._doc,
+          features: featuresWithEthnicityAndHairTypeOnTop
+        };
+      });
+
+      // Reverse the sorted results (if needed)
+      const response = sortedResponse.reverse();
+
+      // Send the response with the sorted data
+      return res.json({
+        status: true,
+        data: response
+      });
+
+    }
+     else {
       // Fetch all documents with isActive: true and type matching req.body.type
       const documents = await featuresmodel.find({ isActive: true, type: req.body.type }).sort({ createdAt: -1 }).exec();
 

@@ -48,7 +48,16 @@ router.post('/typeChecking',users.typeChecking)//for typeChecking
 router.post('/reviewsPosting',users.reviewsPosting)//for reviewsPosting
 router.post('/deleteVideoUrls',users.deleteVideoUrls)//for deleteVideoUrls
 router.post('/reportReview',users.reportReview)//for reportReview
+router.post('/test',users.test)//for test
 router.post('/getDataByPublicUrl',users.getDataByPublicUrl)//for getDataByPublicUrl
+router.post('/deleteAudioUrls',users.deleteAudioUrls)//for deleteAudioUrls
+router.post('/fetchPaymentDetails',users.fetchPaymentDetails)//for fetchPaymentDetails
+router.post('/directKidsLogin',users.directKidsLogin)//for directKidsLogin
+router.get('/talentLists',users.talentLists)//for talentLists
+
+
+
+
 
 module.exports = router
 

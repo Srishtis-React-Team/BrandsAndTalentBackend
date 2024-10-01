@@ -10,6 +10,7 @@ var loginData = require('../../emailCredentials.js');
 const { gmail: { host, pass } } = loginData;
 const { getBusinessReviewEmailTemplate } = require('../../template.js');
 const { v4: uuidv4 } = require('uuid');
+const cron = require('node-cron');
 
 
 
@@ -70,6 +71,7 @@ const { brandsRegister } = require("../../brands/controllers/brands.js");
 const brandsmodel = require("../../brands/models/brandsmodel.js");
 const applymodel = require("../../brands/models/applymodel.js");
 const notificationmodel = require("../../brands/models/notificationmodel.js");
+const transactionmodel = require("../../admin/models/transactionmodel.js");
 
 /**
  ********* signUp*****
@@ -115,7 +117,7 @@ const kidsSignUp = async (req, res, next) => {
     const emailSent = await sendOTPByEmail(email, otp);
 
     if (emailSent) {
-      // Create a new user document
+
       const newUser = new kidsmodel({
         parentFirstName: req.body.parentFirstName,
         parentLastName: req.body.parentLastName,
@@ -125,13 +127,14 @@ const kidsSignUp = async (req, res, next) => {
         parentState: req.body.parentState,
         parentAddress: req.body.parentAddress,
         talentPassword: hashedPass,
-        confirmPassword: hashedPass, //req.body.confirmPassword,
+        confirmPassword: hashedPass,
         profession: req.body.profession,
         relevantCategories: req.body.relevantCategories,
         childFirstName: req.body.childFirstName,
         childLastName: req.body.childLastName,
         preferredChildFirstname: req.body.preferredChildFirstname,
         preferredChildLastName: req.body.preferredChildLastName,
+        preferredChildFullName:req.body.preferredChildFirstname + req.body.preferredChildLastName,
         childGender: req.body.childGender,
         childNationality: req.body.childNationality,
         childEthnicity: req.body.childEthnicity,
@@ -158,17 +161,19 @@ const kidsSignUp = async (req, res, next) => {
         fcmToken: req.body.fcmToken,
         adminApproved: false,
         noOfJobsCompleted: req.body.noOfJobsCompleted,
-        publicUrl: req.body.publicUrl
+        publicUrl: req.body.publicUrl,
       });
+    
 
       // Save the new user to the database
       await newUser.save();
-
+     
 
       res.json({
         message: "Half Registered Successfully",
         status: true,
-        data: req.body.parentEmail
+        data: req.body.parentEmail,
+        user_id: newUser._id
       });
     } else {
       res.json({
@@ -249,7 +254,8 @@ const adultSignUp = async (req, res, next) => {
         parentCountry: req.body.parentCountry,
         childPhone: req.body.childPhone,
         noOfJobsCompleted: req.body.noOfJobsCompleted,
-        publicUrl: req.body.publicUrl
+        adultName: req.body.adultName,
+        publicUrl: req.body.publicUrl,
 
       });
 
@@ -324,12 +330,21 @@ const otpVerificationAdult = async (req, res, next) => {
 
       await transporter.sendMail(mailOptions);
 
-      console.log("Success: User verified and email sent");
-      res.json({
-        message: "User verified",
+      // Generate a token, assuming auth.gettoken() is a valid method
+      const token = auth.gettoken(user._id, newEmail, 'adult');
+
+      // Return success response
+      return res.json({
         status: true,
-        data: user._id
+        message: 'Login successful',
+        data: {
+          user,
+          token,
+          email: newEmail,
+          type: 'adult' // Returning 'adult' as the user type
+        }
       });
+
     } else {
       console.log("Error: OTP does not match");
       res.json({
@@ -416,7 +431,7 @@ const otpVerification = async (req, res, next) => {
 */
 
 
-const saveNotificationPlanUpgrade = async (user_id, brandId,planName, notificationMessage) => {
+const saveNotificationPlanUpgrade = async (user_id, brandId, planName, notificationMessage) => {
   try {
     let brand;
     if (brandId) {
@@ -437,14 +452,14 @@ const saveNotificationPlanUpgrade = async (user_id, brandId,planName, notificati
       talentId: user_id,
       profileApprove: false,
       notificationMessage: notificationMessage,
-      newPlan:planName,
+      newPlan: planName,
       brandDetails: {
         _id: brand?._id,
         brandName: brand?.brandName,
         brandEmail: brand?.brandEmail,
         logo: brand?.logo,
         brandImage: brand?.brandImage,
-        oldPlan:brand?.planName
+        oldPlan: brand?.planName
       },
       talentDetails: {
         parentFirstName: talent.parentFirstName,
@@ -457,7 +472,7 @@ const saveNotificationPlanUpgrade = async (user_id, brandId,planName, notificati
         preferredChildFirstname: talent.preferredChildFirstname,
         preferredChildLastName: talent.preferredChildLastName,
         image: talent.image,
-        oldPlan:talent.planName
+        oldPlan: talent.planName
       }
     });
 
@@ -470,125 +485,146 @@ const saveNotificationPlanUpgrade = async (user_id, brandId,planName, notificati
 };
 const subscriptionPlan = async (req, res, next) => {
   try {
-    const { user_id, subscriptionPlan, planName, brand_id } = req.body;
+    const { user_id, subscriptionPlan, planName, brand_id, transId, coupon } = req.body;//transactionDate, paymentStatus, paymentCurreny, paymentAmount, paymentPeriod, paymentPlan, 
 
     let UserModel;
     let nameFields;
+    console.log("req.body in sub plannnnnnn",req.body)
 
-    // Check if user_id matches a kid
+    // Determine UserModel
     const isKid = await kidsmodel.exists({ _id: user_id });
+    const isBrand = await brandsmodel.exists({ _id: brand_id || user_id });
     if (isKid) {
       UserModel = kidsmodel;
       nameFields = 'childFirstName childLastName';
+    } else {
+
+      if (isBrand) {
+        UserModel = brandsmodel;
+        nameFields = 'brandName';
+      } else {
+        UserModel = adultmodel;
+        nameFields = 'firstName lastName';
+      }
     }
 
-    // Check if user_id matches a brand
-    const isBrand = await brandsmodel.exists({ _id: brand_id });
-    if (isBrand) {
-      UserModel = brandsmodel;
-      nameFields = 'brandName';
-    }
-
-    // If neither kid nor brand, default to adult model
     if (!UserModel) {
-      UserModel = adultmodel;
-      nameFields = 'firstName lastName';
+      return res.status(200).json({ status: false, message: "Invalid user model" });
     }
 
-    console.log("UserModel", UserModel);
-
-    // Update subscription plan for the user with the given user_id or brand_id
+    // Update subscription plan for the user
     const query = { _id: user_id || brand_id };
+    console.log("query", query)
 
-    // Define the selection to include email and additional fields based on conditions
-    let selectFields = 'email ';
-    if (isKid) {
-      selectFields += 'childFirstName childLastName';
-    } else if (isBrand) {
-      selectFields += 'brandName';
-    } else {
-      selectFields += 'firstName lastName';
-    }
 
-    // Fetch the user to get their email and nameFields
+    // Fetch user details
     let user = await UserModel.findOne(query);
-    console.log("user", user);
-    // Check if user exists and has an email address
     if (!user) {
-      return res.status(200).json({ message: "User not found or email not defined" });
+      return res.status(200).json({ status: false, message: "User not found or email not defined" });
     }
 
-    // Determine the correct email field to use
-    let userEmail;
-    if (UserModel === kidsmodel) {
-      // For kids model, use parentEmail if available, otherwise use adultEmail
-      userEmail = user.parentEmail;
-    } else if (UserModel === brandsmodel) {
-      // For brands model, use brandEmail
-      userEmail = user.brandEmail;
-    } else {
-      // For adult model, use adultEmail
-      userEmail = user.adultEmail;
-    }
-
-    // If no valid email found, return appropriate response
+    // Determine user email
+    let userEmail = user.parentEmail || user.brandEmail || user.adultEmail;
+    let senderName = user.preferredChildFirstname || user.brandName;
     if (!userEmail) {
-      return res.status(200).json({ message: "Email not defined for the user" });
+      return res.status(200).json({ status: false, message: "Email not defined for the user" });
     }
 
     if (user.profileApprove === true) {
 
-      // Update the subscription plan and planName
-      const updatedUser = await UserModel.findOneAndUpdate(
-        query,
-        { subscriptionPlan, planName },
-        { new: true } // Options to return the updated document
-      );
+      console.log("ayytysgdfkdhbgkjfnhlkgnlhgnlkhngfnjl")
+      console.log("senderName", senderName)
 
-      if (!updatedUser) {
-        return res.status(200).json({ message: "Need Admin Approval" });
+      // Check if the subscriptionPlan, planName, and transId are the same
+      if (
+        user.subscriptionPlan === subscriptionPlan &&
+        user.planName === planName &&
+        user.transId === transId
+      ) {
+        // If they match, only update the transId
+        const updatedUser = await UserModel.findOneAndUpdate(
+          query,
+          { transId },
+          { new: true }
+        );
+        console.log("updtaeduserrrr",updatedUser)
+
+        if (!updatedUser) {
+          return res.status(500).json({ message: "Failed to update transaction ID" });
+        }
+        console.log("userbrandsss--------------------------", updatedUser)
+        
+        const transaction = new transactionmodel({
+          transId: transId,
+          type: 'user',
+          verifyId: updatedUser._id,
+          isActive: true,
+          email: userEmail,
+          senderName: senderName,
+          coupon: coupon
+        });
+
+        await transaction.save();
+
+        return res.json({
+          message: "Success: Transaction ID updated",
+          status: true,
+          data: updatedUser._id
+        });
+      } else {
+        console.log("transId",transId)
+        // If they don't match, update the entire subscription details
+        const updatedUser = await UserModel.findOneAndUpdate(
+          query,
+          {
+            subscriptionPlan,
+            planName,
+           
+            transId,
+            accountBlock: false
+          },
+          { new: true }
+        );
+
+        if (!updatedUser) {
+          return res.status(500).json({ message: "Failed to update subscription plan" });
+        }
+        console.log("updatedUserjhfjdhgkfkgnfkjgnfhn", updatedUser)
+
+        // Save transaction
+        const transaction = new transactionmodel({
+          transId: transId,
+          type: 'user',
+          verifyId: updatedUser._id,
+          isActive: true,
+          email: userEmail,
+          senderName: senderName,
+          coupon: coupon
+        });
+
+        await transaction.save();
+        console.log("transaction", transaction._id)
+
+
+
+        cron.schedule('0 13 * * *', async () => {
+          console.log('Running subscription reminder cron job...');
+          await subscriptionReminder();
+        });
+
+
+
+        return res.json({
+          message: "Success: Subscription plan updated",
+          status: true,
+          data: updatedUser._id
+        });
       }
 
-      return res.json({
-        message: "Success: Subscription plan updated",
-        status: true,
-        data: updatedUser._id // Return the updated user's ID
-      });
-    }
-   
 
-    // Send email to the user
-    else {
-      const mailOptions = {
-        from: host,
-        to: userEmail,
-        subject: 'Subscription Plan Updated',
-        html: `<p>Hi ${user.brandName || user.preferredChildFirstname},</p>
-             <p>Thank you for being a part of our family. Your subscription plan is updation is pending needs admin approval forthis  <strong>${planName}</strong>.</p>
-             <p>Regards,</p>
-             <p>Brands and Talent Team</p>`
-      };
 
-      transporter.sendMail(mailOptions, (error, info) => {
-        if (error) {
-          console.error("Error sending email:", error);
-        } else {
-          console.log("Email sent: " + info.response);
-        }
-      });
-      // Update the subscription plan and planName
-      const notificationMessage = `${isKid ? user.preferredChildFirstname : isBrand ? user.brandName : user.preferredChildFirstname} has updated their plan to ${planName}.`;
-
-      // Call saveNotificationPlanUpgrade to save the notification
-      await saveNotificationPlanUpgrade(user_id, brand_id,planName, notificationMessage);
-      res.json({
-        message: "A email is send to admin need approval",
-        status: true
-
-      });
     }
   } catch (error) {
-   
     res.status(500).json({
       message: "An error occurred",
       status: false,
@@ -597,7 +633,92 @@ const subscriptionPlan = async (req, res, next) => {
   }
 };
 
+// Subscription reminder function (keep this outside of the main function)
+const subscriptionReminder = async () => {
+  try {
+    const currentDate = new Date();
 
+
+
+    // Find users with Pro or Premium plans
+    const users = await Promise.all([
+      kidsmodel.find({ planName: { $in: ['Pro', 'Premium'] } }),
+      adultmodel.find({ planName: { $in: ['Pro', 'Premium'] } }),
+      brandsmodel.find({ planName: { $in: ['Pro', 'Premium'] } }),
+    ]);
+
+    const allUsers = [...users[0], ...users[1], ...users[2]];
+
+    for (const user of allUsers) {
+
+      const { transactionDate, subscriptionPlan, planName } = user;
+
+      // Get the correct email field based on the model
+      const email = user.parentEmail || user.brandEmail || user.adultEmail;
+
+      if (!email) {
+        console.log(`No email found for user: ${user._id}`);
+        continue; // Skip this user if no email is found
+      }
+      const expirationDate = new Date(transactionDate);
+      let UserModel;
+      if (user.parentEmail) {
+        UserModel = kidsmodel; // User is from the kids model
+      } else if (user.brandEmail) {
+        UserModel = brandsmodel; // User is from the brands model
+      } else if (user.adultEmail) {
+        UserModel = adultmodel; // User is from the adult model
+      }
+
+      if (subscriptionPlan === 'annual') {
+        expirationDate.setFullYear(expirationDate.getFullYear() + 1);
+      } else if (subscriptionPlan === 'monthly') {
+        expirationDate.setMonth(expirationDate.getMonth() + 1);
+      }
+
+      const oneWeekBefore = new Date(expirationDate);
+      oneWeekBefore.setDate(oneWeekBefore.getDate() - 7);
+
+      const threeDaysBefore = new Date(expirationDate);
+      threeDaysBefore.setDate(threeDaysBefore.getDate() - 3);
+
+      const oneDayBefore = new Date(expirationDate);
+      oneDayBefore.setDate(oneDayBefore.getDate() - 1);
+
+      if (currentDate >= oneWeekBefore && currentDate < threeDaysBefore) {
+        await sendReminderEmail(email, expirationDate, 'Your account will expire in 1 week.');
+      } else if (currentDate >= threeDaysBefore && currentDate < oneDayBefore) {
+        await sendReminderEmail(email, expirationDate, 'Your account will expire in 3 days.');
+      } else if (currentDate >= oneDayBefore && currentDate < expirationDate) {
+        await sendReminderEmail(email, expirationDate, 'Your account will expire tomorrow.');
+      } else if (currentDate >= expirationDate) {
+        await sendReminderEmail(email, expirationDate, 'Your account has expired.');
+        await UserModel.findByIdAndUpdate(user._id, { accountBlock: true });
+      }
+    }
+
+    console.log('Reminder emails sent successfully.');
+  } catch (error) {
+    console.error('Error sending subscription reminders:', error);
+  }
+};
+
+// Helper function to send reminder emails
+const sendReminderEmail = async (email, expirationDate, message) => {
+  const mailOptions = {
+    from: host,
+    to: email,
+    subject: 'Subscription Reminder',
+    html: `
+      <p>${message}</p>
+      <p>Your account will expire on: ${expirationDate.toDateString()}</p>
+      <p>Please renew your subscription to continue enjoying our services.</p>
+      <p>Best regards,<br/>Brands And Talent Team</p>
+    `,
+  };
+
+  await transporter.sendMail(mailOptions);
+};
 
 /**
 *********userLogin******
@@ -611,14 +732,15 @@ const talentLogin = async (req, res) => {
   try {
     let user, type, model;
 
+
     // Attempt to find the user in the adultmodel
-    user = await adultmodel.findOne({ adultEmail: email });
+    user = await adultmodel.findOne({ adultEmail: { $regex: new RegExp(`^${email}$`, 'i') } });
     type = 'adult';
     model = adultmodel; // Assign the model to update the fcmToken later
 
     if (!user) {
       // If not found in adultmodel, try finding in kidsmodel
-      user = await kidsmodel.findOne({ parentEmail: email });
+      user = await kidsmodel.findOne({ parentEmail: { $regex: new RegExp(`^${email}$`, 'i') } });
       type = 'kids';
       model = kidsmodel; // Update the model if user is a kid
     }
@@ -646,13 +768,8 @@ const talentLogin = async (req, res) => {
         status: false,
         message: 'User is not active'
       });
-    } else if (type === 'kids' && (!user.isActive || !user.adminApproved)) {
-      return res.json({
-        status: false,
-        message: 'Need Approval from Admin'
-      });
     }
-
+   
     // Update the fcmToken for the found user
     if (fcmToken) {
       await model.updateOne({ _id: user._id }, { $set: { fcmToken: fcmToken } });
@@ -885,6 +1002,7 @@ const updateAdults = async (req, res) => {
     /* Authentication */
 
     const user_id = req.body.user_id || req.params.user_id;
+ 
     const updateFields = {
       isActive: true, // Assuming isActive is always set to true
 
@@ -894,6 +1012,7 @@ const updateAdults = async (req, res) => {
       parentLastName: req.body.parentLastName,
       preferredChildFirstname: req.body.preferredChildFirstname,
       preferredChildLastName: req.body.preferredChildLastName,
+      preferredChildFullName:req.body.preferredChildFirstname + req.body.preferredChildLastName,
       childGender: req.body.childGender,
       childNationality: req.body.childNationality,
       childEthnicity: req.body.childEthnicity,
@@ -906,14 +1025,13 @@ const updateAdults = async (req, res) => {
       childAboutYou: req.body.childAboutYou,
       cv: req.body.cv,
       photo: req.body.photo,
-      videosAndAudios: req.body.videosAndAudios,
       features: req.body.features,
       childLocation: req.body.childLocation,
       portfolio: req.body.portfolio,
       instaFollowers: req.body.instaFollowers,
       tiktokFollowers: req.body.tiktokFollowers,
       twitterFollowers: req.body.twitterFollowers,
-      youtubeFollowers: req.body.twitterFollowers,
+      youtubeFollowers: req.body.youtubeFollowers,
       facebookFollowers: req.body.facebookFollowers,
       linkedinFollowers: req.body.linkedinFollowers,
       threadsFollowers: req.body.threadsFollowers,
@@ -934,8 +1052,18 @@ const updateAdults = async (req, res) => {
       adultLegalLastName: req.body.adultLegalLastName,
       reviews: req.body.reviews,
       noOfJobsCompleted: req.body.noOfJobsCompleted,
-      videoAudioUrls: req.body.videoAudioUrls,
-      publicUrl: req.body.publicUrl
+      videoList: req.body.videoList,
+      audioList: req.body.audioList,
+      publicUrl: req.body.publicUrl,
+      instagramUrl: req.body.instagramUrl,
+      tikTokUrl: req.body.tikTokUrl,
+      youTubeUrl: req.body.youTubeUrl,
+      linkedinUrl: req.body.linkedinUrl,
+      facebookUrl: req.body.facebookUrl,
+      threadsUrl: req.body.threadsUrl,
+      twitterUrl: req.body.twitterUrl
+
+
     };
 
     try {
@@ -966,7 +1094,13 @@ const updateAdults = async (req, res) => {
 
         // Send notification and email
         await saveNotification(user_id, notificationMessage);
-        await sendEmail(adultEmail, 'Approval', emailContent);
+        if (req.body.portfolio && req.body.portfolio.length > 0) {
+          console.log("portfolio.....................................")
+          // Send email if skills are not present
+          await sendEmail(parentEmail, 'Approval', emailContent);
+        }
+
+        // await sendEmail(adultEmail, 'Approval', emailContent);
       }
 
       res.json({ status: true, msg: 'Updated successfully', type: "adult", data: updateFields });
@@ -1159,8 +1293,6 @@ const editKids = async (req, res) => {
       return res.status(200).json({ status: false, msg: 'User not found' });
     }
 
-
-    // Prepare the fields to be updated
     const updateFields = {
 
       parentFirstName: req.body.parentFirstName,
@@ -1170,13 +1302,13 @@ const editKids = async (req, res) => {
       parentCountry: req.body.parentCountry,
       parentState: req.body.parentState,
       parentAddress: req.body.parentAddress,
-      // confirmPassword: req.body.confirmPassword,
       profession: req.body.profession,
       relevantCategories: req.body.relevantCategories,
       childFirstName: req.body.childFirstName,
       childLastName: req.body.childLastName,
       preferredChildFirstname: req.body.preferredChildFirstname,
       preferredChildLastName: req.body.preferredChildLastName,
+      preferredChildFullName:req.body.preferredChildFirstname + req.body.preferredChildLastName,
       childGender: req.body.childGender,
       childNationality: req.body.childNationality,
       childEthnicity: req.body.childEthnicity,
@@ -1188,7 +1320,6 @@ const editKids = async (req, res) => {
       childCity: req.body.childCity,
       childAboutYou: req.body.childAboutYou,
       cv: req.body.cv,
-      videosAndAudios: req.body.videosAndAudios,
       features: req.body.features,
       portfolio: req.body.portfolio,
       instaFollowers: req.body.instaFollowers,
@@ -1207,8 +1338,16 @@ const editKids = async (req, res) => {
       age: req.body.age,
       inActive: true,
       noOfJobsCompleted: req.body.noOfJobsCompleted,
-      videoAudioUrls: req.body.videoAudioUrls,
-      publicUrl: req.body.publicUrl
+      videoList: req.body.videoList,
+      audioList: req.body.audioList,
+      publicUrl: req.body.publicUrl,
+      instagramUrl: req.body.instagramUrl,
+      tikTokUrl: req.body.tikTokUrl,
+      youTubeUrl: req.body.youTubeUrl,
+      linkedinUrl: req.body.linkedinUrl,
+      facebookUrl: req.body.facebookUrl,
+      threadsUrl: req.body.threadsUrl,
+      twitterUrl: req.body.twitterUrl,
 
     };
 
@@ -1227,7 +1366,7 @@ const editKids = async (req, res) => {
       // Retrieve parentEmail and parentFirstName from the existing user document
       const parentEmail = user.parentEmail;
       const parentFirstName = user.parentFirstName;
-
+      // if (!req.body.skills || req.body.skills.length === 0) {
       const emailContent = `
     <p>Hello ${parentFirstName},</p>
     <p>You have been registered successfully. You will receive a team approval confirmation.</p>
@@ -1239,7 +1378,14 @@ const editKids = async (req, res) => {
 
       // Send notification and email
       await saveNotification(userId, notificationMessage);
-      await sendEmail(parentEmail, 'Approval', emailContent);
+      // Check if skills are present in req.body
+      if (req.body.portfolio && req.body.portfolio.length > 0) {
+        console.log("portfolio.....................................")
+        // Send email if skills are not present
+        await sendEmail(parentEmail, 'Approval', emailContent);
+      }
+      //   await sendEmail(parentEmail, 'Approval', emailContent);
+      //  }
     }
 
 
@@ -1249,7 +1395,8 @@ const editKids = async (req, res) => {
       data: {
         user_id: userId,
         // Do not directly return email for privacy reasons, or ensure it's appropriate to do so
-        email: user.parentEmail // Commented for privacy concerns; uncomment if necessary
+        email: user.parentEmail,// Commented for privacy concerns; uncomment if necessary
+        data:updateFields
       }
     })
     // res.json({ status: true, msg: 'Updated successfully, OTP sent to parent email.' });
@@ -1265,174 +1412,179 @@ const editKids = async (req, res) => {
  * @param {*} res return data
  * @param {*} next undefined
  */
-const unifiedDataFetch = async (req, res, next) => {
+ const unifiedDataFetch = async (req, res, next) => {
   try {
-  
+
     const userId = req.params.user_id;
     const dataType = parseInt(req.params.dataType);
     const objectId = new mongoose.Types.ObjectId(userId);
+  //  const user = req.body.user;
+    
 
-    let model;
-    const kidsUser = await kidsmodel.findOne({ _id: objectId, isActive: true, inActive: true, adminApproved: true });//adminApproved: true
-    const adultUser = await adultmodel.findOne({ _id: objectId, isActive: true, inActive: true, adminApproved: true });//adminApproved: true
+   // if (!user || user.length === 'null') {
+      let model;
+      const kidsUser = await kidsmodel.findOne({ _id: objectId, isActive: true, inActive: true });//adminApproved: true
+      const adultUser = await adultmodel.findOne({ _id: objectId, isActive: true, inActive: true });//adminApproved: true
 
-    if (kidsUser) {
-      model = kidsmodel;
-    } else if (adultUser) {
-      model = adultmodel;
-    } else {
-      return res.status(200).json({ status: false, msg: 'No data' });
-    }
-
-    switch (dataType) {
-      case 1: {
-        const user = await model.findOne({ _id: objectId, isActive: true, inActive: true }, 'portfolio').sort({ createdAt: -1 });;
-
-        if (!user || !user.portfolio || user.portfolio.length === 0) {
-          return res.status(200).json({ status: false, msg: 'Portfolio not found' });
-        }
-
-        // Transform the portfolio to the desired format
-        const fileDataArray = user.portfolio.map(item => item.fileData);
-        return res.json({ status: true, data: fileDataArray });
+      if (kidsUser) {
+        model = kidsmodel;
+      } else if (adultUser) {
+        model = adultmodel;
+      } else {
+        return res.status(200).json({ status: false, msg: 'Need Admin Approval' });
       }
-     
-      case 3:{
-        const selectField = {
-          3: 'cv',
+
+      switch (dataType) {
+        case 1: {
+          const user = await model.findOne({ _id: objectId, isActive: true, inActive: true }, 'portfolio').sort({ updatedAt: -1 });
+
+          if (!user || !user.portfolio || user.portfolio.length === 0) {
+            return res.status(200).json({ status: false, msg: 'Portfolio not found' });
+          }
+          // Reverse the portfolio and then map it to get the fileData
         
-        }[dataType];
-
-        const documents = await model.findOne({ _id: objectId, isActive: true, inActive: true }).select(selectField + ' _id').sort({ createdAt: -1 });;
-
-        if (!documents || documents.length === 0 || !documents[selectField]) {
-          return res.status(200).json({ status: false, msg: 'No data found' });
+          const fileDataArray = user.portfolio.map(item => item.fileData);
+          return res.json({ status: true, data: fileDataArray });
         }
 
-        const responseData = documents[selectField].map(item => ({
-          _id: documents._id.toString(), // Convert ObjectId to String if necessary
-          id: item.id,
-          title: item.title,
-          fileData: item.fileData,
-          type: item.type
-        }));
+        case 3: {
+          const selectField = {
+            3: 'cv',
 
-        return res.json({ status: true, data: responseData });
-      }
-      case 2: {
-        try {
+          }[dataType];
+
+          const documents = await model.findOne({ _id: objectId, isActive: true, inActive: true }).select(selectField + ' _id').sort({ updatedAt: -1 });;
+
+          if (!documents || documents.length === 0 || !documents[selectField]) {
+            return res.status(200).json({ status: false, msg: 'No data found' });
+          }
+
+          const responseData = documents[selectField].map(item => ({
+            _id: documents._id.toString(), // Convert ObjectId to String if necessary
+            id: item.id,
+            title: item.title,
+            fileData: item.fileData,
+            type: item.type
+          }));
+
+          return res.json({ status: true, data: responseData });
+        }
+       
+        case 2: {
+          try {
+            // Find the document based on the given criteria
+            const document = await model.findOne({ _id: objectId, isActive: true, inActive: true })
+              .sort({ updatedAt: -1 })
+              .select('videoList');
+
+            if (!document || !document.videoList || document.videoList.length === 0) {
+              return res.status(200).json({ status: false, msg: 'videoList data not found' });
+            }
+
+            // Directly map the URLs
+            const videosAndAudiosData = document.videoList.map(videoList => videoList);
+
+            return res.json({ status: true, videoList: videosAndAudiosData });
+          } catch (error) {
+            console.error('Error fetching videoList data:', error);
+            return res.status(500).json({ status: false, msg: 'Internal server error' });
+          }
+        }
+
+        case 4: {
+          const featuresData = await model.findOne({ _id: objectId, isActive: true, inActive: true }, 'features').sort({ updatedAt: -1 });;
+
+          if (!featuresData || !featuresData.features || featuresData.features.length === 0) {
+            return res.status(200).json({ status: false, msg: 'Features data not found' });
+          }
+
+          // Format the features as per requirement
+          const formattedFeatures = featuresData.features.map(feature => ({
+            label: feature.label,
+            value: feature.value
+          }));
+
+          return res.json({ status: true, data: formattedFeatures });
+        }
+
+        case 6: {
+          try {
+            const serviceData = await model.findOne({ _id: objectId, isActive: true, inActive: true }, 'services').sort({ updatedAt: -1 });
+
+            if (!serviceData || !serviceData.services || serviceData.services.length === 0) {
+              return res.status(200).json({ status: false, msg: 'Services data not found' });
+            }
+
+            const formattedServices = serviceData.services.map(service => {
+              let editorStateString = '';
+              if (Array.isArray(service.editorState)) {
+                editorStateString = service.editorState.join(' '); // Joining HTML strings if there are multiple
+              } else if (typeof service.editorState === 'string') {
+                editorStateString = service.editorState; // Use as is if it's a string
+              } else {
+                console.error('Unexpected type for service.editorState:', typeof service.editorState);
+              }
+
+              return {
+                serviceName: service.serviceName,
+                serviceAmount: service.serviceAmount,
+                serviceDuration: service.serviceDuration,
+                editorState: editorStateString,
+                files: service.files || [], // Ensure files array exists, handle if it's undefined
+              };
+            });
+
+            return res.json({ status: true, data: formattedServices });
+
+          } catch (error) {
+            console.error('Error retrieving services data:', error);
+            return res.status(500).json({ status: false, msg: 'Server error' });
+          }
+        }
+        case 7: {
+          console.log("dgsgkjfkgjfnkj")
+          const reviewsData = await model.findOne({ _id: objectId, isActive: true, inActive: true }, 'reviews').sort({ updatedAt: -1 });
+          if (!reviewsData || !reviewsData.reviews || reviewsData.reviews.length === 0) {
+            return res.status(200).json({ status: false, msg: 'Reviews data not found' });
+          }
+          console.log("reviewsData", reviewsData)
+
+          const approvedReviews = reviewsData.reviews.filter(review => review.reviewApproved === 'Approved');
+          if (approvedReviews.length === 0) {
+            return res.status(200).json({ status: false, msg: 'No approved reviews found' });
+          }
+          console.log("approvedReviews", approvedReviews)
+          const formattedReviews = approvedReviews.map(review => ({
+            comment: review.comment,
+            starRatings: review.starRatings,
+            reviewDate: review.reviewDate,
+            reviewerName: review.reviewerName,
+            reviewerId: review.reviewerId,
+            reviewApproved: review.reviewApproved
+          }));
+          return res.json({ status: true, data: formattedReviews });
+        }
+        case 8: {
           // Find the document based on the given criteria
-          const document = await model.findOne({ _id: objectId, isActive: true, inActive: true })
-            .sort({ createdAt: -1 })
-            .select('videosAndAudios');
+          const videoAudioUrlsData = await model.findOne({ _id: objectId, isActive: true, inActive: true })
+            .sort({ updatedAt: -1 })
+            .select('audioList');
 
-          if (!document || !document.videosAndAudios || document.videosAndAudios.length === 0) {
-            return res.status(200).json({ status: false, msg: 'videosAndAudios data not found' });
+          if (!videoAudioUrlsData || !videoAudioUrlsData.audioList || videoAudioUrlsData.audioList.length === 0) {
+            return res.status(200).json({ status: false, msg: 'audioList data not found' });
           }
 
           // Directly map the URLs
-          const videosAndAudiosData = document.videosAndAudios.map(videosAndAudios => videosAndAudios);
+          const videoAudioUrlsDatas = videoAudioUrlsData.audioList.map(audioList => audioList);
 
-          return res.json({ status: true, videosAndAudios: videosAndAudiosData });
-        } catch (error) {
-          console.error('Error fetching videosAndAudios data:', error);
-          return res.status(500).json({ status: false, msg: 'Internal server error' });
+          return res.json({ status: true, audioList: videoAudioUrlsDatas });
         }
-      }
-
-      case 4: {
-        const featuresData = await model.findOne({ _id: objectId, isActive: true, inActive: true }, 'features').sort({ createdAt: -1 });;
-
-        if (!featuresData || !featuresData.features || featuresData.features.length === 0) {
-          return res.status(200).json({ status: false, msg: 'Features data not found' });
-        }
-
-        // Format the features as per requirement
-        const formattedFeatures = featuresData.features.map(feature => ({
-          label: feature.label,
-          value: feature.value
-        }));
-
-        return res.json({ status: true, data: formattedFeatures });
-      }
-     
-      case 6: {
-        try {
-          const serviceData = await model.findOne({ _id: objectId, isActive: true, inActive: true }, 'services').sort({ createdAt: -1 });
-
-          if (!serviceData || !serviceData.services || serviceData.services.length === 0) {
-            return res.status(200).json({ status: false, msg: 'Services data not found' });
-          }
-
-          const formattedServices = serviceData.services.map(service => {
-            let editorStateString = '';
-            if (Array.isArray(service.editorState)) {
-              editorStateString = service.editorState.join(' '); // Joining HTML strings if there are multiple
-            } else if (typeof service.editorState === 'string') {
-              editorStateString = service.editorState; // Use as is if it's a string
-            } else {
-              console.error('Unexpected type for service.editorState:', typeof service.editorState);
-            }
-
-            return {
-              serviceName: service.serviceName,
-              serviceAmount: service.serviceAmount,
-              serviceDuration: service.serviceDuration,
-              editorState: editorStateString,
-              files: service.files || [], // Ensure files array exists, handle if it's undefined
-            };
-          });
-
-          return res.json({ status: true, data: formattedServices });
-
-        } catch (error) {
-          console.error('Error retrieving services data:', error);
-          return res.status(500).json({ status: false, msg: 'Server error' });
-        }
-      }
-      case 7: {
-        console.log("dgsgkjfkgjfnkj")
-        const reviewsData = await model.findOne({ _id: objectId, isActive: true, inActive: true}, 'reviews').sort({ createdAt: -1 });
-        if (!reviewsData || !reviewsData.reviews || reviewsData.reviews.length === 0) {
-          return res.status(200).json({ status: false, msg: 'Reviews data not found' });
-        }
-        console.log("reviewsData",reviewsData)
        
-        const approvedReviews = reviewsData.reviews.filter(review => review.reviewApproved === 'Approved');
-        if (approvedReviews.length === 0) {
-          return res.status(200).json({ status: false, msg: 'No approved reviews found' });
-        }
-        console.log("approvedReviews",approvedReviews)
-        const formattedReviews = approvedReviews.map(review => ({
-          comment: review.comment,
-          starRatings: review.starRatings,
-          reviewDate: review.reviewDate,
-          reviewerName: review.reviewerName,
-          reviewerId: review.reviewerId,
-          reviewApproved: review.reviewApproved
-        }));
-        return res.json({ status: true, data: formattedReviews });
+        default:
+          return res.status(200).json({ status: false, msg: 'No Data' });
+
       }
-    
-      case 8: {
-        // Find the document based on the given criteria
-        const videoAudioUrlsData = await model.findOne({ _id: objectId, isActive: true, inActive: true })
-          .sort({ createdAt: -1 })
-          .select('videoAudioUrls');
-
-        if (!videoAudioUrlsData || !videoAudioUrlsData.videoAudioUrls || videoAudioUrlsData.videoAudioUrls.length === 0) {
-          return res.status(200).json({ status: false, msg: 'videoAudioUrls data not found' });
-        }
-
-        // Directly map the URLs
-        const videoAudioUrlsDatas = videoAudioUrlsData.videoAudioUrls.map(videoAudioUrl => videoAudioUrl);
-
-        return res.json({ status: true, videoAudioUrls: videoAudioUrlsDatas });
-      }
-      default:
-        return res.status(200).json({ status: false, msg: 'No Data' });
-
-    }
+  
   } catch (error) {
     console.error(error);
     res.status(500).json({ status: false, msg: `Server error: ${error.message}` });
@@ -1476,14 +1628,14 @@ const deleteFile = async (req, res, next) => {
     }
 
     if (updatedUser) {
-   
+
       res.json({ status: true, msg: `Items successfully removed from ${userType} model.`, updatedUser });
     } else {
-     
+
       res.json({ status: false, msg: 'No items were removed.', updatedUser: null });
     }
   } catch (error) {
- 
+
     res.json({ status: false, msg: 'Internal server error.' });
   }
 };
@@ -1531,7 +1683,7 @@ const otpResend = async (req, res, next) => {
           error: error
         });
       } else {
-   
+
         // Update the OTP in the database for the user
         try {
           const filter = { parentEmail: email };
@@ -1543,7 +1695,7 @@ const otpResend = async (req, res, next) => {
         }
 
         res.json({
-          message: "OTP sent successfully",
+          message: "OTP has been sent successfully",
           status: true
         });
       }
@@ -1611,7 +1763,7 @@ const otpResendAdult = async (req, res, next) => {
         }
 
         res.json({
-          message: "OTP sent successfully",
+          message: "OTP has been sent successfully",
           status: true
         });
       }
@@ -1629,19 +1781,20 @@ const otpResendAdult = async (req, res, next) => {
  */
 const talentList = async (req, res) => {
   try {
-   
-
     // Find all active adults
-    const activeAdults = await adultmodel.find({ isActive: true, inActive: true });//adminApproved: true
+    const activeAdults = await adultmodel.find({ isActive: true,adminApproved: true }); // adminApproved: true
 
     // Find all active kids
-    const activeKids = await kidsmodel.find({ isActive: true, inActive: true });//adminApproved: true
+    const activeKids = await kidsmodel.find({ isActive: true, inActive: true,adminApproved: true}); // adminApproved: true
 
     // Combine both lists
-    const reversedUsers = [...activeAdults, ...activeKids];
+    let allActiveUsers = [...activeAdults, ...activeKids];
 
-    // Reverse the array
-    const allActiveUsers = reversedUsers.reverse();
+    // Sort the combined list by createdAt in descending order
+    allActiveUsers = allActiveUsers.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    // Reverse the sorted array
+    allActiveUsers = allActiveUsers;
 
     if (allActiveUsers.length > 0) {
       return res.json({ status: true, data: allActiveUsers });
@@ -1664,12 +1817,22 @@ const talentList = async (req, res) => {
 const talentFilterData = async (req, res) => {
   try {
     let orConditions = [];
+    let orSocialConditions = [];
 
-    //  // Profession filter
+
+       // Helper function to add regex condition
+       const addRegexCondition = (field, value) => {
+        if (value) {
+          orConditions.push({ [field]: { $regex: new RegExp(escapeRegex(value), 'i') } });
+        }
+      };
+
+    // //  // Profession filter
     if (req.body.profession && req.body.profession.length) {
       const professionValues = req.body.profession.map(prof => prof.value);
       orConditions.push({ 'profession.value': { $in: professionValues } });
     }
+    // Profession filter
 
 
     // Features filter
@@ -1679,6 +1842,12 @@ const talentFilterData = async (req, res) => {
         orConditions.push(condition);
       });
     }
+  
+    if (req.body.height) {
+      orConditions.push({ features: { $elemMatch: { label: "Height", value: req.body.height } } });
+     
+    }
+    
 
     // Age range filter
     if (req.body.minAge && req.body.maxAge) {
@@ -1687,16 +1856,20 @@ const talentFilterData = async (req, res) => {
       orConditions.push({ age: { $gte: minAge, $lte: maxAge } });
     }
 
+    // Generic string fields handling
+    const fields = ['adultEmail', 'contactEmail', 'country', 'parentFirstName', 'parentLastName',
+      'parentEmail', 'parentMobileNo', 'parentCountry', 'parentState',
+      'parentAddress', 'profession.value', 'profession.label',
+      'relevantCategories', 'industry', 'childFirstName',
+      'childLastName', 'preferredChildFirstname', 'preferredChildLastName',
+      'childEthnicity', 'childPhone', 'childEmail', 'childLocation',
+      'childCity', 'childAboutYou', 'services', 'portfolio',
+      'features.label', 'features.value', 'maritalStatus'];
 
-    // Generic string fields handling (case insensitive)
-    const fields = ['adultEmail', 'contactEmail', 'country', 'parentFirstName', 'parentLastName', 'parentEmail', 'parentMobileNo', 'parentCountry', 'parentState', 'parentAddress', 'profession.value', 'profession.label', 'relevantCategories', 'industry', 'childFirstName', 'childLastName', 'preferredChildFirstname', 'preferredChildLastName', 'childEthnicity', 'childPhone', 'childEmail', 'childLocation', 'childCity', 'childAboutYou', 'services', 'portfolio', 'features.label', 'features.value', 'maritalStatus']//['childCity', 'parentCountry','childNationality', 'gender', 'childEthnicity', 'languages', 'childFirstName', 'parentFirstName', 'industry','preferredChildFirstname', 'preferredChildLastName'];
     fields.forEach(field => {
-      if (req.body[field]) {
-        let condition = {};
-        condition[field] = { $regex: new RegExp(req.body[field], 'i') }; // Case-insensitive search
-        orConditions.push(condition);
-      }
+      addRegexCondition(field, req.body[field]);
     });
+   
 
     // Search term filter
     if (req.body.searchTerm) {
@@ -1732,6 +1905,57 @@ const talentFilterData = async (req, res) => {
     if (req.body.languages && req.body.languages.length > 0) {
       orConditions.push({ languages: { $in: req.body.languages } });
     }
+   
+  if (req.body.socialmedia) {
+    const socialMediaPlatforms = req.body.socialmedia || [];
+    const minfollowerscount = parseInt(req.body.minfollowerscount, 10) || 0;
+    const maxfollowerscount = parseInt(req.body.maxfollowerscount, 10) || Infinity;
+
+    const createFollowerCondition = (field) => ({
+      $expr: {
+        $and: [
+          {
+            $gte: [
+              { $convert: { input: `$${field}`, to: "int", onError: 0, onNull: 0 } },
+              minfollowerscount
+            ]
+          },
+          {
+            $lte: [
+              { $convert: { input: `$${field}`, to: "int", onError: 0, onNull: 0 } },
+              maxfollowerscount
+            ]
+          }
+        ]
+      }
+    });
+
+    // Add conditions for each social media platform
+    const socialPlatforms = ['facebook', 'instagram', 'linkedin', 'threads', 'tiktok', 'twitter', 'youtube'];
+    socialPlatforms.forEach(platform => {
+      if (socialMediaPlatforms.includes(platform)) {
+        orSocialConditions.push(createFollowerCondition(`${platform}Followers`));
+      }
+    });
+  }
+    //newly
+
+
+if (req.body.name) {
+  const name = req.body.name.trim();
+  const escapedKeyword = escapeRegex(name); // Function to escape regex special characters
+
+  // Define the keyword conditions for first and last names
+  const keywordConditions = [
+    { preferredChildFirstname: { $regex: new RegExp(escapedKeyword, 'i') } },
+    { preferredChildLastName: { $regex: new RegExp(escapedKeyword, 'i') } },
+    { preferredChildFullName: { $regex: new RegExp(escapedKeyword, 'i') } } // Check against full name field
+  ];
+
+  // Push the keyword conditions into orConditions
+  orConditions.push({ $or: keywordConditions });
+}
+
 
     // Keyword filter (checking in both adult and kids models)
     if (req.body.keyword) {
@@ -1777,9 +2001,18 @@ const talentFilterData = async (req, res) => {
     console.log("orConditions", orConditions)
     // Add conditions for isActive: true and inActive: true
     orConditions.push({ isActive: true }, { inActive: true });//,{adminApproved: true}
+
+    let query = {};
    
-    // Constructing the final query with all conditions
-    let query = orConditions.length ? { $and: orConditions } : {};
+
+    if (orConditions.length > 0) {
+      query = { $and: orConditions };
+    }
+
+    if (orSocialConditions.length > 0) {
+      query.$and.push({ $or: orSocialConditions });
+    }
+
 
     // Executing the query on both collections and combining the results
     const adults = await adultmodel.find(query).exec();
@@ -2010,10 +2243,6 @@ const updateProfileStatus = async (req, res) => {
       return res.json({ status: false, msg: 'User not found' });
     }
 
-    // // If we have an update result, we successfully updated the profile status
-    // if (updateResult) {
-    //   return res.json({ status: true, msg: 'Set profile status successfully', type: userType,data:updateResult });
-    // } 
     if (updateResult && updatedUserData) {
       return res.json({
         status: true,
@@ -2254,12 +2483,10 @@ const removeFavorite = async (req, res) => {
     } catch (err) {
       res.json({ status: false, msg: err.message });
     }
-  // } catch (error) {
-  //   res.json({ status: false, msg: 'Invalid Token' });
-  // }
-} catch (error) {
-  res.json({ status: false, msg: error.message });
-}
+    
+  } catch (error) {
+    res.json({ status: false, msg: error.message });
+  }
 };
 /**
  *********remove favourtites*****
@@ -2389,7 +2616,7 @@ const updateAdultPassword = async (req, res) => {
           error: error
         });
       } else {
-       
+
         console.log("Email sent: " + info.response);
 
         // Update the OTP in the database for the user
@@ -2397,7 +2624,7 @@ const updateAdultPassword = async (req, res) => {
           const filter = { adultEmail: email };
           const update = { otp: hashedOTP };
           await adultmodel.updateOne(filter, update);
-       
+
         } catch (updateError) {
           console.error("Error updating OTP in the database:", updateError);
         }
@@ -2429,7 +2656,7 @@ const adultForgotPassword = async (req, res, next) => {
   try {
     const token = crypto.randomBytes(20).toString('hex');
 
-    const user = await adultmodel.findOne({ adultEmail: req.body.adultEmail, isActive: true, inActive: true });
+    const user = await adultmodel.findOne({ adultEmail: req.body.adultEmail, isActive: true });
 
     if (!user) {
       return res.json({
@@ -2718,7 +2945,7 @@ const addServices = async (req, res) => {
       data: updatedTalent
     });
   } catch (error) {
-   
+
     res.status(500).json({
       status: false,
       message: 'An error occurred while adding the files to the service',
@@ -2920,7 +3147,7 @@ const saveReviewNotification = async (talentId, notificationMessage, reviewerNam
       reviewerId: reviewerId,
       isReport: true,
       reviewApproved: 'Approved',
-      status:'Approved',
+      status: 'Approved',
       adminApproved: true,
       profileApprove: true,
       talentDetails: {
@@ -2937,7 +3164,7 @@ const saveReviewNotification = async (talentId, notificationMessage, reviewerNam
         reviews: talent.reviews,
       },
       reviewerDetails: {
-        name: reviewer.preferredChildFirstname|| reviewer.brandName,
+        name: reviewer.preferredChildFirstname || reviewer.brandName,
         reviewerId: reviewerId,
         email: reviewer.adultEmail || reviewer.parentEmail || reviewer.brandEmail,
         image: reviewer.image
@@ -2963,7 +3190,7 @@ const reportReview = async (req, res) => {
 
     // Attempt to find and update a review in the kids model
     updateResult = await kidsmodel.findOneAndUpdate(
-      { _id: talentId, "reviews.reviewerId": reviewerId,"reviews.comment":comment},
+      { _id: talentId, "reviews.reviewerId": reviewerId, "reviews.comment": comment },
       { $set: { "reviews.$.isReport": true } },
       { new: true } // Return the updated document
     );
@@ -2972,8 +3199,8 @@ const reportReview = async (req, res) => {
     if (!updateResult) {
       modelType = "adult";
       updateResult = await adultmodel.findOneAndUpdate(
-        { _id: talentId, "reviews.reviewerId": reviewerId,"reviews.comment":comment},
-        { $set: { "reviews.$.isReport": true} },
+        { _id: talentId, "reviews.reviewerId": reviewerId, "reviews.comment": comment },
+        { $set: { "reviews.$.isReport": true } },
         { new: true } // Return the updated document
       );
     }
@@ -3016,10 +3243,10 @@ const reviewsPosting = async (req, res) => {
       talent = await adultmodel.findOne({ _id: talentId });
       modelType = "adult";
     }
-    
+
     // If talent is found, update the reviews array
 
-    console.log("talent",talent)
+    console.log("talent", talent)
     if (talent) {
       // Add the new review to the reviews array
       talent.reviews.push({
@@ -3029,7 +3256,7 @@ const reviewsPosting = async (req, res) => {
         reviewerName: reviewerName,
         reviewerId: reviewerId,
         reviewApproved: 'Approved',
-        isReport:false
+        isReport: false
       });
 
       // Calculate the average of the starRatings values
@@ -3074,6 +3301,7 @@ const reviewsPosting = async (req, res) => {
  * @param {*} res return data
  * @param {*} next undefined
  */
+
 const deleteVideoUrls = async (req, res) => {
   const { talentId, index } = req.body;
 
@@ -3099,20 +3327,69 @@ const deleteVideoUrls = async (req, res) => {
     }
 
     // Check if the index is valid
-    if (index >= talent.videoAudioUrls.length) {
-      return res.status(400).send({ message: "Invalid index" });
+    if (index >= talent.videoList.length) {
+      return res.status(200).send({ message: "Invalid index" });
     }
 
     // Remove the URL at the specified index
-    talent.videoAudioUrls.splice(index, 1);
+    talent.videoList.splice(index, 1);
 
     // Save the updated document
     await talent.save();
 
-    res.status(200).send({ message: "URL deleted successfully", videoAudioUrls: talent.videoAudioUrls });
+    res.status(200).send({ status: true, message: "URL deleted successfully", videoList: talent.videoList });
   } catch (error) {
     console.error("Error deleting URL:", error);
-    res.status(500).send({ message: "An error occurred while deleting the URL" });
+    res.status(500).send({ status: false, message: "An error occurred while deleting the URL" });
+  }
+};
+
+
+/**
+ *********deleteAudioUrls ******
+ * @param {*} req from user
+ * @param {*} res return data
+ * @param {*} next undefined
+ */
+const deleteAudioUrls = async (req, res) => {
+  const { talentId, index } = req.body;
+
+  try {
+    // Validate input
+    if (!talentId || index === undefined || index < 0) {
+      return res.status(400).send({ message: "Invalid input" });
+    }
+
+    // Find the talent document in the kids model
+    let talent = await kidsmodel.findById(talentId);
+    let modelType = 'kids';
+
+    // If not found, check in the adults model
+    if (!talent) {
+      talent = await adultmodel.findById(talentId);
+      modelType = 'adults';
+    }
+
+    // If talent not found in both models
+    if (!talent) {
+      return res.status(200).send({ message: "Talent not found" });
+    }
+
+    // Check if the index is valid
+    if (index >= talent.audioList.length) {
+      return res.status(200).send({ message: "Invalid index" });
+    }
+
+    // Remove the URL at the specified index
+    talent.audioList.splice(index, 1);
+
+    // Save the updated document
+    await talent.save();
+
+    res.status(200).send({ status: true, message: "URL deleted successfully", audioList: talent.audioList });
+  } catch (error) {
+    console.error("Error deleting URL:", error);
+    res.status(500).send({ status: false, message: "An error occurred while deleting the URL" });
   }
 };
 /**
@@ -3123,46 +3400,310 @@ const deleteVideoUrls = async (req, res) => {
  */
  const getDataByPublicUrl = async (req, res) => {
   try {
-    // Extract publicUrl from req.body and trim any extra spaces
-    const publicUrl = req.body.publicUrl.trim().toLowerCase(); // Normalize to lowercase
+      // Extract and normalize publicUrl and userId
+      const publicUrl = req.body.publicUrl.trim().toLowerCase();
+      const { userId } = req.body;
 
-    // Check if the user with the given publicUrl exists in adultmodel
-    const adultUser = await adultmodel.findOne({ 
-      publicUrl: { $regex: new RegExp(`^${publicUrl}$`, 'i') }, // Case-insensitive regex
-      isActive: true, 
-      inActive: true 
-    });
-    if (adultUser) {
-      return res.json({ status: true, data: adultUser });
-    }
+      // Function to find the user in the specified models
+      const findUserInModels = async (publicUrl, userId) => {
+          const models = [
+              { model: adultmodel, name: "Adult" },
+              { model: kidsmodel, name: "Kids" },
+              { model: brandsmodel, name: "Brands" }
+          ];
 
-    // Check if the user with the given publicUrl exists in kidsmodel
-    const kidsUser = await kidsmodel.findOne({ 
-      publicUrl: { $regex: new RegExp(`^${publicUrl}$`, 'i') }, // Case-insensitive regex
-      isActive: true, 
-      inActive: true 
-    });
-    if (kidsUser) {
-      return res.json({ status: true, data: kidsUser });
-    }
+          for (const { model, name } of models) {
+              try {
+                  console.log(`Querying ${name} model for userId:`, userId);
 
-    // Check if the user with the given publicUrl exists in brandsmodel
-    const brandUser = await brandsmodel.findOne({ 
-      publicUrl: { $regex: new RegExp(`^${publicUrl}$`, 'i') }, // Case-insensitive regex
-      isActive: true, 
-      inActive: true 
-    });
-    if (brandUser) {
-      return res.json({ status: true, data: brandUser });
-    }
+                  // Check for user with the given publicUrl and userId
+                  const user = await model.findOne({
+                      publicUrl: { $regex: new RegExp(`^${publicUrl}$`, 'i') }, // Case-insensitive regex
+                      _id: userId, // using userId directly
+                      isActive: true,
+                      inActive: true
+                  });
 
-    // If no user is found in any model, return an appropriate response
-    return res.json({ status: false, msg: 'No user found' });
+                  // If user is found, return the result
+                  if (user) {
+                      console.log(`${name} model found user:`, user);
+                      return { status: true, data: user, currentStatus: "own-talent", model: name };
+                  }
+              } catch (error) {
+                  console.error(`Error querying ${name} model:`, error.message);
+              }
+          }
+
+          // If no user found in any model with userId
+          return { status: false, message: "User not found with specified userId." };
+      };
+
+      // First, search for the user in all models with userId
+      const userWithId = await findUserInModels(publicUrl, userId);
+      if (userWithId.status) return res.json(userWithId);
+
+      // If not found with userId, check for publicUrl without userId
+      const findUserWithoutId = async (publicUrl) => {
+          const models = [
+              { model: adultmodel, name: "Adult" },
+              { model: kidsmodel, name: "Kids" },
+              { model: brandsmodel, name: "Brands" }
+          ];
+
+          for (const { model, name } of models) {
+              try {
+                  console.log(`Checking admin approval in ${name} model for publicUrl:`, publicUrl);
+                  const user = await model.findOne({
+                      publicUrl: { $regex: new RegExp(`^${publicUrl}$`, 'i') } // Case-insensitive regex
+                  });
+
+                  if (user) {
+                      console.log(`${name} model found user for approval check:`, user);
+                      // Check for admin approval status
+                      if (!user.adminApproved) {
+                          return { status: true, data: [], currentStatus: "not-approved", model: name };
+                      }
+                      return { status: true, data: user, currentStatus: "approved", model: name };
+                  }
+              } catch (error) {
+                  console.error(`Error checking admin approval in ${name} model:`, error.message);
+              }
+          }
+
+          return null; // Return null if user not found in any model
+      };
+
+      // Check admin approval status
+      const adminApprovalStatus = await findUserWithoutId(publicUrl);
+      if (adminApprovalStatus) return res.json(adminApprovalStatus);
+
+      // If no user found
+      return res.json({ status: false, msg: "User not found" });
+
   } catch (error) {
-    console.error('Error occurred while fetching data:', error);
-    return res.status(500).json({ status: false, msg: 'Error occurred while fetching data' });
+      console.error('Error occurred while fetching data:', error);
+      return res.status(500).json({ status: false, msg: 'Error occurred while fetching data' });
   }
 };
+
+
+/**
+ *********fetchPaymentDetails ******
+ * @param {*} req from user
+ * @param {*} res return data
+ * @param {*} next undefined
+ */
+
+const fetchPaymentDetails = async (req, res, next) => {
+  try {
+    const userId = req.body.user_id;
+
+    // Find the user in all three models
+    const kidsUser = await kidsmodel.findOne({ _id: userId, isActive: true });
+    const adultUser = await adultmodel.findOne({ _id: userId, isActive: true });
+    const brandUser = await brandsmodel.findOne({ _id: userId, isActive: true });
+
+    // Determine which model to use
+    let model = null;
+
+    if (kidsUser) {
+      model = kidsmodel;
+    } else if (adultUser) {
+      model = adultmodel;
+    } else if (brandUser) {
+      model = brandsmodel;
+    }
+
+    // If no user is found in any model, return an appropriate message
+    if (!model) {
+      return res.status(200).json({ status: false, msg: 'User not found or not active' });
+    }
+
+    // Fetch user details
+    const userDetails = await model.findOne({ _id: userId, isActive: true });
+
+    if (!userDetails) {
+      return res.status(200).json({ status: false, msg: 'User details not found' });
+    }
+
+    // Return the user details
+    res.json({ status: true, data: userDetails });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ status: false, msg: `Server error: ${error.message}` });
+  }
+};
+/**
+*********directKidsLogin******
+* @param {*} req from user
+* @param {*} res return data
+* @param {*} next undefined
+*/
+
+const directKidsLogin = async (req, res, next) => {
+  try {
+    const newEmail = req.body.parentEmail;
+
+    // Fetch the user from the database for the given email
+    const user = await kidsmodel.findOne({ parentEmail: newEmail, isActive: true });
+
+    if (!user) {
+      console.log("Error: User not found");
+      return res.json({
+        message: "User not found",
+        status: false
+      });
+    }
+
+    // Generate a token, assuming auth.getToken() is a valid method
+    const token = auth.gettoken(user._id, newEmail); // Ensure `auth.getToken` exists and is imported
+
+    // Return success response
+    return res.json({
+      status: true,
+      message: 'Login successful',
+      data: {
+        user,
+        token,
+        email: newEmail,
+        type: 'kids' // Returning 'kids' as the user type
+      }
+    });
+
+  } catch (error) {
+    console.error("Error:", error);
+    res.json({
+      message: "An error occurred",
+      status: false,
+      error: error.toString()
+    });
+  }
+};
+const test = async (req, res, next) => {
+  let orConditions = [];
+
+  // Get the social media platforms from req.body.socialmedia (expected as an array)
+  const socialMediaPlatforms = req.body.socialmedia || [];
+
+  // Extract min and max followers count from req.body
+  const minfollowerscount = parseInt(req.body.minfollowerscount, 10) || 0;
+  const maxfollowerscount = parseInt(req.body.maxfollowerscount, 10) || Infinity;
+
+  // Function to create follower condition with safe conversion
+  const createFollowerCondition = (field) => ({
+    $expr: {
+      $and: [
+        {
+          $gte: [
+            {
+              $convert: {
+                input: `$${field}`,
+                to: "int",
+                onError: 0,  // Use 0 if conversion fails
+                onNull: 0    // Use 0 if the field is null or empty
+              }
+            },
+            minfollowerscount
+          ]
+        },
+        {
+          $lte: [
+            {
+              $convert: {
+                input: `$${field}`,
+                to: "int",
+                onError: 0,
+                onNull: 0
+              }
+            },
+            maxfollowerscount
+          ]
+        }
+      ]
+    }
+  });
+
+  // Add conditions for each platform based on its inclusion in req.body.socialmedia
+  if (socialMediaPlatforms.includes('facebook')) {
+    orConditions.push(createFollowerCondition('facebookFollowers'));
+  }
+
+  if (socialMediaPlatforms.includes('instagram')) {
+    orConditions.push(createFollowerCondition('instaFollowers'));
+  }
+
+  if (socialMediaPlatforms.includes('linkedin')) {
+    orConditions.push(createFollowerCondition('linkedinFollowers'));
+  }
+
+  if (socialMediaPlatforms.includes('threads')) {
+    orConditions.push(createFollowerCondition('threadsFollowers'));
+  }
+
+  if (socialMediaPlatforms.includes('tiktok')) {
+    orConditions.push(createFollowerCondition('tiktokFollowers'));
+  }
+
+  if (socialMediaPlatforms.includes('twitter')) {
+    orConditions.push(createFollowerCondition('twitterFollowers'));
+  }
+
+  if (socialMediaPlatforms.includes('youtube')) {
+    orConditions.push(createFollowerCondition('youtubeFollowers'));
+  }
+
+  // Query to ensure that conditions match for any of the included platforms
+  const query = orConditions.length > 0 ? { $or: orConditions } : {};
+
+  try {
+    // Run the query in the KidsModel, AdultModel, and BrandsModel
+    const kidsResults = await kidsmodel.find(query);
+    const adultResults = await adultmodel.find(query);
+
+    // Combine results from all models
+    const allResults = [...kidsResults, ...adultResults];
+
+    // Send the combined results
+    res.status(200).json(allResults);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+/**
+ *********talentLists*****
+ * @param {*} req from user
+ * @param {*} res return data
+ * @param {*} next undefined
+ */
+ const talentLists = async (req, res) => {
+  try {
+    // Find all active adults
+    const activeAdults = await adultmodel.find({ isActive: true }); // adminApproved: true
+
+    // Find all active kids
+    const activeKids = await kidsmodel.find({ isActive: true, inActive: true}); // adminApproved: true
+
+    // Combine both lists
+    let allActiveUsers = [...activeAdults, ...activeKids];
+
+    // Sort the combined list by createdAt in descending order
+    allActiveUsers = allActiveUsers.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    // Reverse the sorted array
+    allActiveUsers = allActiveUsers.reverse();
+
+    if (allActiveUsers.length > 0) {
+      return res.json({ status: true, data: allActiveUsers });
+    } else {
+      return res.json({ status: false, msg: 'No active users found' });
+    }
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    return res.json({ status: false, msg: 'An error occurred' });
+  }
+};
+
 
 
 
@@ -3173,6 +3714,6 @@ module.exports = {
   getTalentById, updateProfileStatus, subscriptionStatus, getByProfession, loginTemplate, getPlanByType,
   removeFavorite, checkUserStatus, socialSignup, updateAdultPassword, adultForgotPassword, adultResetPassword,
   fetchUserData, countUsers, activateUser, addServices, deleteService, applyJobUsersList, deleteIndividualService,
-  typeChecking, reviewsPosting, deleteVideoUrls,reportReview,getDataByPublicUrl
+  typeChecking, reviewsPosting, deleteVideoUrls, reportReview, getDataByPublicUrl, deleteAudioUrls, fetchPaymentDetails, directKidsLogin, test,talentLists
 
 };
